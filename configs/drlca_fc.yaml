@@ -1,0 +1,5 @@
+# configs/drlca_fc.yaml — Baseline (FC Fusion) 실험 설정
+_base_: base.yaml
+
+logging:
+  run_name: "fc_drlca_cw"

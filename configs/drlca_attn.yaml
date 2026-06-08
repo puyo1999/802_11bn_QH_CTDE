@@ -1,0 +1,9 @@
+# configs/drlca_attn.yaml — Attention-DRLCA 실험 설정
+_base_: base.yaml
+
+agent:
+  hidden_dim: 32
+  n_heads: 2
+
+logging:
+  run_name: "attn_drlca_cw"
