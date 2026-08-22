@@ -1,0 +1,41 @@
+# configs/qh_ctde.yaml — QH-CTDE 및 Q-MAPPO 알고리즘 전용 설정
+_base_: base.yaml
+
+env:
+  # ── [주의] env 섹션 전체가 덮어써지므로 base.yaml의 필수 값 누락 없이 명시 ──
+  mode: "qh"              # QH-CTDE 환경 모드 활성화 (4인용 스케줄링)
+  k_stas: 4               # [추가] AP당 사용자 수 (K=4)
+  interact_slots: 555556   # base.yaml과 동일 유지 (5s / 9μs)
+  max_episodes: 600       # base.yaml과 동일 유지
+  seed: 42
+
+train:
+  max_episodes: 1000       # 👈 기존 300~500 수준이었다면 1000 이상으로 확대
+  epsilon_decay: 0.995     # 👈 탐험율이 너무 일찍 0.01로 떨어지지 않도록 완만하게 조정
+  learning_rate: 0.0003    # 👈 Q-Mix 계열 네트워크에 안정적인 Standard LRagent:
+  state_dim: 10           # ✅ 10으로 수정
+  action_shape: [9, 16]
+
+  # ── [QH-CTDE 핵심 모듈 파라미터] ──────────────────────────────
+  use_quantization: true  # 벡터 양자화(VQ) 코드북 메커니즘 활성화
+  vq_bits: 4              # 시그널링 오버헤드 제약을 위한 4-bit 양자화 설정
+  use_dsm: true           # 동적 모드 스위칭(Dynamic Switching Module) 활성화
+  gamma_margin: 0.8       # DSM 채널 상태 안정성 기준 마진 가중치 (Γ)
+  hidden_dim: 128         # QH-CTDE 모델 은닉층 뉴런 수
+
+  # ── [기존 agent 파라미터 전체 명시 (파서 덮어쓰기 에러 방지)] ──
+  fused_dim: 8
+  history_len: 10
+
+  gamma: 0.99             # drlca_attn.yaml과 동일하게 0.99로 맞춤 (공정한 비교)
+  tau: 0.005              # drlca_attn.yaml과 동기화
+  eps_start: 1.0
+  eps_end: 0.01
+  eps_decay: 0.99
+  batch_size: 32
+  mem_size: 500
+  lr: 0.0005
+  dueling: false
+
+logging:
+  run_name: "qh_ctde_scheduling"
