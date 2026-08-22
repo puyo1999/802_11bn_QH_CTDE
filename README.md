@@ -57,12 +57,35 @@ python experiments/train.py --config configs/drlca_fc.yaml
 # 3. Attention-DRLCA 학습
 python experiments/train.py --config configs/drlca_attn.yaml
 
+# ① 제안 기법 (Quantized-Hybrid CTDE & Q-MAPPO) 가치 믹서 학습
+python experiments/train_ctde.py --config configs/qh_ctde.yaml
+
+# ② 대조 베이스라인 1 (Attention-DRLCA) 학습
+python experiments/train_ctde.py --config configs/drlca_attn.yaml
+
 # 4. 평가 (cross-topology)
 python experiments/evaluate.py --config configs/drlca_attn.yaml --checkpoint runs/attn/best.pt
 
 # 5. Ablation
 python experiments/ablation.py --config configs/drlca_attn.yaml
 ```
+---
+
+## 🚀 다중 사용자 스케줄링 실험 가이드 ($K=4$)
+
+Wi-Fi 8(802.11bn) 표준 사양에 맞춘 AP당 4인용 다중 사용자 환경($K=4$)에서 제안 기법(QH-CTDE) 및 베이스라인 모델들을 공정하게 비교 학습하기 위한 설정 및 구동 가이드입니다.
+
+### 1. 핵심 환경 및 네트워크 차원 정의
+다중 사용자 스케줄링 활성화에 따라 환경의 상태 공간(Observation Space)과 행동 공간(Action Space) 규격이 다음과 같이 확장되었습니다.
+* **State Dimension (`state_dim`):** `9` (기존 싱글 STA 전용 4차원에서 다중 사용자 징후 및 DSM 스위칭 지표가 결합되어 **9차원**으로 확장)
+* **Action Shape (`action_shape`):** `[9, 16]` (Contention Window 제어 후보 9개 $\times$ MCS 레벨 인덱스 16개)
+
+### 2. 실험 실행 명령어
+
+제안 알고리즘 및 베이스라인을 동일한 $K=4$ 환경(`mode: "qh"`)에서 실행하려면 아래 명령어를 순차적으로 수행합니다.
+
+```bash
+
 
 ---
 

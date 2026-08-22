@@ -19,11 +19,11 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import torch
 
-from src.envs.obss_env import OBSSEnv
-from src.envs.topology import get_all_fixed_topos, random_topology
-from src.agents.attn_drlca_agent import AttnDRLCAAgent
-from src.utils.metrics import aggregate_metrics, d95_reduction
-from experiments.train import load_config, build_agents
+from attention_drlca.src.envs.obss_env import OBSSEnv
+from attention_drlca.src.envs.topology import get_all_fixed_topos, random_topology
+from attention_drlca.src.agents.attn_drlca_agent import AttnDRLCAAgent
+from attention_drlca.src.utils.metrics import aggregate_metrics, d95_reduction
+from attention_drlca.experiments.train import load_config, build_agents
 
 
 def evaluate_topology(topo, agents: list[AttnDRLCAAgent],

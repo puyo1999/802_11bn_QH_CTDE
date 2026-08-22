@@ -5,6 +5,7 @@ LSTM + Double DQN Decision Network (논문 Fig.4 오른쪽 블록)
 구조: LSTM64 × 2 → FC64 → FC(n_actions)
       Dueling 구조 옵션 추가 (개선 실험용)
 """
+from __future__ import annotations
 
 import torch
 import torch.nn as nn

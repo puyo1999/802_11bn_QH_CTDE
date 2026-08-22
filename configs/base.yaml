@@ -2,7 +2,8 @@
 
 env:
   mode: "cw"              # cw | cca | joint
-  interact_slots: 55556   # 0.5s / 9μs
+  #interact_slots: 55556   # 0.5s / 9μs
+  interact_slots: 555556   # 5s / 9μs
   max_episodes: 600       # 300s / 0.5s
   seed: 42
 

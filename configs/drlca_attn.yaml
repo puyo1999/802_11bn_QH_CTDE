@@ -1,9 +1,21 @@
-# configs/drlca_attn.yaml — Attention-DRLCA 실험 설정
+# configs/drlca_attn.yaml — 수정본
 _base_: base.yaml
 
 agent:
+  state_dim: 6       # 👈 누락되어 에러를 내던 값들 추가
+  fused_dim: 8       # 👈 추가
+  history_len: 10    # 👈 추가
   hidden_dim: 32
   n_heads: 2
+  gamma: 0.99
+  tau: 0.005
+  eps_start: 1.0
+  eps_end: 0.01
+  eps_decay: 0.99
+  batch_size: 32
+  mem_size: 500
+  lr: 0.0005
+  dueling: false
 
 logging:
   run_name: "attn_drlca_cw"

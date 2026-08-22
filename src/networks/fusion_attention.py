@@ -18,6 +18,11 @@ src/networks/fusion_attention.py
   fused            : (B, out_dim)
   attn_weights     : (B, N_nbr+1) — 해석 가능성용
 """
+# numpy 1.26.0 다운그레이드에 따른 후속 조치
+# Python 3.9 이하 버전에서는 torch.Tensor | None 같은 | (Union) 문법을 지원하지 않지만,
+# 파일 맨 위에 from __future__ import annotations 를 넣어주면
+# Python 3.10+ 스타일의 최신 타입 힌트 문법을 미리 빌려와 사용할 수 있게 됩니다.
+from __future__ import annotations
 
 import torch
 import torch.nn as nn
