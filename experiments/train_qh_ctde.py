@@ -4,7 +4,6 @@ experiments/train_qh_ctde.py (QH-CTDE VQ & DSM 통합 고도화 버전)
 
 import os
 import sys
-import yaml
 import random
 import numpy as np
 import torch
@@ -15,44 +14,35 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.envs.qh_obss_env_mod1 import OBSSEnv
+from src.config import load_config
 from src.envs.topology import FIXED_TOPOS_CW
 from experiments.plot.marl_plotter import MARLPlotter
 from experiments.run_baselines import run_eval as run_baseline_eval
 
 from src.agents.qh_ctde_agent import QHCTDEAgent
 
-def load_config(path: str) -> dict:
-    with open(path, 'r', encoding='utf-8') as f:
-        cfg = yaml.safe_load(f)
-    if "_base_" in cfg:
-        base_path = os.path.join(os.path.dirname(path), cfg.pop("_base_"))
-        with open(base_path, 'r', encoding='utf-8') as f:
-            base = yaml.safe_load(f)
-        base.update(cfg)
-        cfg = base
-    return cfg
-
 def build_agents(n_aps: int, cfg: dict) -> list[QHCTDEAgent]:
     """
     YAML 설정 파일(qh_ctde.yaml)의 train 섹션을 바탕으로
     모든 AP에 대한 QH-CTDE 에이전트 리스트를 생성합니다.
     """
+    acfg = cfg["agent"]
     tcfg = cfg["train"]
 
-    state_dim = tcfg.get("state_dim", 9)
-    hidden_dim = tcfg.get("hidden_dim", 128)
-    use_quantization = tcfg.get("use_quantization", True)
-    vq_bits = tcfg.get("vq_bits", 4)
-    use_dsm = tcfg.get("use_dsm", True)
-    gamma_margin = tcfg.get("gamma_margin", 0.8)
+    state_dim = acfg.get("state_dim", 10)
+    hidden_dim = acfg.get("hidden_dim", 128)
+    use_quantization = acfg.get("use_quantization", True)
+    vq_bits = acfg.get("vq_bits", 4)
+    use_dsm = acfg.get("use_dsm", True)
+    gamma_margin = acfg.get("gamma_margin", 0.8)
 
-    lr = tcfg.get("learning_rate", 0.0003)
-    gamma = tcfg.get("gamma", 0.99)
-    tau = tcfg.get("tau", 0.005)
+    lr = acfg.get("lr", tcfg.get("learning_rate", 0.0003))
+    gamma = acfg.get("gamma", 0.99)
+    tau = acfg.get("tau", 0.005)
 
-    eps_start = tcfg.get("eps_start", 1.0)
-    eps_end = tcfg.get("eps_end", 0.01)
-    eps_decay = tcfg.get("eps_decay", 0.995)
+    eps_start = acfg.get("eps_start", 1.0)
+    eps_end = acfg.get("eps_end", 0.01)
+    eps_decay = tcfg.get("epsilon_decay", acfg.get("eps_decay", 0.995))
     device = tcfg.get("device", "cpu")
 
     k_stas = cfg["env"].get("k_stas", 4)
@@ -74,6 +64,8 @@ def build_agents(n_aps: int, cfg: dict) -> list[QHCTDEAgent]:
             eps_start=eps_start,
             eps_end=eps_end,
             eps_decay=eps_decay,
+            batch_size=acfg.get("batch_size", 32),
+            mem_size=acfg.get("mem_size", 5000),
             device=device,
         )
         for i in range(n_aps)

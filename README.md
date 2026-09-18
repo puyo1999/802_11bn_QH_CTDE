@@ -69,6 +69,19 @@ python experiments/evaluate.py --config configs/drlca_attn.yaml --checkpoint run
 # 5. Ablation
 python experiments/ablation.py --config configs/drlca_attn.yaml
 ```
+
+### Configuration-first CTDE 실행 경로
+
+고정 토폴로지와 환경 파라미터는 이제 `configs/topologies.yaml` 및 YAML 설정으로
+분리되어 있습니다. `T3`, `T6`의 `shared_sta_groups`는 중첩 커버리지 STA를 명시하며,
+Classical CTDE는 환경이 반환한 관측값에서 local/global 차원을 검증합니다.
+
+```bash
+# 양자 계층 없이 classical CTDE 계약/학습 루프 검증
+python experiments/train_classical_ctde.py --config configs/classical_ctde.yaml --topology T3
+```
+
+`qml.qnode`는 이 classical 경로가 재현 가능하게 검증된 후 encoder 계층에만 추가합니다.
 ---
 
 ## 🚀 다중 사용자 스케줄링 실험 가이드 ($K=4$)

@@ -1,0 +1,32 @@
+# Fixed IEEE 802.11bn scenarios.  Positions are metres in a common plane.
+# `shared_sta_groups` explicitly records stations intentionally in overlapping
+# AP coverage; an environment can use this metadata for diagnostics or masks.
+topologies:
+  T1:
+    name: CW_Topo1
+    ap_positions: [[0, 0], [20, 0], [40, 0]]
+    sta_positions: [[[0, -10]], [[20, -10]], [[40, -10]]]
+  T2:
+    name: CW_Topo2
+    ap_positions: [[40, 0], [20, 0], [0, 0]]
+    sta_positions: [[[40, -10]], [[20, -10]], [[0, -10]]]
+  T3:
+    name: CW_Topo3
+    ap_positions: [[0, 0], [30, 0], [0, -30], [30, -30]]
+    # AP0/AP1 deliberately expose a shared edge STA at [15, -5].
+    sta_positions: [[[5, -5], [15, -5]], [[35, -5], [15, -5]], [[5, -35]], [[35, -35]]]
+    shared_sta_groups: [[[0, 1], [1, 1]]]
+  T4:
+    name: CW_Topo4
+    ap_positions: [[0, 0], [30, 0], [30, -30], [0, -30]]
+    sta_positions: [[[5, -5]], [[35, -5]], [[35, -35]], [[5, -35]]]
+  T5:
+    name: CW_Topo5
+    ap_positions: [[0, 0], [10, 0], [20, 0], [20, -20]]
+    sta_positions: [[[0, -8], [0, -16]], [[10, -8]], [[20, -8]], [[20, -28]]]
+  T6:
+    name: CW_Topo6
+    ap_positions: [[0, 0], [20, 0], [40, 0], [20, -20]]
+    # Three AP coverage domains meet at this STA; it is intentionally shared.
+    sta_positions: [[[3, -8], [20, -8]], [[23, -8], [20, -8]], [[43, -8]], [[23, -28], [20, -8]]]
+    shared_sta_groups: [[[0, 1], [1, 1], [3, 1]]]

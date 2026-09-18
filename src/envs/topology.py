@@ -6,7 +6,10 @@ src/envs/topology.py
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
 import numpy as np
+import yaml
 
 
 @dataclass
@@ -23,6 +26,7 @@ class Topology:
     sta_positions: list
     neighbors:     dict
     name:          str = "unnamed"
+    shared_sta_groups: list[list[tuple[int, int]]] = field(default_factory=list)
 
 
 def _neighbors_from_positions(
@@ -51,79 +55,60 @@ def _neighbors_from_positions(
     return nbrs
 
 
-# ── 논문 고정 토폴로지 (Fig.7 CW 최적화 / Fig.11 CCA 최적화) ─
+# ── YAML-backed fixed topologies (legacy function names remain public) ────
+
+_TOPOLOGY_FILE = Path(__file__).resolve().parents[2] / "configs" / "topologies.yaml"
+
+
+def load_fixed_topologies(path: str | Path = _TOPOLOGY_FILE) -> dict[str, Topology]:
+    """Build fixed topologies from YAML, including intentional shared STAs."""
+    with Path(path).open(encoding="utf-8") as handle:
+        raw: dict[str, Any] = yaml.safe_load(handle) or {}
+    result: dict[str, Topology] = {}
+    for key, spec in raw.get("topologies", {}).items():
+        ap = np.asarray(spec["ap_positions"], dtype=np.float32)
+        sta = [[np.asarray(point, dtype=np.float32) for point in stations]
+               for stations in spec["sta_positions"]]
+        if len(ap) != len(sta):
+            raise ValueError(f"{key}: AP and STA list lengths differ")
+        groups = [[tuple(member) for member in group]
+                  for group in spec.get("shared_sta_groups", [])]
+        for group in groups:
+            if len(group) < 2:
+                raise ValueError(f"{key}: shared STA group must contain two or more entries")
+            positions = [sta[ap_idx][sta_idx] for ap_idx, sta_idx in group]
+            if not all(np.allclose(positions[0], point) for point in positions[1:]):
+                raise ValueError(f"{key}: shared STA coordinates must be identical")
+        result[key] = Topology(len(ap), ap, sta, _neighbors_from_positions(ap),
+                               spec.get("name", key), groups)
+    return result
+
+
+def _fixed(name: str) -> Topology:
+    return load_fixed_topologies()[name]
 
 def topo_cw1() -> Topology:
-    """Topo1: 3-AP, 20m 간격, AP1-AP2 직접, AP1-AP3 hidden"""
-    ap = np.array([[0., 0.], [20., 0.], [40., 0.]], dtype=np.float32)
-    sta = [
-        [np.array([0., -10.], dtype=np.float32)],
-        [np.array([20., -10.], dtype=np.float32)],
-        [np.array([40., -10.], dtype=np.float32)],
-    ]
-    nbrs = _neighbors_from_positions(ap)
-    return Topology(3, ap, sta, nbrs, name="CW_Topo1")
+    return _fixed("T1")
 
 
 def topo_cw2() -> Topology:
-    """Topo2: 3-AP, 20m 간격, 반대 방향"""
-    ap = np.array([[40., 0.], [20., 0.], [0., 0.]], dtype=np.float32)
-    sta = [
-        [np.array([40., -10.], dtype=np.float32)],
-        [np.array([20., -10.], dtype=np.float32)],
-        [np.array([0., -10.], dtype=np.float32)],
-    ]
-    nbrs = _neighbors_from_positions(ap)
-    return Topology(3, ap, sta, nbrs, name="CW_Topo2")
+    return _fixed("T2")
 
 
 def topo_cw3() -> Topology:
-    """Topo3: 4-AP 정사각형, 30m"""
-    ap = np.array([
-        [0., 0.], [30., 0.], [0., -30.], [30., -30.]
-    ], dtype=np.float32)
-    sta = [[np.array([x + 5., y - 5.], dtype=np.float32)]
-           for x, y in ap]
-    nbrs = _neighbors_from_positions(ap)
-    return Topology(4, ap, sta, nbrs, name="CW_Topo3")
+    return _fixed("T3")
 
 
 def topo_cw4() -> Topology:
-    """Topo4: 4-AP, 비대칭 배치"""
-    ap = np.array([
-        [0., 0.], [30., 0.], [30., -30.], [0., -30.]
-    ], dtype=np.float32)
-    sta = [[np.array([x + 5., y - 5.], dtype=np.float32)]
-           for x, y in ap]
-    nbrs = _neighbors_from_positions(ap)
-    return Topology(4, ap, sta, nbrs, name="CW_Topo4")
+    return _fixed("T4")
 
 
 def topo_cw5() -> Topology:
-    """Topo5: 4-AP + 2 extra STA, 밀집"""
-    ap = np.array([
-        [0., 0.], [10., 0.], [20., 0.], [20., -20.]
-    ], dtype=np.float32)
-    sta = [
-        [np.array([0., -8.], dtype=np.float32),
-         np.array([0., -16.], dtype=np.float32)],
-        [np.array([10., -8.], dtype=np.float32)],
-        [np.array([20., -8.], dtype=np.float32)],
-        [np.array([20., -28.], dtype=np.float32)],
-    ]
-    nbrs = _neighbors_from_positions(ap)
-    return Topology(4, ap, sta, nbrs, name="CW_Topo5")
+    return _fixed("T5")
 
 
 def topo_cw6() -> Topology:
-    """Topo6: 4-AP, 분산 배치"""
-    ap = np.array([
-        [0., 0.], [20., 0.], [40., 0.], [20., -20.]
-    ], dtype=np.float32)
-    sta = [[np.array([x + 3., y - 8.], dtype=np.float32)]
-           for x, y in ap]
-    nbrs = _neighbors_from_positions(ap)
-    return Topology(4, ap, sta, nbrs, name="CW_Topo6")
+    return _fixed("T6")
 
 
 FIXED_TOPOS_CW = [

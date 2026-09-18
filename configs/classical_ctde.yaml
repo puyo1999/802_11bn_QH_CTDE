@@ -1,0 +1,23 @@
+_base_: qh_ctde.yaml
+
+# This is the mandatory classical checkpoint before enabling a qml.qnode.
+env:
+  mode: qh
+  k_stas: 4
+  topology_file: topologies.yaml
+  traffic:
+    type: saturated
+    poisson_arrival_rate: 0.1
+    queue_max_size: 100
+
+agent:
+  # Must equal 2 * env.k_stas + 2. Kept explicit for experiment provenance.
+  state_dim: 10
+  hidden_dim: 128
+  gamma: 0.99
+  lr: 0.0003
+
+train:
+  max_episodes: 300
+  horizon: 32
+  batch_size: 1

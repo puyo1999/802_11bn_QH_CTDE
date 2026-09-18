@@ -14,30 +14,15 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import numpy as np
-import yaml
 import torch
 from tqdm import tqdm
 
 from src.envs.obss_env import OBSSEnv
+from src.config import load_config
 from src.envs.topology import get_all_fixed_topos, random_topology
 from src.agents.attn_drlca_agent import AttnDRLCAAgent
 from src.utils.metrics import aggregate_metrics, d95_reduction
 from src.utils.logger import Logger
-
-
-def load_config(path: str) -> dict:
-    #with open(path) as f: # <-- 인코딩이 지정되지 않음
-    with open(path, 'r', encoding='utf-8') as f:
-        cfg = yaml.safe_load(f)
-    # base config 병합 (단순 flat merge)
-    if "_base_" in cfg:
-        base_path = os.path.join(os.path.dirname(path), cfg.pop("_base_"))
-        #with open(base_path) as f:
-        with open(base_path, 'r', encoding='utf-8') as f:
-            base = yaml.safe_load(f)
-        base.update(cfg)
-        cfg = base
-    return cfg
 
 
 def build_agents(n_aps: int, cfg: dict, mode: str) -> list[AttnDRLCAAgent]:
