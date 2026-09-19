@@ -1,0 +1,37 @@
+# configs/qh_ctde.yaml — QH-CTDE 전용 설정
+#
+# [수정 사항] 기존 파일은 train.learning_rate 줄의 주석 끝에 'agent:' 키가 붙어
+#   "# ... Standard LRagent:" 형태가 되면서 agent 섹션 전체가 주석에 삼켜졌다.
+#   그 결과 state_dim, vq_bits, use_dsm 등이 모두 train 섹션의 하위 키로 파싱되었다.
+#   deep merge 도입과 함께 섹션 구조를 정상화한다.
+
+_base_: base.yaml
+
+env:
+  impl: "qh_v2"
+  mode: "qh"
+  topology: "all"
+  k_stas: 4
+  overlap:
+    enabled: true
+    mode: "hard"
+    expose_in_obs: true
+
+agent:
+  hidden_dim: 128
+  lr: 0.0003
+  gamma: 0.99
+  tau: 0.005
+  eps_decay: 0.995
+  use_quantization: true
+  vq_bits: 4
+  use_dsm: true
+  gamma_margin: 0.8
+
+train:
+  max_episodes: 1000
+  n_runs: 5
+  eval_steps: 200
+
+logging:
+  run_name: "qh_ctde_scheduling"
