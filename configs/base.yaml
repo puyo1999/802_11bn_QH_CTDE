@@ -1,37 +1,81 @@
-# configs/base.yaml — 논문 Table I / II 기준 공통 파라미터
+# configs/base.yaml — 전 실험 공통 기본값
+# 자식 설정은 _base_: base.yaml 로 상속하며, deep merge가 적용되므로
+# 하위 키 일부만 재정의해도 나머지 키는 보존된다.
+
+topology_file: "configs/topologies.yaml"
 
 env:
-  mode: "cw"              # cw | cca | joint
-  #interact_slots: 55556   # 0.5s / 9μs
-  interact_slots: 555556   # 5s / 9μs
-  max_episodes: 600       # 300s / 0.5s
+  impl: "qh"                # qh | ctde | legacy
+  mode: "qh"                # qh | cw | cca | joint
+  topology: "T1"            # topologies.yaml의 ID 또는 'all' / 'group:with_overlap'
+  interact_slots: 55556     # 0.5 s / 9 us
+  max_episodes: 600
   seed: 42
+  queue_max_size: 100
+
+  # 연속 부하 비율 트래픽 모델 (src/envs/traffic.py)
+  # ratio=0 -> 가벼운 poisson, ratio=1 -> 도착률이 서비스 용량을 상회하며 자연 포화
+  traffic:
+    traffic_load_ratio: 0.7
+    poisson_lambda_min: 0.1
+    poisson_lambda_max: 3.0
+    init_fill_ratio: 0.0
+  k_stas: 4
+  harsh_mode_enabled: true
+  harsh_start_ratio: 0.5
+  harsh_interference_gain: 5.0
+  n_mcs: 16
+  tx_power_dbm: 15.0
+  noise_dbm: -95.0
+
+  # 중첩 영역 STA에 대한 명시적 제약 (src/envs/overlap.py)
+  overlap:
+    enabled: true
+    mode: "hard"          # hard: 중첩 AP 동시 전송 시 전송 실패 / soft: 간섭 이득만 가산
+    soft_gain_db: 10.0
+    expose_in_obs: true   # 관측 벡터에 중첩 지시자 K차원 추가 -> obs_dim = 3K + 2
+
+  # 보상 가중치 (src/envs/reward.py)
+  reward:
+    lambda_fair: 0.5
+    lambda_latency: 0.2
+    lambda_overlap: 0.0   # 0보다 크면 중첩 차단 횟수에 직접 패널티 부과
+    latency_deadline_ms: 5.0
+    latency_exp_scale: 0.02
 
 agent:
-  state_dim: 6
-  fused_dim: 8
-  history_len: 10
-  gamma: 0.9
-  tau: 0.004
+  # state_dim 은 기재하지 않는다. 환경 관측 차원에서 자동 추론된다.
+  hidden_dim: 128
+  n_mcs: 16
+  lr: 0.0005
+  gamma: 0.99
+  tau: 0.005
+  batch_size: 32
+  mem_size: 5000
   eps_start: 1.0
   eps_end: 0.01
-  eps_decay: 0.99
-  batch_size: 32
-  mem_size: 500
-  lr: 0.0005
-  dueling: false
+  eps_decay: 0.995
+  use_quantization: true
+  vq_bits: 4
+  use_dsm: true
+  gamma_margin: 0.8
+  device: "cpu"
 
 train:
-  n_runs: 5               # 반복 실험 수 (오차 막대용)
+  max_episodes: 300
+  n_runs: 5
+  eval_steps: 200
+  warmup_steps: 500
+  update_every: 1
+  target_update_every: 5
+  grad_clip: 1.0
   log_interval: 10
   save_interval: 100
-  device: "cpu"           # cuda | cpu
-
-eval:
-  n_episodes: 100
-  exploration: 0.0
+  device: "cpu"
+  result_dir: "results"
 
 logging:
+  run_name: "base"
   use_wandb: false
   use_tb: true
   log_dir: "runs"

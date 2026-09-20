@@ -8,3 +8,10 @@ results/
 *.pth
 wandb/
 .DS_Store
+*.npy
+results/
+runs/
+plots/
+.pytest_cache/
+*.egg-info/
+ qh-ctde-refactor
