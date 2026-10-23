@@ -13,7 +13,9 @@ env:
 train:
   max_episodes: 1000       # 👈 기존 300~500 수준이었다면 1000 이상으로 확대
   epsilon_decay: 0.995     # 👈 탐험율이 너무 일찍 0.01로 떨어지지 않도록 완만하게 조정
-  learning_rate: 0.0003    # 👈 Q-Mix 계열 네트워크에 안정적인 Standard LRagent:
+  learning_rate: 0.0003    # 👈 Q-Mix 계열 네트워크에 안정적인 Standard LR
+
+agent:
   state_dim: 10           # ✅ 10으로 수정
   action_shape: [9, 16]
 
