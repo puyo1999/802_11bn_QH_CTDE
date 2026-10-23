@@ -2,180 +2,324 @@ load,topology,seed,policy,throughput,arrival_bound
 0.1,CW_Topo1,0,Random,51.0,53.0
 0.1,CW_Topo1,0,Local Greedy (0-bit),1.0,53.0
 0.1,CW_Topo1,0,Co-TDMA (RR),51.0,53.0
-0.1,CW_Topo1,0,MAPPO (0-bit),1.0,53.0
+0.1,CW_Topo1,0,"MAPPO (0-bit, argmax)",1.0,53.0
+0.1,CW_Topo1,0,"MAPPO (0-bit, sampled)",52.0,53.0
 0.1,CW_Topo1,0,Genie Oracle,53.0,53.0
 0.1,CW_Topo1,1,Random,46.0,51.0
 0.1,CW_Topo1,1,Local Greedy (0-bit),13.0,51.0
 0.1,CW_Topo1,1,Co-TDMA (RR),51.0,51.0
-0.1,CW_Topo1,1,MAPPO (0-bit),32.0,51.0
+0.1,CW_Topo1,1,"MAPPO (0-bit, argmax)",32.0,51.0
+0.1,CW_Topo1,1,"MAPPO (0-bit, sampled)",50.0,51.0
 0.1,CW_Topo1,1,Genie Oracle,51.0,51.0
 0.1,CW_Topo1,2,Random,50.0,50.0
 0.1,CW_Topo1,2,Local Greedy (0-bit),6.0,50.0
 0.1,CW_Topo1,2,Co-TDMA (RR),50.0,50.0
-0.1,CW_Topo1,2,MAPPO (0-bit),40.0,50.0
+0.1,CW_Topo1,2,"MAPPO (0-bit, argmax)",40.0,50.0
+0.1,CW_Topo1,2,"MAPPO (0-bit, sampled)",50.0,50.0
 0.1,CW_Topo1,2,Genie Oracle,50.0,50.0
 0.1,CW_Topo2,0,Random,51.0,53.0
 0.1,CW_Topo2,0,Local Greedy (0-bit),1.0,53.0
 0.1,CW_Topo2,0,Co-TDMA (RR),51.0,53.0
-0.1,CW_Topo2,0,MAPPO (0-bit),1.0,53.0
+0.1,CW_Topo2,0,"MAPPO (0-bit, argmax)",1.0,53.0
+0.1,CW_Topo2,0,"MAPPO (0-bit, sampled)",52.0,53.0
 0.1,CW_Topo2,0,Genie Oracle,53.0,53.0
 0.1,CW_Topo2,1,Random,46.0,51.0
 0.1,CW_Topo2,1,Local Greedy (0-bit),13.0,51.0
 0.1,CW_Topo2,1,Co-TDMA (RR),51.0,51.0
-0.1,CW_Topo2,1,MAPPO (0-bit),32.0,51.0
+0.1,CW_Topo2,1,"MAPPO (0-bit, argmax)",32.0,51.0
+0.1,CW_Topo2,1,"MAPPO (0-bit, sampled)",50.0,51.0
 0.1,CW_Topo2,1,Genie Oracle,51.0,51.0
 0.1,CW_Topo2,2,Random,50.0,50.0
 0.1,CW_Topo2,2,Local Greedy (0-bit),6.0,50.0
 0.1,CW_Topo2,2,Co-TDMA (RR),50.0,50.0
-0.1,CW_Topo2,2,MAPPO (0-bit),40.0,50.0
+0.1,CW_Topo2,2,"MAPPO (0-bit, argmax)",40.0,50.0
+0.1,CW_Topo2,2,"MAPPO (0-bit, sampled)",50.0,50.0
 0.1,CW_Topo2,2,Genie Oracle,50.0,50.0
 0.1,CW_Topo3,0,Random,68.0,104.0
 0.1,CW_Topo3,0,Local Greedy (0-bit),8.0,104.0
 0.1,CW_Topo3,0,Co-TDMA (RR),103.0,104.0
-0.1,CW_Topo3,0,MAPPO (0-bit),12.0,104.0
+0.1,CW_Topo3,0,"MAPPO (0-bit, argmax)",12.0,104.0
+0.1,CW_Topo3,0,"MAPPO (0-bit, sampled)",98.0,104.0
 0.1,CW_Topo3,0,Genie Oracle,104.0,104.0
 0.1,CW_Topo3,1,Random,83.0,109.0
 0.1,CW_Topo3,1,Local Greedy (0-bit),10.0,109.0
 0.1,CW_Topo3,1,Co-TDMA (RR),109.0,109.0
-0.1,CW_Topo3,1,MAPPO (0-bit),3.0,109.0
+0.1,CW_Topo3,1,"MAPPO (0-bit, argmax)",3.0,109.0
+0.1,CW_Topo3,1,"MAPPO (0-bit, sampled)",107.0,109.0
 0.1,CW_Topo3,1,Genie Oracle,109.0,109.0
 0.1,CW_Topo3,2,Random,83.0,117.0
 0.1,CW_Topo3,2,Local Greedy (0-bit),1.0,117.0
 0.1,CW_Topo3,2,Co-TDMA (RR),116.0,117.0
-0.1,CW_Topo3,2,MAPPO (0-bit),8.0,117.0
+0.1,CW_Topo3,2,"MAPPO (0-bit, argmax)",8.0,117.0
+0.1,CW_Topo3,2,"MAPPO (0-bit, sampled)",109.0,117.0
 0.1,CW_Topo3,2,Genie Oracle,117.0,117.0
 0.1,CW_Topo4,0,Random,65.0,70.0
 0.1,CW_Topo4,0,Local Greedy (0-bit),28.0,70.0
 0.1,CW_Topo4,0,Co-TDMA (RR),70.0,70.0
-0.1,CW_Topo4,0,MAPPO (0-bit),31.0,70.0
+0.1,CW_Topo4,0,"MAPPO (0-bit, argmax)",31.0,70.0
+0.1,CW_Topo4,0,"MAPPO (0-bit, sampled)",70.0,70.0
 0.1,CW_Topo4,0,Genie Oracle,70.0,70.0
 0.1,CW_Topo4,1,Random,67.0,67.0
 0.1,CW_Topo4,1,Local Greedy (0-bit),13.0,67.0
 0.1,CW_Topo4,1,Co-TDMA (RR),67.0,67.0
-0.1,CW_Topo4,1,MAPPO (0-bit),42.0,67.0
+0.1,CW_Topo4,1,"MAPPO (0-bit, argmax)",42.0,67.0
+0.1,CW_Topo4,1,"MAPPO (0-bit, sampled)",67.0,67.0
 0.1,CW_Topo4,1,Genie Oracle,67.0,67.0
 0.1,CW_Topo4,2,Random,84.0,84.0
 0.1,CW_Topo4,2,Local Greedy (0-bit),6.0,84.0
 0.1,CW_Topo4,2,Co-TDMA (RR),84.0,84.0
-0.1,CW_Topo4,2,MAPPO (0-bit),50.0,84.0
+0.1,CW_Topo4,2,"MAPPO (0-bit, argmax)",50.0,84.0
+0.1,CW_Topo4,2,"MAPPO (0-bit, sampled)",82.0,84.0
 0.1,CW_Topo4,2,Genie Oracle,84.0,84.0
 0.1,CW_Topo5,0,Random,46.0,86.0
 0.1,CW_Topo5,0,Local Greedy (0-bit),7.0,86.0
 0.1,CW_Topo5,0,Co-TDMA (RR),86.0,86.0
-0.1,CW_Topo5,0,MAPPO (0-bit),20.0,86.0
+0.1,CW_Topo5,0,"MAPPO (0-bit, argmax)",20.0,86.0
+0.1,CW_Topo5,0,"MAPPO (0-bit, sampled)",82.0,86.0
 0.1,CW_Topo5,0,Genie Oracle,86.0,86.0
 0.1,CW_Topo5,1,Random,66.0,85.0
 0.1,CW_Topo5,1,Local Greedy (0-bit),10.0,85.0
 0.1,CW_Topo5,1,Co-TDMA (RR),85.0,85.0
-0.1,CW_Topo5,1,MAPPO (0-bit),20.0,85.0
+0.1,CW_Topo5,1,"MAPPO (0-bit, argmax)",20.0,85.0
+0.1,CW_Topo5,1,"MAPPO (0-bit, sampled)",85.0,85.0
 0.1,CW_Topo5,1,Genie Oracle,85.0,85.0
 0.1,CW_Topo5,2,Random,59.0,99.0
 0.1,CW_Topo5,2,Local Greedy (0-bit),1.0,99.0
 0.1,CW_Topo5,2,Co-TDMA (RR),99.0,99.0
-0.1,CW_Topo5,2,MAPPO (0-bit),1.0,99.0
+0.1,CW_Topo5,2,"MAPPO (0-bit, argmax)",1.0,99.0
+0.1,CW_Topo5,2,"MAPPO (0-bit, sampled)",94.0,99.0
 0.1,CW_Topo5,2,Genie Oracle,99.0,99.0
 0.1,CW_Topo6,0,Random,53.0,128.0
 0.1,CW_Topo6,0,Local Greedy (0-bit),8.0,128.0
 0.1,CW_Topo6,0,Co-TDMA (RR),126.0,128.0
-0.1,CW_Topo6,0,MAPPO (0-bit),24.0,128.0
+0.1,CW_Topo6,0,"MAPPO (0-bit, argmax)",24.0,128.0
+0.1,CW_Topo6,0,"MAPPO (0-bit, sampled)",116.0,128.0
 0.1,CW_Topo6,0,Genie Oracle,128.0,128.0
 0.1,CW_Topo6,1,Random,54.0,126.0
 0.1,CW_Topo6,1,Local Greedy (0-bit),10.0,126.0
 0.1,CW_Topo6,1,Co-TDMA (RR),126.0,126.0
-0.1,CW_Topo6,1,MAPPO (0-bit),25.0,126.0
+0.1,CW_Topo6,1,"MAPPO (0-bit, argmax)",25.0,126.0
+0.1,CW_Topo6,1,"MAPPO (0-bit, sampled)",113.0,126.0
 0.1,CW_Topo6,1,Genie Oracle,126.0,126.0
 0.1,CW_Topo6,2,Random,63.0,145.0
 0.1,CW_Topo6,2,Local Greedy (0-bit),1.0,145.0
 0.1,CW_Topo6,2,Co-TDMA (RR),144.0,145.0
-0.1,CW_Topo6,2,MAPPO (0-bit),35.0,145.0
+0.1,CW_Topo6,2,"MAPPO (0-bit, argmax)",35.0,145.0
+0.1,CW_Topo6,2,"MAPPO (0-bit, sampled)",124.0,145.0
 0.1,CW_Topo6,2,Genie Oracle,144.0,145.0
 1.0,CW_Topo1,0,Random,284.0,642.0
 1.0,CW_Topo1,0,Local Greedy (0-bit),0.0,642.0
 1.0,CW_Topo1,0,Co-TDMA (RR),641.0,642.0
-1.0,CW_Topo1,0,MAPPO (0-bit),75.0,642.0
+1.0,CW_Topo1,0,"MAPPO (0-bit, argmax)",75.0,642.0
+1.0,CW_Topo1,0,"MAPPO (0-bit, sampled)",616.0,642.0
 1.0,CW_Topo1,0,Genie Oracle,642.0,642.0
 1.0,CW_Topo1,1,Random,302.0,575.0
 1.0,CW_Topo1,1,Local Greedy (0-bit),7.0,575.0
 1.0,CW_Topo1,1,Co-TDMA (RR),575.0,575.0
-1.0,CW_Topo1,1,MAPPO (0-bit),199.0,575.0
+1.0,CW_Topo1,1,"MAPPO (0-bit, argmax)",199.0,575.0
+1.0,CW_Topo1,1,"MAPPO (0-bit, sampled)",531.0,575.0
 1.0,CW_Topo1,1,Genie Oracle,575.0,575.0
 1.0,CW_Topo1,2,Random,289.0,642.0
 1.0,CW_Topo1,2,Local Greedy (0-bit),0.0,642.0
 1.0,CW_Topo1,2,Co-TDMA (RR),639.0,642.0
-1.0,CW_Topo1,2,MAPPO (0-bit),0.0,642.0
+1.0,CW_Topo1,2,"MAPPO (0-bit, argmax)",0.0,642.0
+1.0,CW_Topo1,2,"MAPPO (0-bit, sampled)",596.0,642.0
 1.0,CW_Topo1,2,Genie Oracle,641.0,642.0
 1.0,CW_Topo2,0,Random,284.0,642.0
 1.0,CW_Topo2,0,Local Greedy (0-bit),0.0,642.0
 1.0,CW_Topo2,0,Co-TDMA (RR),641.0,642.0
-1.0,CW_Topo2,0,MAPPO (0-bit),75.0,642.0
+1.0,CW_Topo2,0,"MAPPO (0-bit, argmax)",75.0,642.0
+1.0,CW_Topo2,0,"MAPPO (0-bit, sampled)",616.0,642.0
 1.0,CW_Topo2,0,Genie Oracle,642.0,642.0
 1.0,CW_Topo2,1,Random,302.0,575.0
 1.0,CW_Topo2,1,Local Greedy (0-bit),7.0,575.0
 1.0,CW_Topo2,1,Co-TDMA (RR),575.0,575.0
-1.0,CW_Topo2,1,MAPPO (0-bit),199.0,575.0
+1.0,CW_Topo2,1,"MAPPO (0-bit, argmax)",199.0,575.0
+1.0,CW_Topo2,1,"MAPPO (0-bit, sampled)",531.0,575.0
 1.0,CW_Topo2,1,Genie Oracle,575.0,575.0
 1.0,CW_Topo2,2,Random,289.0,642.0
 1.0,CW_Topo2,2,Local Greedy (0-bit),0.0,642.0
 1.0,CW_Topo2,2,Co-TDMA (RR),639.0,642.0
-1.0,CW_Topo2,2,MAPPO (0-bit),0.0,642.0
+1.0,CW_Topo2,2,"MAPPO (0-bit, argmax)",0.0,642.0
+1.0,CW_Topo2,2,"MAPPO (0-bit, sampled)",596.0,642.0
 1.0,CW_Topo2,2,Genie Oracle,641.0,642.0
 1.0,CW_Topo3,0,Random,675.0,1280.0
 1.0,CW_Topo3,0,Local Greedy (0-bit),0.0,1280.0
 1.0,CW_Topo3,0,Co-TDMA (RR),1259.0,1280.0
-1.0,CW_Topo3,0,MAPPO (0-bit),318.0,1280.0
+1.0,CW_Topo3,0,"MAPPO (0-bit, argmax)",318.0,1280.0
+1.0,CW_Topo3,0,"MAPPO (0-bit, sampled)",1009.0,1280.0
 1.0,CW_Topo3,0,Genie Oracle,1278.0,1280.0
 1.0,CW_Topo3,1,Random,640.0,1167.0
 1.0,CW_Topo3,1,Local Greedy (0-bit),0.0,1167.0
 1.0,CW_Topo3,1,Co-TDMA (RR),1147.0,1167.0
-1.0,CW_Topo3,1,MAPPO (0-bit),476.0,1167.0
+1.0,CW_Topo3,1,"MAPPO (0-bit, argmax)",476.0,1167.0
+1.0,CW_Topo3,1,"MAPPO (0-bit, sampled)",912.0,1167.0
 1.0,CW_Topo3,1,Genie Oracle,1162.0,1167.0
 1.0,CW_Topo3,2,Random,690.0,1204.0
 1.0,CW_Topo3,2,Local Greedy (0-bit),0.0,1204.0
 1.0,CW_Topo3,2,Co-TDMA (RR),1194.0,1204.0
-1.0,CW_Topo3,2,MAPPO (0-bit),204.0,1204.0
+1.0,CW_Topo3,2,"MAPPO (0-bit, argmax)",204.0,1204.0
+1.0,CW_Topo3,2,"MAPPO (0-bit, sampled)",1011.0,1204.0
 1.0,CW_Topo3,2,Genie Oracle,1200.0,1204.0
 1.0,CW_Topo4,0,Random,744.0,845.0
 1.0,CW_Topo4,0,Local Greedy (0-bit),0.0,845.0
 1.0,CW_Topo4,0,Co-TDMA (RR),837.0,845.0
-1.0,CW_Topo4,0,MAPPO (0-bit),524.0,845.0
+1.0,CW_Topo4,0,"MAPPO (0-bit, argmax)",524.0,845.0
+1.0,CW_Topo4,0,"MAPPO (0-bit, sampled)",833.0,845.0
 1.0,CW_Topo4,0,Genie Oracle,845.0,845.0
 1.0,CW_Topo4,1,Random,685.0,755.0
 1.0,CW_Topo4,1,Local Greedy (0-bit),2.0,755.0
 1.0,CW_Topo4,1,Co-TDMA (RR),748.0,755.0
-1.0,CW_Topo4,1,MAPPO (0-bit),668.0,755.0
+1.0,CW_Topo4,1,"MAPPO (0-bit, argmax)",668.0,755.0
+1.0,CW_Topo4,1,"MAPPO (0-bit, sampled)",746.0,755.0
 1.0,CW_Topo4,1,Genie Oracle,755.0,755.0
 1.0,CW_Topo4,2,Random,772.0,832.0
 1.0,CW_Topo4,2,Local Greedy (0-bit),0.0,832.0
 1.0,CW_Topo4,2,Co-TDMA (RR),828.0,832.0
-1.0,CW_Topo4,2,MAPPO (0-bit),440.0,832.0
+1.0,CW_Topo4,2,"MAPPO (0-bit, argmax)",440.0,832.0
+1.0,CW_Topo4,2,"MAPPO (0-bit, sampled)",813.0,832.0
 1.0,CW_Topo4,2,Genie Oracle,832.0,832.0
 1.0,CW_Topo5,0,Random,161.0,1056.0
 1.0,CW_Topo5,0,Local Greedy (0-bit),0.0,1056.0
 1.0,CW_Topo5,0,Co-TDMA (RR),1040.0,1056.0
-1.0,CW_Topo5,0,MAPPO (0-bit),165.0,1056.0
+1.0,CW_Topo5,0,"MAPPO (0-bit, argmax)",165.0,1056.0
+1.0,CW_Topo5,0,"MAPPO (0-bit, sampled)",891.0,1056.0
 1.0,CW_Topo5,0,Genie Oracle,1046.0,1056.0
 1.0,CW_Topo5,1,Random,180.0,960.0
 1.0,CW_Topo5,1,Local Greedy (0-bit),2.0,960.0
 1.0,CW_Topo5,1,Co-TDMA (RR),947.0,960.0
-1.0,CW_Topo5,1,MAPPO (0-bit),105.0,960.0
+1.0,CW_Topo5,1,"MAPPO (0-bit, argmax)",105.0,960.0
+1.0,CW_Topo5,1,"MAPPO (0-bit, sampled)",806.0,960.0
 1.0,CW_Topo5,1,Genie Oracle,951.0,960.0
 1.0,CW_Topo5,2,Random,189.0,1036.0
 1.0,CW_Topo5,2,Local Greedy (0-bit),0.0,1036.0
 1.0,CW_Topo5,2,Co-TDMA (RR),1029.0,1036.0
-1.0,CW_Topo5,2,MAPPO (0-bit),0.0,1036.0
+1.0,CW_Topo5,2,"MAPPO (0-bit, argmax)",0.0,1036.0
+1.0,CW_Topo5,2,"MAPPO (0-bit, sampled)",900.0,1036.0
 1.0,CW_Topo5,2,Genie Oracle,1032.0,1036.0
 1.0,CW_Topo6,0,Random,278.0,1491.0
 1.0,CW_Topo6,0,Local Greedy (0-bit),0.0,1491.0
 1.0,CW_Topo6,0,Co-TDMA (RR),1465.0,1491.0
-1.0,CW_Topo6,0,MAPPO (0-bit),66.0,1491.0
+1.0,CW_Topo6,0,"MAPPO (0-bit, argmax)",66.0,1491.0
+1.0,CW_Topo6,0,"MAPPO (0-bit, sampled)",931.0,1491.0
 1.0,CW_Topo6,0,Genie Oracle,1470.0,1491.0
 1.0,CW_Topo6,1,Random,284.0,1389.0
 1.0,CW_Topo6,1,Local Greedy (0-bit),0.0,1389.0
 1.0,CW_Topo6,1,Co-TDMA (RR),1363.0,1389.0
-1.0,CW_Topo6,1,MAPPO (0-bit),205.0,1389.0
+1.0,CW_Topo6,1,"MAPPO (0-bit, argmax)",205.0,1389.0
+1.0,CW_Topo6,1,"MAPPO (0-bit, sampled)",852.0,1389.0
 1.0,CW_Topo6,1,Genie Oracle,1372.0,1389.0
 1.0,CW_Topo6,2,Random,312.0,1407.0
 1.0,CW_Topo6,2,Local Greedy (0-bit),0.0,1407.0
 1.0,CW_Topo6,2,Co-TDMA (RR),1389.0,1407.0
-1.0,CW_Topo6,2,MAPPO (0-bit),29.0,1407.0
+1.0,CW_Topo6,2,"MAPPO (0-bit, argmax)",29.0,1407.0
+1.0,CW_Topo6,2,"MAPPO (0-bit, sampled)",1018.0,1407.0
 1.0,CW_Topo6,2,Genie Oracle,1394.0,1407.0
+5.0,CW_Topo1,0,Random,333.0,3077.0
+5.0,CW_Topo1,0,Local Greedy (0-bit),0.0,3077.0
+5.0,CW_Topo1,0,Co-TDMA (RR),3055.0,3077.0
+5.0,CW_Topo1,0,"MAPPO (0-bit, argmax)",1000.0,3077.0
+5.0,CW_Topo1,0,"MAPPO (0-bit, sampled)",1675.0,3077.0
+5.0,CW_Topo1,0,Genie Oracle,3063.0,3077.0
+5.0,CW_Topo1,1,Random,433.0,3048.0
+5.0,CW_Topo1,1,Local Greedy (0-bit),0.0,3048.0
+5.0,CW_Topo1,1,Co-TDMA (RR),3037.0,3048.0
+5.0,CW_Topo1,1,"MAPPO (0-bit, argmax)",1102.0,3048.0
+5.0,CW_Topo1,1,"MAPPO (0-bit, sampled)",1476.0,3048.0
+5.0,CW_Topo1,1,Genie Oracle,3041.0,3048.0
+5.0,CW_Topo1,2,Random,340.0,3028.0
+5.0,CW_Topo1,2,Local Greedy (0-bit),0.0,3028.0
+5.0,CW_Topo1,2,Co-TDMA (RR),3012.0,3028.0
+5.0,CW_Topo1,2,"MAPPO (0-bit, argmax)",1044.0,3028.0
+5.0,CW_Topo1,2,"MAPPO (0-bit, sampled)",1857.0,3028.0
+5.0,CW_Topo1,2,Genie Oracle,3021.0,3028.0
+5.0,CW_Topo2,0,Random,333.0,3077.0
+5.0,CW_Topo2,0,Local Greedy (0-bit),0.0,3077.0
+5.0,CW_Topo2,0,Co-TDMA (RR),3055.0,3077.0
+5.0,CW_Topo2,0,"MAPPO (0-bit, argmax)",1000.0,3077.0
+5.0,CW_Topo2,0,"MAPPO (0-bit, sampled)",1675.0,3077.0
+5.0,CW_Topo2,0,Genie Oracle,3063.0,3077.0
+5.0,CW_Topo2,1,Random,433.0,3048.0
+5.0,CW_Topo2,1,Local Greedy (0-bit),0.0,3048.0
+5.0,CW_Topo2,1,Co-TDMA (RR),3037.0,3048.0
+5.0,CW_Topo2,1,"MAPPO (0-bit, argmax)",1102.0,3048.0
+5.0,CW_Topo2,1,"MAPPO (0-bit, sampled)",1476.0,3048.0
+5.0,CW_Topo2,1,Genie Oracle,3041.0,3048.0
+5.0,CW_Topo2,2,Random,340.0,3028.0
+5.0,CW_Topo2,2,Local Greedy (0-bit),0.0,3028.0
+5.0,CW_Topo2,2,Co-TDMA (RR),3012.0,3028.0
+5.0,CW_Topo2,2,"MAPPO (0-bit, argmax)",1044.0,3028.0
+5.0,CW_Topo2,2,"MAPPO (0-bit, sampled)",1857.0,3028.0
+5.0,CW_Topo2,2,Genie Oracle,3021.0,3028.0
+5.0,CW_Topo3,0,Random,1441.0,6148.0
+5.0,CW_Topo3,0,Local Greedy (0-bit),0.0,6148.0
+5.0,CW_Topo3,0,Co-TDMA (RR),4178.0,6148.0
+5.0,CW_Topo3,0,"MAPPO (0-bit, argmax)",1453.0,6148.0
+5.0,CW_Topo3,0,"MAPPO (0-bit, sampled)",2002.0,6148.0
+5.0,CW_Topo3,0,Genie Oracle,5150.0,6148.0
+5.0,CW_Topo3,1,Random,1439.0,6082.0
+5.0,CW_Topo3,1,Local Greedy (0-bit),0.0,6082.0
+5.0,CW_Topo3,1,Co-TDMA (RR),4197.0,6082.0
+5.0,CW_Topo3,1,"MAPPO (0-bit, argmax)",1950.0,6082.0
+5.0,CW_Topo3,1,"MAPPO (0-bit, sampled)",2272.0,6082.0
+5.0,CW_Topo3,1,Genie Oracle,5190.0,6082.0
+5.0,CW_Topo3,2,Random,1561.0,6050.0
+5.0,CW_Topo3,2,Local Greedy (0-bit),0.0,6050.0
+5.0,CW_Topo3,2,Co-TDMA (RR),4192.0,6050.0
+5.0,CW_Topo3,2,"MAPPO (0-bit, argmax)",2546.0,6050.0
+5.0,CW_Topo3,2,"MAPPO (0-bit, sampled)",2346.0,6050.0
+5.0,CW_Topo3,2,Genie Oracle,5180.0,6050.0
+5.0,CW_Topo4,0,Random,1885.0,4099.0
+5.0,CW_Topo4,0,Local Greedy (0-bit),0.0,4099.0
+5.0,CW_Topo4,0,Co-TDMA (RR),4067.0,4099.0
+5.0,CW_Topo4,0,"MAPPO (0-bit, argmax)",2512.0,4099.0
+5.0,CW_Topo4,0,"MAPPO (0-bit, sampled)",2607.0,4099.0
+5.0,CW_Topo4,0,Genie Oracle,4094.0,4099.0
+5.0,CW_Topo4,1,Random,1946.0,4020.0
+5.0,CW_Topo4,1,Local Greedy (0-bit),0.0,4020.0
+5.0,CW_Topo4,1,Co-TDMA (RR),3995.0,4020.0
+5.0,CW_Topo4,1,"MAPPO (0-bit, argmax)",1507.0,4020.0
+5.0,CW_Topo4,1,"MAPPO (0-bit, sampled)",2359.0,4020.0
+5.0,CW_Topo4,1,Genie Oracle,4020.0,4020.0
+5.0,CW_Topo4,2,Random,1906.0,4035.0
+5.0,CW_Topo4,2,Local Greedy (0-bit),0.0,4035.0
+5.0,CW_Topo4,2,Co-TDMA (RR),4000.0,4035.0
+5.0,CW_Topo4,2,"MAPPO (0-bit, argmax)",1984.0,4035.0
+5.0,CW_Topo4,2,"MAPPO (0-bit, sampled)",2050.0,4035.0
+5.0,CW_Topo4,2,Genie Oracle,4030.0,4035.0
+5.0,CW_Topo5,0,Random,301.0,5120.0
+5.0,CW_Topo5,0,Local Greedy (0-bit),0.0,5120.0
+5.0,CW_Topo5,0,Co-TDMA (RR),4100.0,5120.0
+5.0,CW_Topo5,0,"MAPPO (0-bit, argmax)",989.0,5120.0
+5.0,CW_Topo5,0,"MAPPO (0-bit, sampled)",1275.0,5120.0
+5.0,CW_Topo5,0,Genie Oracle,4571.0,5120.0
+5.0,CW_Topo5,1,Random,370.0,5066.0
+5.0,CW_Topo5,1,Local Greedy (0-bit),0.0,5066.0
+5.0,CW_Topo5,1,Co-TDMA (RR),4128.0,5066.0
+5.0,CW_Topo5,1,"MAPPO (0-bit, argmax)",1113.0,5066.0
+5.0,CW_Topo5,1,"MAPPO (0-bit, sampled)",1477.0,5066.0
+5.0,CW_Topo5,1,Genie Oracle,4553.0,5066.0
+5.0,CW_Topo5,2,Random,336.0,5049.0
+5.0,CW_Topo5,2,Local Greedy (0-bit),0.0,5049.0
+5.0,CW_Topo5,2,Co-TDMA (RR),4094.0,5049.0
+5.0,CW_Topo5,2,"MAPPO (0-bit, argmax)",1014.0,5049.0
+5.0,CW_Topo5,2,"MAPPO (0-bit, sampled)",2061.0,5049.0
+5.0,CW_Topo5,2,Genie Oracle,4588.0,5049.0
+5.0,CW_Topo6,0,Random,338.0,7201.0
+5.0,CW_Topo6,0,Local Greedy (0-bit),0.0,7201.0
+5.0,CW_Topo6,0,Co-TDMA (RR),4307.0,7201.0
+5.0,CW_Topo6,0,"MAPPO (0-bit, argmax)",1992.0,7201.0
+5.0,CW_Topo6,0,"MAPPO (0-bit, sampled)",2012.0,7201.0
+5.0,CW_Topo6,0,Genie Oracle,4865.0,7201.0
+5.0,CW_Topo6,1,Random,362.0,7121.0
+5.0,CW_Topo6,1,Local Greedy (0-bit),0.0,7121.0
+5.0,CW_Topo6,1,Co-TDMA (RR),4293.0,7121.0
+5.0,CW_Topo6,1,"MAPPO (0-bit, argmax)",1522.0,7121.0
+5.0,CW_Topo6,1,"MAPPO (0-bit, sampled)",2089.0,7121.0
+5.0,CW_Topo6,1,Genie Oracle,4855.0,7121.0
+5.0,CW_Topo6,2,Random,334.0,7018.0
+5.0,CW_Topo6,2,Local Greedy (0-bit),0.0,7018.0
+5.0,CW_Topo6,2,Co-TDMA (RR),4262.0,7018.0
+5.0,CW_Topo6,2,"MAPPO (0-bit, argmax)",1984.0,7018.0
+5.0,CW_Topo6,2,"MAPPO (0-bit, sampled)",2183.0,7018.0
+5.0,CW_Topo6,2,Genie Oracle,4859.0,7018.0

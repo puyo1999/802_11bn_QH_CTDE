@@ -10,7 +10,8 @@
     ],
     "loads": [
       0.1,
-      1.0
+      1.0,
+      5.0
     ],
     "seeds": 3,
     "episode_len": 200,
@@ -41,11 +42,17 @@
           "ratio_to_oracle": 0.9874213836477987,
           "ratio_std": 0.017788849841171003
         },
-        "MAPPO (0-bit)": {
+        "MAPPO (0-bit, argmax)": {
           "mean": 24.333333333333332,
           "std": 16.81930108205715,
           "ratio_to_oracle": 0.48210630164015295,
           "ratio_std": 0.3350478936548456
+        },
+        "MAPPO (0-bit, sampled)": {
+          "mean": 50.666666666666664,
+          "std": 0.9428090415820634,
+          "ratio_to_oracle": 0.987174744111481,
+          "ratio_std": 0.009073854797951498
         },
         "Genie Oracle": {
           "mean": 51.333333333333336,
@@ -74,11 +81,17 @@
           "ratio_to_oracle": 0.9874213836477987,
           "ratio_std": 0.017788849841171003
         },
-        "MAPPO (0-bit)": {
+        "MAPPO (0-bit, argmax)": {
           "mean": 24.333333333333332,
           "std": 16.81930108205715,
           "ratio_to_oracle": 0.48210630164015295,
           "ratio_std": 0.3350478936548456
+        },
+        "MAPPO (0-bit, sampled)": {
+          "mean": 50.666666666666664,
+          "std": 0.9428090415820634,
+          "ratio_to_oracle": 0.987174744111481,
+          "ratio_std": 0.009073854797951498
         },
         "Genie Oracle": {
           "mean": 51.333333333333336,
@@ -107,11 +120,17 @@
           "ratio_to_oracle": 0.993945868945869,
           "ratio_std": 0.004303079050425402
         },
-        "MAPPO (0-bit)": {
+        "MAPPO (0-bit, argmax)": {
           "mean": 7.666666666666667,
           "std": 3.6817870057290873,
           "ratio_to_oracle": 0.07042787318016676,
           "ratio_std": 0.035898710403575534
+        },
+        "MAPPO (0-bit, sampled)": {
+          "mean": 104.66666666666667,
+          "std": 4.784233364802441,
+          "ratio_to_oracle": 0.9518610000261377,
+          "ratio_std": 0.02151178851458541
         },
         "Genie Oracle": {
           "mean": 110.0,
@@ -140,11 +159,17 @@
           "ratio_to_oracle": 1.0,
           "ratio_std": 0.0
         },
-        "MAPPO (0-bit)": {
+        "MAPPO (0-bit, argmax)": {
           "mean": 41.0,
           "std": 7.788880963698615,
           "ratio_to_oracle": 0.554986969912343,
           "ratio_std": 0.08033222468335165
+        },
+        "MAPPO (0-bit, sampled)": {
+          "mean": 73.0,
+          "std": 6.48074069840786,
+          "ratio_to_oracle": 0.9920634920634921,
+          "ratio_std": 0.011223917161691244
         },
         "Genie Oracle": {
           "mean": 73.66666666666667,
@@ -173,11 +198,17 @@
           "ratio_to_oracle": 1.0,
           "ratio_std": 0.0
         },
-        "MAPPO (0-bit)": {
+        "MAPPO (0-bit, argmax)": {
           "mean": 13.666666666666666,
           "std": 8.956685895029603,
           "ratio_to_oracle": 0.15931775576098423,
           "ratio_std": 0.1055180846524191
+        },
+        "MAPPO (0-bit, sampled)": {
+          "mean": 87.0,
+          "std": 5.0990195135927845,
+          "ratio_to_oracle": 0.9676611071959909,
+          "ratio_std": 0.022925093192883553
         },
         "Genie Oracle": {
           "mean": 90.0,
@@ -206,11 +237,17 @@
           "ratio_to_oracle": 0.9947916666666666,
           "ratio_std": 0.00736569563735987
         },
-        "MAPPO (0-bit)": {
+        "MAPPO (0-bit, argmax)": {
           "mean": 28.0,
           "std": 4.96655480858378,
           "ratio_to_oracle": 0.20965608465608465,
           "ratio_std": 0.024033521574876485
+        },
+        "MAPPO (0-bit, sampled)": {
+          "mean": 117.66666666666667,
+          "std": 4.642796092394706,
+          "ratio_to_oracle": 0.8880621693121693,
+          "ratio_std": 0.019441801011691347
         },
         "Genie Oracle": {
           "mean": 132.66666666666666,
@@ -241,11 +278,17 @@
           "ratio_to_oracle": 0.9984407475987513,
           "ratio_std": 0.0012737861327522845
         },
-        "MAPPO (0-bit)": {
+        "MAPPO (0-bit, argmax)": {
           "mean": 91.33333333333333,
           "std": 82.05824489687527,
           "ratio_to_oracle": 0.15430312880942706,
           "ratio_std": 0.14375360276367938
+        },
+        "MAPPO (0-bit, sampled)": {
+          "mean": 581.0,
+          "std": 36.2859017617954,
+          "ratio_to_oracle": 0.9375923367965465,
+          "ratio_std": 0.015705470183527703
         },
         "Genie Oracle": {
           "mean": 619.3333333333334,
@@ -274,11 +317,17 @@
           "ratio_to_oracle": 0.9984407475987513,
           "ratio_std": 0.0012737861327522845
         },
-        "MAPPO (0-bit)": {
+        "MAPPO (0-bit, argmax)": {
           "mean": 91.33333333333333,
           "std": 82.05824489687527,
           "ratio_to_oracle": 0.15430312880942706,
           "ratio_std": 0.14375360276367938
+        },
+        "MAPPO (0-bit, sampled)": {
+          "mean": 581.0,
+          "std": 36.2859017617954,
+          "ratio_to_oracle": 0.9375923367965465,
+          "ratio_std": 0.015705470183527703
         },
         "Genie Oracle": {
           "mean": 619.3333333333334,
@@ -307,11 +356,17 @@
           "ratio_to_oracle": 0.989074747458423,
           "ratio_std": 0.004265372334082946
         },
-        "MAPPO (0-bit)": {
+        "MAPPO (0-bit, argmax)": {
           "mean": 332.6666666666667,
           "std": 111.52677805003704,
           "ratio_to_oracle": 0.2761549484322266,
           "ratio_std": 0.09972228370597311
+        },
+        "MAPPO (0-bit, sampled)": {
+          "mean": 977.3333333333334,
+          "std": 46.20485784946091,
+          "ratio_to_oracle": 0.8056228558320022,
+          "ratio_std": 0.026145419480157844
         },
         "Genie Oracle": {
           "mean": 1213.3333333333333,
@@ -340,11 +395,17 @@
           "ratio_to_oracle": 0.9921511096307327,
           "ratio_std": 0.002151938911431788
         },
-        "MAPPO (0-bit)": {
+        "MAPPO (0-bit, argmax)": {
           "mean": 544.0,
           "std": 94.14881836751856,
           "ratio_to_oracle": 0.6779109029873166,
           "ratio_std": 0.1509417389402572
+        },
+        "MAPPO (0-bit, sampled)": {
+          "mean": 797.3333333333334,
+          "std": 37.205137040766594,
+          "ratio_to_oracle": 0.9836805827683949,
+          "ratio_std": 0.004701418019417771
         },
         "Genie Oracle": {
           "mean": 810.6666666666666,
@@ -373,11 +434,17 @@
           "ratio_to_oracle": 0.9957169289150624,
           "ratio_std": 0.001156281807262329
         },
-        "MAPPO (0-bit)": {
+        "MAPPO (0-bit, argmax)": {
           "mean": 90.0,
           "std": 68.19090848492928,
           "ratio_to_oracle": 0.08938462682936145,
           "ratio_std": 0.06609250192492905
+        },
+        "MAPPO (0-bit, sampled)": {
+          "mean": 865.6666666666666,
+          "std": 42.35039026450117,
+          "ratio_to_oracle": 0.8571461279266694,
+          "ratio_std": 0.010713013308162071
         },
         "Genie Oracle": {
           "mean": 1009.6666666666666,
@@ -406,15 +473,257 @@
           "ratio_to_oracle": 0.9954840240393487,
           "ratio_std": 0.0014471598936251118
         },
-        "MAPPO (0-bit)": {
+        "MAPPO (0-bit, argmax)": {
           "mean": 100.0,
           "std": 75.76718726907227,
           "ratio_to_oracle": 0.07170610404440521,
           "ratio_std": 0.05582331293820205
         },
+        "MAPPO (0-bit, sampled)": {
+          "mean": 933.6666666666666,
+          "std": 67.79544396360438,
+          "ratio_to_oracle": 0.6615323946070879,
+          "ratio_std": 0.048867121089757645
+        },
         "Genie Oracle": {
           "mean": 1412.0,
           "std": 41.98412398355677,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        }
+      }
+    },
+    "5.0": {
+      "CW_Topo1": {
+        "arrival_bound": 3051.0,
+        "Random": {
+          "mean": 368.6666666666667,
+          "std": 45.580210130664774,
+          "ratio_to_oracle": 0.1212166104924709,
+          "ratio_std": 0.01505136457799042
+        },
+        "Local Greedy (0-bit)": {
+          "mean": 0.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.0,
+          "ratio_std": 0.0
+        },
+        "Co-TDMA (RR)": {
+          "mean": 3034.6666666666665,
+          "std": 17.632041540584257,
+          "ratio_to_oracle": 0.9976978929175674,
+          "ratio_std": 0.0007136710152012062
+        },
+        "MAPPO (0-bit, argmax)": {
+          "mean": 1048.6666666666667,
+          "std": 41.77186719418811,
+          "ratio_to_oracle": 0.34481301302785505,
+          "ratio_std": 0.014667591314164345
+        },
+        "MAPPO (0-bit, sampled)": {
+          "mean": 1669.3333333333333,
+          "std": 155.59420154862954,
+          "ratio_to_oracle": 0.5489710899414725,
+          "ratio_std": 0.05282024950131788
+        },
+        "Genie Oracle": {
+          "mean": 3041.6666666666665,
+          "std": 17.15290710702481,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        }
+      },
+      "CW_Topo2": {
+        "arrival_bound": 3051.0,
+        "Random": {
+          "mean": 368.6666666666667,
+          "std": 45.580210130664774,
+          "ratio_to_oracle": 0.1212166104924709,
+          "ratio_std": 0.01505136457799042
+        },
+        "Local Greedy (0-bit)": {
+          "mean": 0.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.0,
+          "ratio_std": 0.0
+        },
+        "Co-TDMA (RR)": {
+          "mean": 3034.6666666666665,
+          "std": 17.632041540584257,
+          "ratio_to_oracle": 0.9976978929175674,
+          "ratio_std": 0.0007136710152012062
+        },
+        "MAPPO (0-bit, argmax)": {
+          "mean": 1048.6666666666667,
+          "std": 41.77186719418811,
+          "ratio_to_oracle": 0.34481301302785505,
+          "ratio_std": 0.014667591314164345
+        },
+        "MAPPO (0-bit, sampled)": {
+          "mean": 1669.3333333333333,
+          "std": 155.59420154862954,
+          "ratio_to_oracle": 0.5489710899414725,
+          "ratio_std": 0.05282024950131788
+        },
+        "Genie Oracle": {
+          "mean": 3041.6666666666665,
+          "std": 17.15290710702481,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        }
+      },
+      "CW_Topo3": {
+        "arrival_bound": 6093.333333333333,
+        "Random": {
+          "mean": 1480.3333333333333,
+          "std": 57.045790574083746,
+          "ratio_to_oracle": 0.2861403819218511,
+          "ratio_std": 0.010805722289929242
+        },
+        "Local Greedy (0-bit)": {
+          "mean": 0.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.0,
+          "ratio_std": 0.0
+        },
+        "Co-TDMA (RR)": {
+          "mean": 4189.0,
+          "std": 8.04155872120988,
+          "ratio_to_oracle": 0.8097330218066511,
+          "ratio_std": 0.001108275964322707
+        },
+        "MAPPO (0-bit, argmax)": {
+          "mean": 1983.0,
+          "std": 446.8250962811586,
+          "ratio_to_oracle": 0.38312141906282987,
+          "ratio_std": 0.08563485680879178
+        },
+        "MAPPO (0-bit, sampled)": {
+          "mean": 2206.6666666666665,
+          "std": 147.84075516882646,
+          "ratio_to_oracle": 0.4264661831786811,
+          "ratio_std": 0.02738375403567082
+        },
+        "Genie Oracle": {
+          "mean": 5173.333333333333,
+          "std": 16.996731711975947,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        }
+      },
+      "CW_Topo4": {
+        "arrival_bound": 4051.3333333333335,
+        "Random": {
+          "mean": 1912.3333333333333,
+          "std": 25.30261295246446,
+          "ratio_to_oracle": 0.47248745099963657,
+          "ratio_std": 0.009660558346694941
+        },
+        "Local Greedy (0-bit)": {
+          "mean": 0.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.0,
+          "ratio_std": 0.0
+        },
+        "Co-TDMA (RR)": {
+          "mean": 4020.6666666666665,
+          "std": 32.826141344293816,
+          "ratio_to_oracle": 0.9932473028982264,
+          "ratio_std": 0.00051248723747332
+        },
+        "MAPPO (0-bit, argmax)": {
+          "mean": 2001.0,
+          "std": 410.4655893007354,
+          "ratio_to_oracle": 0.49358805474088846,
+          "ratio_std": 0.09745520673821394
+        },
+        "MAPPO (0-bit, sampled)": {
+          "mean": 2338.6666666666665,
+          "std": 227.8483901389011,
+          "ratio_to_oracle": 0.5774287745786486,
+          "ratio_std": 0.052716440803699055
+        },
+        "Genie Oracle": {
+          "mean": 4048.0,
+          "std": 32.78210894171799,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        }
+      },
+      "CW_Topo5": {
+        "arrival_bound": 5078.333333333333,
+        "Random": {
+          "mean": 335.6666666666667,
+          "std": 28.1701181317288,
+          "ratio_to_oracle": 0.07344984940395301,
+          "ratio_std": 0.00629506103540518
+        },
+        "Local Greedy (0-bit)": {
+          "mean": 0.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.0,
+          "ratio_std": 0.0
+        },
+        "Co-TDMA (RR)": {
+          "mean": 4107.333333333333,
+          "std": 14.817407180595247,
+          "ratio_to_oracle": 0.8986472847919059,
+          "ratio_std": 0.005969603250463291
+        },
+        "MAPPO (0-bit, argmax)": {
+          "mean": 1038.6666666666667,
+          "std": 53.54333654983493,
+          "ratio_to_oracle": 0.22727652468692314,
+          "ratio_std": 0.012293735552721063
+        },
+        "MAPPO (0-bit, sampled)": {
+          "mean": 1604.3333333333333,
+          "std": 333.2759950684851,
+          "ratio_to_oracle": 0.3508497459366273,
+          "ratio_std": 0.07198936419469588
+        },
+        "Genie Oracle": {
+          "mean": 4570.666666666667,
+          "std": 14.290634073484012,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        }
+      },
+      "CW_Topo6": {
+        "arrival_bound": 7113.333333333333,
+        "Random": {
+          "mean": 344.6666666666667,
+          "std": 12.364824660660938,
+          "ratio_to_oracle": 0.07092552611238538,
+          "ratio_std": 0.0025891542430071584
+        },
+        "Local Greedy (0-bit)": {
+          "mean": 0.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.0,
+          "ratio_std": 0.0
+        },
+        "Co-TDMA (RR)": {
+          "mean": 4287.333333333333,
+          "std": 18.803073034893938,
+          "ratio_to_oracle": 0.8822271491443697,
+          "ratio_std": 0.003626461375743137
+        },
+        "MAPPO (0-bit, argmax)": {
+          "mean": 1832.6666666666667,
+          "std": 219.69878369157067,
+          "ratio_to_oracle": 0.3770870023480209,
+          "ratio_std": 0.04497140221898434
+        },
+        "MAPPO (0-bit, sampled)": {
+          "mean": 2094.6666666666665,
+          "std": 69.92535702844538,
+          "ratio_to_oracle": 0.4310379168907495,
+          "ratio_std": 0.014585632151277134
+        },
+        "Genie Oracle": {
+          "mean": 4859.666666666667,
+          "std": 4.109609335312651,
           "ratio_to_oracle": 1.0,
           "ratio_std": 0.0
         }
