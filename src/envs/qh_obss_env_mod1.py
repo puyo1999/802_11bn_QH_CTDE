@@ -59,12 +59,19 @@ class OBSSEnv(gym.Env):
             k_stas: int = 4,
             k_stas_per_ap: int | None = None,
             poisson_lambda: float | None = None,
+            allow_mute: bool = False,
+            harsh_start_step: int | None = None,
     ):
         super().__init__()
         self.topo = topology
         self.mode = mode
         self.interact_slots = interact_slots
         self.max_episodes = max_episodes
+        # Harsh mode (간섭 ×5) 시작 스텝. None이면 기존 동작(에피소드 길이의 절반).
+        # 학습/평가가 같은 스케줄을 쓰도록 에피소드 길이와 분리해서 명시할 수 있다.
+        self.harsh_start_step = max_episodes // 2 if harsh_start_step is None else harsh_start_step
+        # allow_mute=True 이면 STA 인덱스 K 가 "이번 슬롯 전송 안 함(mute)" 행동이 된다.
+        self.allow_mute = allow_mute
         self.n_aps = topology.n_aps
         self._rng = np.random.default_rng(seed)
         random.seed(seed)
@@ -99,11 +106,64 @@ class OBSSEnv(gym.Env):
         elif mode == "joint":
             self.action_space = spaces.MultiDiscrete([7, 5] * self.n_aps)
         elif mode == "qh":
-            # STA 선택지 (K개 + 1 dummy) 또는 MCS 선택지 (16개)
-            self.action_space = spaces.MultiDiscrete([self.k_stas, 16] * self.n_aps)
+            # STA 선택지 (K개, allow_mute 시 +1 mute) 및 MCS 선택지 (16개)
+            n_sta_actions = self.k_stas + 1 if allow_mute else self.k_stas
+            self.action_space = spaces.MultiDiscrete([n_sta_actions, 16] * self.n_aps)
+
+        # 토폴로지에 실제로 존재하는 STA만 트래픽을 받는다 (패딩 STA 큐는 서비스 불가능).
+        self.valid_sta_counts = [len(stas) for stas in self.topo.sta_positions]
+        self._arrival_mask = np.zeros((self.n_aps, self.k_stas), dtype=np.float32)
+        for i, n_valid in enumerate(self.valid_sta_counts):
+            self._arrival_mask[i, :min(n_valid, self.k_stas)] = 1.0
 
         self._aps = [APState(ap_id=i, k_stas=self.k_stas) for i in range(self.n_aps)]
         self._step = 0
+
+    @property
+    def mute_index(self) -> int:
+        return self.k_stas
+
+    @property
+    def is_harsh(self) -> bool:
+        return self._step >= self.harsh_start_step
+
+    def queues(self) -> np.ndarray:
+        return np.stack([ap.queues for ap in self._aps])
+
+    def _draw_arrivals(self) -> np.ndarray:
+        return np.stack([self._rng.poisson(self.poisson_lambda, size=self.k_stas) * self._arrival_mask[i]
+                         for i in range(self.n_aps)])
+
+    def peek_arrivals(self) -> np.ndarray:
+        """다음 step 에서 도착할 패킷 수를 RNG 를 소비하지 않고 미리 본다 (genie oracle 전용)."""
+        state = self._rng.bit_generator.state
+        arrivals = self._draw_arrivals()
+        self._rng.bit_generator.state = state
+        return arrivals
+
+    def link_sinr_db(self, target_stas: list[int], harsh: bool | None = None) -> np.ndarray:
+        """각 AP의 SINR(dB). target_stas[i] == -1 이면 AP i 는 전송하지 않으며 결과는 -inf."""
+        harsh = self.is_harsh if harsh is None else harsh
+        sinr = np.full(self.n_aps, -np.inf)
+        for i, target_sta in enumerate(target_stas):
+            if target_sta == -1:
+                continue
+            if target_sta < len(self.topo.sta_positions[i]):
+                sta_pos = self.topo.sta_positions[i][target_sta]
+            else:
+                sta_pos = np.array([9999.0, 9999.0])
+
+            rx_power = self._rx_power(self.topo.ap_positions[i], sta_pos, TX_POWER_DBM)
+            interference = self._dbm_to_mw(NOISE_DBM)
+            for j, other in enumerate(target_stas):
+                if j != i and other != -1:
+                    interference += self._rx_power(self.topo.ap_positions[j], sta_pos, TX_POWER_DBM)
+
+            # Harsh Mode (간섭 증폭)
+            if harsh:
+                interference *= 5.0
+            sinr[i] = self._mw_to_db(rx_power / interference)
+        return sinr
 
     def reset(self, *, seed: int | None = None, options: dict | None = None) -> tuple[np.ndarray, dict]:
         if seed is not None:
@@ -113,31 +173,33 @@ class OBSSEnv(gym.Env):
         self._step = 0
 
         # 초기 트래픽 주입
-        for ap in self._aps:
-            ap.queues += self._rng.poisson(self.poisson_lambda, size=self.k_stas)
+        for i, ap in enumerate(self._aps):
+            ap.queues += self._rng.poisson(self.poisson_lambda, size=self.k_stas) * self._arrival_mask[i]
             ap.queues = np.clip(ap.queues, 0, self.queue_max_size)
 
         return self._get_obs(), {}
 
     def step(self, actions: np.ndarray) -> tuple[np.ndarray, float, bool, bool, dict]:
         # 1. 버퍼 큐 진화 (Queue Evolution - 식 2)
-        for ap in self._aps:
-            arrivals = self._rng.poisson(self.poisson_lambda, size=self.k_stas)
+        for ap, arrivals in zip(self._aps, self._draw_arrivals()):
             ap.queues = np.clip(ap.queues + arrivals, 0, self.queue_max_size)
 
         # 2. Action 파싱 (Target STA 및 MCS 추출)
         target_stas = []
         selected_mcs = []
         for i in range(self.n_aps):
-            if np.sum(self._aps[i].queues) == 0:
+            sta = int(actions[2 * i])
+            muted = self.allow_mute and sta == self.mute_index
+            if np.sum(self._aps[i].queues) == 0 or muted:
                 target_stas.append(-1)
                 selected_mcs.append(0)
             else:
-                target_stas.append(int(actions[2 * i]))
+                target_stas.append(sta)
                 selected_mcs.append(int(actions[2 * i + 1]))
 
         # 3. 물리 계층(SINR 및 Interference) 계산
         successful_tx = [0] * self.n_aps
+        sinr = self.link_sinr_db(target_stas)
 
         for i in range(self.n_aps):
             target_sta = target_stas[i]
@@ -145,23 +207,7 @@ class OBSSEnv(gym.Env):
             if target_sta == -1:
                 continue
 
-            if target_sta < len(self.topo.sta_positions[i]):
-                sta_pos = self.topo.sta_positions[i][target_sta]
-            else:
-                sta_pos = [9999.0, 9999.0]
-
-            rx_power = self._rx_power(self.topo.ap_positions[i], sta_pos, TX_POWER_DBM)
-
-            interference = self._dbm_to_mw(NOISE_DBM)
-            for j in range(self.n_aps):
-                if j != i and target_stas[j] != -1:
-                    interference += self._rx_power(self.topo.ap_positions[j], sta_pos, TX_POWER_DBM)
-
-            # Harsh Mode (Episode 후반부 간섭 증폭)
-            if self._step >= (self.max_episodes // 2):
-                interference *= 5.0
-
-            sinr_db = self._mw_to_db(rx_power / interference)
+            sinr_db = sinr[i]
             mcs_idx = selected_mcs[i]
 
             # MCS 임계치 확인 및 전송 처리
@@ -181,7 +227,7 @@ class OBSSEnv(gym.Env):
         done = self._step >= self.max_episodes
 
         info = {
-            "is_harsh_mode": self._step >= (self.max_episodes // 2),
+            "is_harsh_mode": self.is_harsh,
             "system_throughput": sum(successful_tx),
             "thp": successful_tx,
         }
@@ -240,7 +286,8 @@ class OBSSEnv(gym.Env):
                 if k < len(self.topo.sta_positions[i]):
                     rx_pwr = self._rx_power(self.topo.ap_positions[i], self.topo.sta_positions[i][k], TX_POWER_DBM)
                 else:
-                    rx_pwr = -110.0
+                    # 존재하지 않는 STA: -110 dBm 패딩 (mW 로 변환해야 아래 SNR 식과 단위가 맞음)
+                    rx_pwr = self._dbm_to_mw(-110.0)
                 base_sinr[k] = self._mw_to_db(rx_pwr / self._dbm_to_mw(NOISE_DBM)) / 40.0
 
             # 3. 이웃 AP 평균 수신 신호 강도 (r_bar) -> 1 차원
@@ -252,7 +299,7 @@ class OBSSEnv(gym.Env):
             avg_neighbor_rssi = self._mw_to_db(np.mean(neighbor_pwrs)) / 100.0 if neighbor_pwrs else 0.0
 
             # 4. 백홀 지연/채널 응집 시간 비율 (tau_sig / tau_coh) -> 1 차원
-            tau_ratio = 1.0 if self._step >= (self.max_episodes // 2) else 0.1
+            tau_ratio = 1.0 if self.is_harsh else 0.1
 
             # 최종 2*K + 2 차원 결합
             obs[i] = np.concatenate([q_ratios, base_sinr, [avg_neighbor_rssi], [tau_ratio]])

@@ -4,7 +4,6 @@ src/agents/qh_ctde_agent.py (다차원 액션 버퍼 및 STE VQ 학습 고도화
 
 from __future__ import annotations
 
-import random
 from collections import deque
 from typing import Any
 import numpy as np
@@ -90,37 +89,43 @@ class QHCTDEAgent:
 
         self.optimizer = optim.Adam(param_groups, lr=lr)
 
-        # ── 다차원 액션 호환 자체 메모리 버퍼 (deque) ──
+        # ── On-policy 롤아웃 버퍼 (update 마다 비워진다) ──
         self.memory = deque(maxlen=mem_size)
+        self.reward_baseline = 0.0
 
-    def select_action(self, state: np.ndarray, valid_sta_cnt: int = 4) -> np.ndarray:
-        """ε-greedy 및 유효 STA 마스킹을 적용한 액션 선택 ([STA, MCS])"""
-        if random.random() < self.eps:
-            sta_act = random.randrange(valid_sta_cnt)
-            mcs_act = random.randrange(self.n_mcs)
-            return np.array([sta_act, mcs_act], dtype=np.int32)
+    def _quantize(self, feat: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """VQ + STE. Forward 는 코드북 벡터, backward 는 원본 특징으로 그라디언트를 전달."""
+        distances = torch.sum((feat.unsqueeze(1) - self.codebook.unsqueeze(0)) ** 2, dim=-1)
+        quantized = self.codebook[torch.argmin(distances, dim=1)]
+        # Codebook loss + commitment loss (이 항이 없으면 코드북은 학습되지 않는다)
+        vq_loss = torch.mean((quantized - feat.detach()) ** 2) + 0.25 * torch.mean((quantized.detach() - feat) ** 2)
+        return feat + (quantized - feat).detach(), vq_loss
 
+    def _logits(self, states: torch.Tensor, valid_sta_cnt: int | None = None):
+        feat = self.actor(states)
+        vq_loss = torch.zeros((), device=self.device)
+        if self.use_quantization:
+            feat, vq_loss = self._quantize(feat)
+        sta_logits = self.sta_head(feat)
+        if valid_sta_cnt is not None and valid_sta_cnt < self.n_stas:
+            sta_logits[:, valid_sta_cnt:] = -1e9
+        return sta_logits, self.mcs_head(feat), vq_loss
+
+    def select_action(self, state: np.ndarray, valid_sta_cnt: int = 4, deterministic: bool = False) -> np.ndarray:
+        """현재 정책에서 샘플링한 액션 ([STA, MCS]). 유효하지 않은 STA 는 마스킹.
+
+        학습은 on-policy 정책 경사이므로 탐험도 정책 분포 자체에서 나와야 한다
+        (ε-greedy 로 고른 행동에 log π 를 곱하면 경사가 편향된다).
+        """
         s_t = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         with torch.no_grad():
-            feat = self.actor(s_t)
-
-            # VQ(Vector Quantization) 적용 로직 (추론 시)
-            if self.use_quantization:
-                flat_feat = feat.squeeze(0)
-                distances = torch.sum((flat_feat.unsqueeze(0) - self.codebook) ** 2, dim=1)
-                idx = torch.argmin(distances)
-                feat = self.codebook[idx].unsqueeze(0)
-
-            sta_logits = self.sta_head(feat)
-            mcs_logits = self.mcs_head(feat)
-
-            # 유효하지 않은 STA 범위 마스킹 (-1e9 부여)
-            if valid_sta_cnt < self.n_stas:
-                sta_logits[0, valid_sta_cnt:] = -1e9
-
-            sta_act = sta_logits.argmax(dim=-1).item()
-            mcs_act = mcs_logits.argmax(dim=-1).item()
-
+            sta_logits, mcs_logits, _ = self._logits(s_t, valid_sta_cnt)
+            if deterministic:
+                sta_act = sta_logits.argmax(dim=-1).item()
+                mcs_act = mcs_logits.argmax(dim=-1).item()
+            else:
+                sta_act = torch.distributions.Categorical(logits=sta_logits).sample().item()
+                mcs_act = torch.distributions.Categorical(logits=mcs_logits).sample().item()
         return np.array([sta_act, mcs_act], dtype=np.int32)
 
     def store_transition(self, state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray, done: bool) -> None:
@@ -128,11 +133,12 @@ class QHCTDEAgent:
         self.memory.append((state, action, reward, next_state, done))
 
     def update(self) -> float | None:
-        """Replay Buffer에서 미니배치를 샘플링하여 정책 경사 역방향 전파 수행"""
+        """On-policy REINFORCE: 최근 batch_size 개 트랜지션으로 한 번 갱신하고 버퍼를 비운다."""
         if len(self.memory) < self.batch_size:
             return None
 
-        batch = random.sample(self.memory, self.batch_size)
+        batch = list(self.memory)
+        self.memory.clear()
 
         states = torch.FloatTensor(np.array([item[0] for item in batch])).to(self.device)
         actions = np.array([item[1] for item in batch])  # (B, 2) 형태의 배열
@@ -140,32 +146,18 @@ class QHCTDEAgent:
         mcs_a_t = torch.LongTensor(actions[:, 1]).to(self.device)
         rewards = torch.FloatTensor([item[2] for item in batch]).to(self.device)
 
-        # 보상 정규화 (학습 안정화)
-        if rewards.std() > 1e-5:
-            rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-5)
+        # 이동평균 baseline 으로 advantage 계산 (배치 내 정규화만 하면 배치 평균이 기준이 되어 버린다)
+        self.reward_baseline = 0.95 * self.reward_baseline + 0.05 * float(rewards.mean())
+        advantages = rewards - self.reward_baseline
+        if advantages.std() > 1e-5:
+            advantages = advantages / (advantages.std() + 1e-5)
 
-        # 순전파 (그라디언트 유지)
-        feat = self.actor(states)
+        sta_logits, mcs_logits, vq_loss = self._logits(states)
+        sta_log_probs = torch.distributions.Categorical(logits=sta_logits).log_prob(sta_a_t)
+        mcs_log_probs = torch.distributions.Categorical(logits=mcs_logits).log_prob(mcs_a_t)
 
-        if self.use_quantization:
-            # Straight-Through Estimator (STE) 적용
-            flat_feat = feat
-            distances = torch.sum((flat_feat.unsqueeze(1) - self.codebook.unsqueeze(0)) ** 2, dim=-1)
-            indices = torch.argmin(distances, dim=1)
-            quantized = self.codebook[indices]
-            feat = feat + (quantized - feat).detach()
-
-        sta_logits = self.sta_head(feat)
-        mcs_logits = self.mcs_head(feat)
-
-        sta_dist = torch.distributions.Categorical(logits=sta_logits)
-        mcs_dist = torch.distributions.Categorical(logits=mcs_logits)
-
-        sta_log_probs = sta_dist.log_prob(sta_a_t)
-        mcs_log_probs = mcs_dist.log_prob(mcs_a_t)
-
-        # 정책 경사 손실 함수
-        loss = -(sta_log_probs * rewards + mcs_log_probs * rewards).mean()
+        # 정책 경사 손실 함수 (+ VQ 손실)
+        loss = -((sta_log_probs + mcs_log_probs) * advantages).mean() + vq_loss
 
         self.optimizer.zero_grad()
         loss.backward()
@@ -179,6 +171,7 @@ class QHCTDEAgent:
         return float(loss.item())
 
     def decay_epsilon(self) -> None:
+        # 탐험은 정책 샘플링으로 이루어지며 eps 는 더 이상 행동 선택에 쓰이지 않는다 (호환용).
         self.eps = max(self.eps_end, self.eps * self.eps_decay)
 
     def save(self, path: str) -> None:
@@ -186,6 +179,7 @@ class QHCTDEAgent:
             "actor": self.actor.state_dict(),
             "sta_head": self.sta_head.state_dict(),
             "mcs_head": self.mcs_head.state_dict(),
+            "codebook": self.codebook.detach().cpu() if self.use_quantization else None,
             "eps": self.eps,
         }, path)
 
@@ -194,4 +188,6 @@ class QHCTDEAgent:
         self.actor.load_state_dict(ckpt["actor"])
         self.sta_head.load_state_dict(ckpt["sta_head"])
         self.mcs_head.load_state_dict(ckpt["mcs_head"])
+        if self.use_quantization and ckpt.get("codebook") is not None:
+            self.codebook.data.copy_(ckpt["codebook"].to(self.device))
         self.eps = ckpt.get("eps", self.eps_end)

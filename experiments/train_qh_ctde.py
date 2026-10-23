@@ -199,12 +199,16 @@ def train_qh_ctde(topo, cfg: dict) -> tuple[list[QHCTDEAgent], list[float]]:
 
     max_episodes = tcfg.get("max_episodes", 300)
     k_stas = ecfg.get("k_stas", 4)
+    episode_len = ecfg.get("episode_len", 200)
 
+    # 평가 환경과 동일한 에피소드 길이 / harsh mode 스케줄로 학습한다.
+    # (이전에는 max_episodes=1 이라 1스텝 에피소드였고, harsh 조건 step >= 1 // 2 가
+    #  항상 참이어서 학습 내내 간섭 ×5 상태만 경험했다.)
     env = OBSSEnv(
         topology=topo,
         mode=ecfg.get("mode", "qh"),
         interact_slots=ecfg.get("interact_slots", 55556),
-        max_episodes=1,
+        max_episodes=episode_len,
         k_stas_per_ap=k_stas
     )
     n_aps = env.n_aps
@@ -244,8 +248,6 @@ def train_qh_ctde(topo, cfg: dict) -> tuple[list[QHCTDEAgent], list[float]]:
                 # 2. 매 스텝 미니배치 학습 수행
                 agent.update()
 
-            agent.decay_epsilon()
-
             obs = next_obs
             ep_cumulative_reward += system_reward
 
@@ -267,15 +269,12 @@ def eval_qh_ctde(env, agents: list[QHCTDEAgent], topo, test_steps=200) -> float:
         actions_list = []
         for i, agent in enumerate(agents):
             valid_sta_cnt = len(topo.sta_positions[i])
-            # 평가 시 탐험(Epsilon)을 0으로 고정하여 최적 정책 수행
-            orig_eps = agent.eps
-            agent.eps = 0.0
-            act = agent.select_action(obs[i], valid_sta_cnt=valid_sta_cnt)
-            agent.eps = orig_eps
+            # 평가 시 탐험 없이 최빈(argmax) 행동 수행
+            act = agent.select_action(obs[i], valid_sta_cnt=valid_sta_cnt, deterministic=True)
             actions_list.extend(act)
 
         env_action = np.array(actions_list, dtype=np.int32)
-        _, _, _, _, info = env.step(env_action)
+        obs, _, _, _, info = env.step(env_action)
         total_system_packets += sum(info["thp"])
 
     return float(total_system_packets)
@@ -284,7 +283,7 @@ def eval_qh_ctde(env, agents: list[QHCTDEAgent], topo, test_steps=200) -> float:
 # ── 5. 통합 메인 실행 루프 ────────────────────────────────────────────────
 def main():
     cfg = load_config("configs/qh_ctde.yaml")
-    test_steps = 200
+    test_steps = cfg["env"].get("episode_len", 200)
     topo_instances = [topo_fn() for topo_fn in FIXED_TOPOS_CW]
     topo_names = [topo.name for topo in topo_instances]
 

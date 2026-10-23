@@ -102,6 +102,23 @@ Wi-Fi 8(802.11bn) 표준 사양에 맞춘 AP당 4인용 다중 사용자 환경(
 
 ---
 
+## Oracle gap 실험 (mute 행동 + genie oracle)
+
+`allow_mute=True` 이면 각 AP의 STA 행동에 인덱스 `K`(= mute, 이번 슬롯 전송 안 함)가 추가되어
+Co-TDMA / Co-SR 선택을 학습할 수 있습니다. `src/agents/mapc_baselines.py` 의 `GenieOracle` 은
+다음 슬롯 도착 패킷까지 알고 모든 (STA | mute) 조합과 링크별 최적 MCS 를 전수 탐색하는
+슬롯 단위 정확 최적해입니다.
+
+```bash
+python -m venv .venv && .venv/bin/pip install -r requirements.txt
+.venv/bin/python experiments/oracle_gap.py            # Random / Local Greedy / Co-TDMA / 0-bit MAPPO vs Oracle
+.venv/bin/python experiments/oracle_gap.py --quick    # 스모크 테스트
+```
+
+결과는 `experiments/oracle_gap_results/` (CSV, summary.json, 그림)에 저장됩니다.
+
+---
+
 ## 핵심 지표 (Wi-Fi 8 PAR)
 
 | 지표 | 정의 | 목표 |

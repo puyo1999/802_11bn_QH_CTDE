@@ -29,6 +29,8 @@ def make_scheduling_env(topology: Topology, config: dict[str, Any], *, episode_h
         poisson_arrival_rate=traffic.get("poisson_arrival_rate", env.get("poisson_arrival_rate", 0.1)),
         queue_max_size=traffic.get("queue_max_size", env.get("queue_max_size", 100)),
         k_stas=env.get("k_stas", env.get("k_stas_per_ap", 4)),
+        allow_mute=env.get("allow_mute", False),
+        harsh_start_step=env.get("harsh_start_step"),
     )
 
 

@@ -7,6 +7,7 @@ env:
   k_stas: 4               # [추가] AP당 사용자 수 (K=4)
   interact_slots: 555556   # base.yaml과 동일 유지 (5s / 9μs)
   max_episodes: 600       # base.yaml과 동일 유지
+  episode_len: 200        # 학습/평가 공통 에피소드 길이 (harsh mode 는 episode_len // 2 부터)
   seed: 42
 
 train:

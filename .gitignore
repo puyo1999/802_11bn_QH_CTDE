@@ -8,3 +8,4 @@ results/
 *.pth
 wandb/
 .DS_Store
+.venv/
