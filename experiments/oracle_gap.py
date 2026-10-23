@@ -30,7 +30,8 @@ from src.agents.mappo import MAPPO, train_mappo
 from src.envs.qh_obss_env_mod1 import OBSSEnv
 from src.envs.topology import load_fixed_topologies
 
-POLICIES = ["Random", "Local Greedy (0-bit)", "Co-TDMA (RR)", "MAPPO (0-bit)", "Genie Oracle"]
+POLICIES = ["Random", "Local Greedy (0-bit)", "Co-TDMA (RR)", "MAPPO (0-bit, argmax)", "MAPPO (0-bit, sampled)",
+            "Genie Oracle"]
 
 
 def make_env(topo, args, load: float) -> OBSSEnv:
@@ -66,11 +67,15 @@ def run_job(args, job: tuple[float, str, int]) -> list[dict]:
         "Random": RandomScheduler(env, seed).act,
         "Local Greedy (0-bit)": LocalGreedy(env).act,
         "Co-TDMA (RR)": CoTDMA(env).act,
-        "MAPPO (0-bit)": lambda o: learner.act(o, deterministic=True)[0],
+        # A 0-bit decentralized policy can only time-share through randomness, so the
+        # argmax policy alone understates it; report both.
+        "MAPPO (0-bit, argmax)": lambda o: learner.act(o, deterministic=True)[0],
+        "MAPPO (0-bit, sampled)": lambda o: learner.act(o)[0],
         "Genie Oracle": GenieOracle(env).act,
     }
     rows = []
     for policy, act in policies.items():
+        torch.manual_seed(10_000 + seed)
         thp, bound = run_episode(env, act, 10_000 + seed)
         rows.append({"load": load, "topology": topo.name, "seed": seed, "policy": policy,
                      "throughput": thp, "arrival_bound": bound})
@@ -83,8 +88,8 @@ def run_job(args, job: tuple[float, str, int]) -> list[dict]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--topos", nargs="+", default=[f"T{i}" for i in range(1, 7)])
-    parser.add_argument("--loads", nargs="+", type=float, default=[0.1, 1.0],
-                        help="Poisson arrivals per STA per slot (0.1 = legacy light load)")
+    parser.add_argument("--loads", nargs="+", type=float, default=[0.1, 1.0, 5.0],
+                        help="Poisson arrivals per STA per slot (0.1 = legacy light load, 5.0 = beyond one AP's per-slot capacity)")
     parser.add_argument("--seeds", type=int, default=3)
     parser.add_argument("--episode-len", type=int, default=200)
     parser.add_argument("--k-stas", type=int, default=4)
@@ -135,10 +140,10 @@ def summarize(rows: list[dict], args) -> dict:
 def print_table(summary: dict) -> None:
     for load, per_load in summary["results"].items():
         print(f"\n== load λ={load} (throughput, % of Genie Oracle) ==")
-        print(f"{'topology':10s} " + " ".join(f"{p[:14]:>16s}" for p in POLICIES) + f" {'arrival bnd':>12s}")
+        print(f"{'topology':10s} " + " ".join(f"{p[:16]:>17s}" for p in POLICIES) + f" {'arrival bnd':>12s}")
         for topo, entry in per_load.items():
             cells = [f"{entry[p]['mean']:7.0f} ({100 * entry[p]['ratio_to_oracle']:4.0f}%)" for p in POLICIES]
-            print(f"{topo:10s} " + " ".join(f"{c:>16s}" for c in cells) + f" {entry['arrival_bound']:12.0f}")
+            print(f"{topo:10s} " + " ".join(f"{c:>17s}" for c in cells) + f" {entry['arrival_bound']:12.0f}")
 
 
 def plot(summary: dict, path: str) -> None:
@@ -147,7 +152,7 @@ def plot(summary: dict, path: str) -> None:
     import matplotlib.pyplot as plt
 
     # Reference categorical slots in fixed order; the oracle is the 100% reference line.
-    colors = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100"]
+    colors = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4"]
     learners = POLICIES[:-1]
     loads = list(summary["results"])
     fig, axes = plt.subplots(len(loads), 1, figsize=(10, 3.4 * len(loads)), squeeze=False)
@@ -170,7 +175,7 @@ def plot(summary: dict, path: str) -> None:
         ax.set_axisbelow(True)
         for side in ("top", "right"):
             ax.spines[side].set_visible(False)
-    axes[0, 0].legend(ncol=5, fontsize=8, frameon=False, loc="upper left", bbox_to_anchor=(0, 1.22))
+    axes[0, 0].legend(ncol=3, fontsize=8, frameon=False, loc="upper left", bbox_to_anchor=(0, 1.32))
     fig.tight_layout()
     fig.savefig(path, dpi=200)
     print(f"\nsaved {path}")
