@@ -129,12 +129,12 @@ def test_mcs_control_overrides_learner_mcs(wrapper):
 
     env = MCS_CONTROL[wrapper](make("T6", load=5.0))
     env.reset(seed=0)
-    total = 0.0
-    for _ in range(10):
-        # Learner proposes MCS 15 everywhere; link adaptation must replace it.
-        _, _, _, _, info = env.step(np.array([0, 15] * env.n_aps))
-        total += info["system_throughput"]
-    assert total > 0
+    # One AP transmits, the rest mute: ARF's interference-free starting MCS must decode.
+    # The learner proposes MCS 0 (1 packet/slot); link adaptation must raise it.
+    action = np.array([env.mute_index, 0] * env.n_aps)
+    action[0:2] = [0, 0]
+    _, _, _, _, info = env.step(action)
+    assert info["system_throughput"] > env.mcs_table.capacity(0)
 
 
 def test_genie_mcs_matches_exact_value_for_chosen_set():
