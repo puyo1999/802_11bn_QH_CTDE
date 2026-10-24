@@ -79,43 +79,60 @@ def run_episode(env, act, observe, seed: int) -> tuple[float, float]:
     return total, bound
 
 
-def run_job(args, job: tuple[float, str, int]) -> list[dict]:
-    load, topo_id, seed = job
+def job_name(job: tuple) -> str:
+    return "_".join(str(part) for part in job)
+
+
+def run_job(args, job: tuple) -> list[dict]:
+    """job = ("baselines", load, topo, seed) or ("learner", load, topo, seed, learner, mcs).
+
+    Each finished job is written to <out>/jobs/<name>.json; a re-run returns that file instead of
+    recomputing, so an interrupted sweep resumes where it stopped.
+    """
+    path = os.path.join(args.out, "jobs", job_name(job) + ".json")
+    if os.path.exists(path):
+        with open(path) as handle:
+            return json.load(handle)["rows"]
+
+    kind, load, topo_id, seed = job[:4]
     torch.set_num_threads(1)
     topo = get_registry().get(topo_id)
     env = make_oracle_env(args, topo, load)
     eval_seed = 10_000 + seed
-    rows, notes = [], []
+    rows, extra = [], {}
 
     def record(policy, thp, bound):
         rows.append({"load": load, "topology": topo_id, "seed": seed, "policy": policy,
                      "throughput": thp, "arrival_bound": bound})
 
-    for name in BASELINES:
-        policy = BaselinePolicy(name, seed=eval_seed)
-        record(name, *run_episode(env, lambda o, p=policy: p.act(env), policy.observe, eval_seed))
+    if kind == "baselines":
+        for name in BASELINES:
+            policy = BaselinePolicy(name, seed=eval_seed)
+            record(name, *run_episode(env, lambda o, p=policy: p.act(env), policy.observe, eval_seed))
+    else:
+        key, mcs = job[4:]
+        _, cls = LEARNERS[key]
+        wrap = MCS_CONTROL[mcs] or (lambda e: e)
+        # With link adaptation the learner only picks STA / mute: a single dummy MCS output.
+        n_mcs = env.mcs_table.n_mcs if mcs == "learned" else 1
+        learner = cls(env.obs_dim, env.n_aps, env.k_stas, env.valid_sta_counts, n_mcs=n_mcs, seed=seed)
+        start = time.time()
+        curve = train_mappo(wrap(make_oracle_env(args, topo, load)), learner, args.episodes,
+                            reward_scale=1.0 / (10.0 * env.n_aps), seed=seed,
+                            episodes_per_update=args.episodes_per_update)
+        extra = {"train_seconds": time.time() - start, "curve": curve}
+        eval_env = wrap(env)
+        for mode in ("argmax", "sampled"):
+            torch.manual_seed(eval_seed)
+            act = lambda o, d=(mode == "argmax"): learner.act(o, deterministic=d)[0]
+            record(f"{key}+{mcs}/{mode}", *run_episode(eval_env, act, None, eval_seed))
 
-    for key in args.learners:
-        for mcs in args.mcs:
-            _, cls = LEARNERS[key]
-            wrap = MCS_CONTROL[mcs] or (lambda e: e)
-            # With link adaptation the learner only picks STA / mute: a single dummy MCS output.
-            n_mcs = env.mcs_table.n_mcs if mcs == "learned" else 1
-            learner = cls(env.obs_dim, env.n_aps, env.k_stas, env.valid_sta_counts, n_mcs=n_mcs, seed=seed)
-            start = time.time()
-            curve = train_mappo(wrap(make_oracle_env(args, topo, load)), learner, args.episodes,
-                                reward_scale=1.0 / (10.0 * env.n_aps), seed=seed,
-                                episodes_per_update=args.episodes_per_update)
-            notes.append(f"{key}+{mcs} train {time.time() - start:.0f}s last-20 {np.mean(curve[-20:]):.0f}")
-            eval_env = wrap(env)
-            for mode in ("argmax", "sampled"):
-                torch.manual_seed(eval_seed)
-                act = lambda o, d=(mode == "argmax"): learner.act(o, deterministic=d)[0]
-                record(f"{key}+{mcs}/{mode}", *run_episode(eval_env, act, None, eval_seed))
-
-    print(f"[load={load} {topo_id} seed={seed}] "
-          + " | ".join(f"{r['policy']}: {r['throughput']:.0f}" for r in rows)
-          + f" | bound {rows[-1]['arrival_bound']:.0f} | " + "; ".join(notes), flush=True)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path + ".tmp", "w") as handle:
+        json.dump({"job": list(job), "rows": rows, **extra}, handle)
+    os.replace(path + ".tmp", path)
+    print(f"[{job_name(job)}] " + " | ".join(f"{r['policy']}: {r['throughput']:.0f}" for r in rows)
+          + (f" | train {extra['train_seconds']:.0f}s" if extra else ""), flush=True)
     return rows
 
 
@@ -140,7 +157,12 @@ def main() -> None:
         args.topos, args.loads, args.seeds, args.episode_len, args.episodes = ["T3", "T6"], [1.0], 1, 50, 8
 
     os.makedirs(args.out, exist_ok=True)
-    jobs = [(load, t, seed) for load in args.loads for t in args.topos for seed in range(args.seeds)]
+    jobs = []
+    for load in args.loads:
+        for t in args.topos:
+            for seed in range(args.seeds):
+                jobs.append(("baselines", load, t, seed))
+                jobs += [("learner", load, t, seed, key, mcs) for key in args.learners for mcs in args.mcs]
     with ProcessPoolExecutor(max_workers=args.workers) as pool:
         rows = [row for job_rows in pool.map(run_job, [args] * len(jobs), jobs) for row in job_rows]
 
