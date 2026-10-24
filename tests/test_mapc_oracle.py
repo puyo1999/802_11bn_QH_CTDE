@@ -121,3 +121,28 @@ def test_ppo_learners_smoke(learner):
     assert action.shape == (2 * env.n_aps,) and np.isfinite(log_prob)
     for i, n_valid in enumerate(env.valid_sta_counts):
         assert action[2 * i] < n_valid or action[2 * i] == env.mute_index
+
+
+@pytest.mark.parametrize("wrapper", ["arf", "genie"])
+def test_mcs_control_overrides_learner_mcs(wrapper):
+    from src.envs.mcs_control import MCS_CONTROL
+
+    env = MCS_CONTROL[wrapper](make("T6", load=5.0))
+    env.reset(seed=0)
+    total = 0.0
+    for _ in range(10):
+        # Learner proposes MCS 15 everywhere; link adaptation must replace it.
+        _, _, _, _, info = env.step(np.array([0, 15] * env.n_aps))
+        total += info["system_throughput"]
+    assert total > 0
+
+
+def test_genie_mcs_matches_exact_value_for_chosen_set():
+    from src.envs.mcs_control import GenieMCS
+
+    env = GenieMCS(make("T3", load=5.0))
+    env.reset(seed=2)
+    stas, queues = env._transmit_set(np.array([0, 0] * env.n_aps))
+    expected, _ = schedule_value(env.env, stas, queues, prospective_harsh(env.env))
+    _, _, _, _, info = env.step(np.array([0, 0] * env.n_aps))
+    assert info["system_throughput"] == pytest.approx(expected)

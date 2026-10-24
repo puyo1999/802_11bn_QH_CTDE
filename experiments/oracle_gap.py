@@ -10,6 +10,7 @@ with allow_mute=True so learners can stay silent, and with a fixed Poisson rate 
 
     python experiments/oracle_gap.py                       # default sweep
     python experiments/oracle_gap.py --learners mappo central --loads 5.0 --topos T3 T6
+    python experiments/oracle_gap.py --mcs arf genie        # learners pick STA/mute only; MCS by ARF / genie
     python experiments/oracle_gap.py --quick               # smoke run
 """
 from __future__ import annotations
@@ -32,6 +33,7 @@ from src.agents.mappo import MAPPO, CentralPPO, train_mappo
 from src.config import load_config
 from src.config.schema import ExperimentConfig
 from src.envs.env_factory import make_env
+from src.envs.mcs_control import MCS_CONTROL
 from src.envs.topology_registry import get_registry
 from src.training.baseline_policies import BaselinePolicy
 
@@ -41,9 +43,17 @@ REFERENCE = "exact_oracle"
 LABELS = {
     "random": "Random", "greedy": "Greedy (ARF)", "round_robin": "Round-robin (ARF)",
     "oracle": "All-transmit SINR heuristic", "co_tdma": "Co-TDMA", "exact_oracle": "Exact oracle",
-    "mappo/argmax": "MAPPO 0-bit (argmax)", "mappo/sampled": "MAPPO 0-bit (sampled)",
-    "central/argmax": "CentralPPO ∞-bit (argmax)", "central/sampled": "CentralPPO ∞-bit (sampled)",
 }
+MCS_LABELS = {"learned": "", "arf": " + ARF MCS", "genie": " + genie MCS"}
+
+
+def label(policy: str) -> str:
+    """'mappo+arf/sampled' -> 'MAPPO (0-bit) + ARF MCS, sampled'."""
+    if policy in LABELS:
+        return LABELS[policy]
+    learner, mode = policy.split("/")
+    key, mcs = learner.split("+")
+    return f"{LEARNERS[key][0]}{MCS_LABELS[mcs]}, {mode}"
 
 
 def make_oracle_env(args, topo, load: float):
@@ -86,17 +96,22 @@ def run_job(args, job: tuple[float, str, int]) -> list[dict]:
         record(name, *run_episode(env, lambda o, p=policy: p.act(env), policy.observe, eval_seed))
 
     for key in args.learners:
-        _, cls = LEARNERS[key]
-        learner = cls(env.obs_dim, env.n_aps, env.k_stas, env.valid_sta_counts, seed=seed)
-        start = time.time()
-        curve = train_mappo(make_oracle_env(args, topo, load), learner, args.episodes,
-                            reward_scale=1.0 / (10.0 * env.n_aps), seed=seed,
-                            episodes_per_update=args.episodes_per_update)
-        notes.append(f"{key} train {time.time() - start:.0f}s last-20 {np.mean(curve[-20:]):.0f}")
-        for mode in ("argmax", "sampled"):
-            torch.manual_seed(eval_seed)
-            act = lambda o, d=(mode == "argmax"): learner.act(o, deterministic=d)[0]
-            record(f"{key}/{mode}", *run_episode(env, act, None, eval_seed))
+        for mcs in args.mcs:
+            _, cls = LEARNERS[key]
+            wrap = MCS_CONTROL[mcs] or (lambda e: e)
+            # With link adaptation the learner only picks STA / mute: a single dummy MCS output.
+            n_mcs = env.mcs_table.n_mcs if mcs == "learned" else 1
+            learner = cls(env.obs_dim, env.n_aps, env.k_stas, env.valid_sta_counts, n_mcs=n_mcs, seed=seed)
+            start = time.time()
+            curve = train_mappo(wrap(make_oracle_env(args, topo, load)), learner, args.episodes,
+                                reward_scale=1.0 / (10.0 * env.n_aps), seed=seed,
+                                episodes_per_update=args.episodes_per_update)
+            notes.append(f"{key}+{mcs} train {time.time() - start:.0f}s last-20 {np.mean(curve[-20:]):.0f}")
+            eval_env = wrap(env)
+            for mode in ("argmax", "sampled"):
+                torch.manual_seed(eval_seed)
+                act = lambda o, d=(mode == "argmax"): learner.act(o, deterministic=d)[0]
+                record(f"{key}+{mcs}/{mode}", *run_episode(eval_env, act, None, eval_seed))
 
     print(f"[load={load} {topo_id} seed={seed}] "
           + " | ".join(f"{r['policy']}: {r['throughput']:.0f}" for r in rows)
@@ -113,6 +128,8 @@ def main() -> None:
     parser.add_argument("--seeds", type=int, default=3)
     parser.add_argument("--episode-len", type=int, default=200)
     parser.add_argument("--learners", nargs="*", default=["mappo"], choices=list(LEARNERS))
+    parser.add_argument("--mcs", nargs="+", default=["learned"], choices=list(MCS_CONTROL),
+                        help="MCS control for learners: learned (action head), arf, genie")
     parser.add_argument("--episodes", type=int, default=600)
     parser.add_argument("--episodes-per-update", type=int, default=4)
     parser.add_argument("--out", default="experiments/oracle_gap_results_envv2")
@@ -175,7 +192,7 @@ def plot(summary: dict, path: str) -> None:
 
     # Reference categorical slots in fixed order, keyed by policy (never by rank).
     palette = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"]
-    order = [p for p in LABELS if p in summary["policies"] and p != REFERENCE]
+    order = [p for p in summary["policies"] if p != REFERENCE]
     colors = {p: palette[i % len(palette)] for i, p in enumerate(order)}
     loads = list(summary["results"])
     fig, axes = plt.subplots(len(loads), 1, figsize=(12, 3.6 * len(loads)), squeeze=False)
@@ -188,7 +205,7 @@ def plot(summary: dict, path: str) -> None:
             vals = [100 * per_load[t][policy]["ratio_to_oracle"] for t in topos]
             errs = [100 * per_load[t][policy]["ratio_std"] for t in topos]
             ax.bar(x + (k - (len(order) - 1) / 2) * width, vals, width * 0.9, yerr=errs, color=colors[policy],
-                   label=LABELS[policy], error_kw={"elinewidth": 0.8, "ecolor": "#52514e", "capsize": 2})
+                   label=label(policy), error_kw={"elinewidth": 0.8, "ecolor": "#52514e", "capsize": 2})
         ax.axhline(100, color="#0b0b0b", linewidth=1.2, linestyle="--", label="Exact oracle (100%)")
         ax.set_xticks(x, topos, color="#0b0b0b")
         ax.set_ylabel("Throughput (% of oracle)", color="#52514e")
