@@ -1,0 +1,385 @@
+{
+  "config": {
+    "config": "configs/qh_ctde.yaml",
+    "topos": [
+      "T3",
+      "T5",
+      "T6"
+    ],
+    "loads": [
+      5.0
+    ],
+    "seeds": 1,
+    "episode_len": 200,
+    "learners": [
+      "mappo",
+      "central"
+    ],
+    "mcs": [
+      "learned",
+      "arf",
+      "genie"
+    ],
+    "episodes": 600,
+    "episodes_per_update": 4,
+    "workers": 4,
+    "quick": false
+  },
+  "policies": [
+    "random",
+    "greedy",
+    "round_robin",
+    "oracle",
+    "co_tdma",
+    "exact_oracle",
+    "mappo+learned/argmax",
+    "mappo+learned/sampled",
+    "mappo+arf/argmax",
+    "mappo+arf/sampled",
+    "mappo+genie/argmax",
+    "mappo+genie/sampled",
+    "central+learned/argmax",
+    "central+learned/sampled",
+    "central+arf/argmax",
+    "central+arf/sampled",
+    "central+genie/argmax",
+    "central+genie/sampled"
+  ],
+  "results": {
+    "5.0": {
+      "T3": {
+        "arrival_bound": 6115.0,
+        "random": {
+          "mean": 1590.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.29597915115413254,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 2295.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4272151898734177,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 3263.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6074087862993298,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 3936.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7326880119136262,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4268.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7944899478778853,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 5372.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 2509.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.46705137751303055,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 2815.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5240134028294863,
+          "ratio_std": 0.0
+        },
+        "mappo+arf/argmax": {
+          "mean": 3548.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6604616530156366,
+          "ratio_std": 0.0
+        },
+        "mappo+arf/sampled": {
+          "mean": 3324.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6187639612807149,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 3070.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5714817572598659,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 4015.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7473938942665674,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 2939.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.547096053611318,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 2855.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5314594192107223,
+          "ratio_std": 0.0
+        },
+        "central+arf/argmax": {
+          "mean": 3466.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6451973194341027,
+          "ratio_std": 0.0
+        },
+        "central+arf/sampled": {
+          "mean": 3303.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6148548026805659,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 3170.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.590096798212956,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 4365.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8125465376023827,
+          "ratio_std": 0.0
+        }
+      },
+      "T5": {
+        "arrival_bound": 5100.0,
+        "random": {
+          "mean": 433.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.09309825843904537,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 985.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.21178241238443346,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 999.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.21479251773812083,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 1159.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.2491937217802623,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4129.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8877660718125134,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 4651.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 1539.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.33089658138034833,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 2183.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.46936142764996774,
+          "ratio_std": 0.0
+        },
+        "mappo+arf/argmax": {
+          "mean": 1598.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.343582025370888,
+          "ratio_std": 0.0
+        },
+        "mappo+arf/sampled": {
+          "mean": 2287.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4917222102773597,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 981.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.21092238228337992,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 2980.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.640722425284885,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 1047.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.2251128789507633,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 2828.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6080412814448506,
+          "ratio_std": 0.0
+        },
+        "central+arf/argmax": {
+          "mean": 2053.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4414104493657278,
+          "ratio_std": 0.0
+        },
+        "central+arf/sampled": {
+          "mean": 2749.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5910556869490432,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 1645.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.353687379058267,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 2931.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6301870565469792,
+          "ratio_std": 0.0
+        }
+      },
+      "T6": {
+        "arrival_bound": 7165.0,
+        "random": {
+          "mean": 333.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.06813996316758748,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 736.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.1506036423163495,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 1367.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.2797217106609372,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 2176.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.44526294250051157,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4474.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9154900757110702,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 4887.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 1985.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4061796603233067,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 1721.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.35215878862287703,
+          "ratio_std": 0.0
+        },
+        "mappo+arf/argmax": {
+          "mean": 2612.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5344792306118273,
+          "ratio_std": 0.0
+        },
+        "mappo+arf/sampled": {
+          "mean": 2486.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5086965418457131,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 2034.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4162062615101289,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 3325.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6803765091057908,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 1743.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.35666052793124614,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 2601.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5322283609576427,
+          "ratio_std": 0.0
+        },
+        "central+arf/argmax": {
+          "mean": 1525.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3120523838755883,
+          "ratio_std": 0.0
+        },
+        "central+arf/sampled": {
+          "mean": 2304.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4714548802946593,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 3003.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.614487415592388,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 3464.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7088193165541232,
+          "ratio_std": 0.0
+        }
+      }
+    }
+  }
+}
