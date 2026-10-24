@@ -80,6 +80,8 @@ class TrainConfig:
     max_episodes: int = 300
     n_runs: int = 5
     eval_steps: int = 200
+    rollout_length: int = 128
+    ppo: dict[str, Any] = field(default_factory=dict)
     warmup_steps: int = 500
     update_every: int = 1
     target_update_every: int = 5
@@ -94,6 +96,36 @@ class TrainConfig:
         raw = _section(cfg, "train")
         known = {f for f in cls.__dataclass_fields__}
         return cls(**{k: v for k, v in raw.items() if k in known})
+
+
+@dataclass
+class CommunicationDelayConfig:
+    """Simulation-only AP-to-server observation delay in decision cycles."""
+    enabled: bool = False
+    normal_delay_steps: int = 0
+    congested_delay_steps: int = 2
+    jitter_max_steps: int = 1
+    max_delay_steps: int = 3
+    normal_to_congested_prob: float = 0.05
+    congested_to_normal_prob: float = 0.25
+    initial_congested_prob: float = 0.1
+
+    @classmethod
+    def from_dict(cls, cfg: dict[str, Any]) -> "CommunicationDelayConfig":
+        raw = cfg.get("communication_delay") or {}
+        if not isinstance(raw, dict):
+            raise TypeError("communication_delay must be a mapping")
+        known = cls.__dataclass_fields__
+        result = cls(**{key: value for key, value in raw.items() if key in known})
+        for key in ("normal_delay_steps", "congested_delay_steps", "jitter_max_steps", "max_delay_steps"):
+            if getattr(result, key) < 0:
+                raise ValueError(f"communication_delay.{key} must be non-negative")
+        if result.normal_delay_steps > result.max_delay_steps or result.congested_delay_steps > result.max_delay_steps:
+            raise ValueError("base delay values cannot exceed max_delay_steps")
+        for key in ("normal_to_congested_prob", "congested_to_normal_prob", "initial_congested_prob"):
+            if not 0.0 <= getattr(result, key) <= 1.0:
+                raise ValueError(f"communication_delay.{key} must be in [0, 1]")
+        return result
 
 
 @dataclass
@@ -116,6 +148,7 @@ class ExperimentConfig:
     env: EnvConfig = field(default_factory=EnvConfig)
     agent: AgentConfig = field(default_factory=AgentConfig)
     train: TrainConfig = field(default_factory=TrainConfig)
+    communication_delay: CommunicationDelayConfig = field(default_factory=CommunicationDelayConfig)
     logging: LoggingConfig = field(default_factory=LoggingConfig)
     topology_file: str = "configs/topologies.yaml"
     raw: dict[str, Any] = field(default_factory=dict)
@@ -126,6 +159,7 @@ class ExperimentConfig:
             env=EnvConfig.from_dict(cfg),
             agent=AgentConfig.from_dict(cfg),
             train=TrainConfig.from_dict(cfg),
+            communication_delay=CommunicationDelayConfig.from_dict(cfg),
             logging=LoggingConfig.from_dict(cfg),
             topology_file=cfg.get("topology_file", "configs/topologies.yaml"),
             raw=cfg,

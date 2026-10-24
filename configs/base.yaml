@@ -74,6 +74,18 @@ train:
   device: "cpu"
   result_dir: "results"
 
+# Sensitivity-analysis model for delayed AP-to-central observations.
+# Disabled by default to preserve zero-delay baseline runs.
+communication_delay:
+  enabled: false
+  normal_delay_steps: 0
+  congested_delay_steps: 2
+  jitter_max_steps: 1
+  max_delay_steps: 3
+  normal_to_congested_prob: 0.05
+  congested_to_normal_prob: 0.25
+  initial_congested_prob: 0.1
+
 logging:
   run_name: "base"
   use_wandb: false

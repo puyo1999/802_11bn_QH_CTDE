@@ -1,0 +1,46 @@
+import os
+import subprocess
+from multiprocessing import Pool
+
+CONFIGS = [
+    "configs/ablation/c1_local_critic.yaml",
+    "configs/ablation/c2_central_critic.yaml",
+    "configs/ablation/c3_joint_attention.yaml",
+    "configs/ablation/c4_proposed_vq.yaml",
+    "configs/ablation/c5_capacity_control.yaml"
+]
+
+SEEDS = [1, 2, 3, 4, 5]
+
+
+def run_single_job(job_args):
+    config_path, seed = job_args
+    cmd = [
+        "python", "train_ablation.py",
+        "--config", config_path,
+        "--seed", str(seed),
+        "--steps", "1000",
+        "--output_dir", "./results_csv"
+    ]
+    print(f"[START] Executing: Config={config_path} | Seed={seed}")
+    subprocess.run(cmd, check=True)
+    print(f"[COMPLETE] Config={config_path} | Seed={seed}")
+
+
+def main():
+    job_list = []
+    for cfg in CONFIGS:
+        for sd in SEEDS:
+            job_list.append((cfg, sd))
+
+    print(f"Total workload: {len(job_list)} runs across 5 seeds and 5 conditions.")
+
+    # 5개 시드 병렬 연산 수행
+    with Pool(processes=5) as pool:
+        pool.map(run_single_job, job_list)
+
+    print("All 25 ablation runs completed successfully.")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,121 @@
+import glob
+import os
+import numpy as np
+import pandas as pd
+
+
+def bootstrap_paired_ci(data_a, data_b, n_bootstraps=10000, ci=95, seed=42):
+    """동일 시드 짝지은 차이 벡터에 대해 비모수 부트스트랩 95% 신뢰구간을 산출합니다."""
+    diffs = np.array(data_a) - np.array(data_b)
+    n = len(diffs)
+
+    np.random.seed(seed)
+    boot_means = np.zeros(n_bootstraps)
+    for i in range(n_bootstraps):
+        sample = np.random.choice(diffs, size=n, replace=True)
+        boot_means[i] = np.mean(sample)
+
+    lower_p = (100 - ci) / 2.0
+    upper_p = 100 - lower_p
+    ci_lower = np.percentile(boot_means, lower_p)
+    ci_upper = np.percentile(boot_means, upper_p)
+    mean_diff = np.mean(diffs)
+
+    # 신뢰구간 하한이 0을 초과하면 통계적으로 유의미한 이득으로 판정
+    is_significant = (ci_lower > 0) if mean_diff > 0 else (ci_upper < 0)
+    return mean_diff, ci_lower, ci_upper, is_significant
+
+
+def run_analysis(results_dir="./results_csv"):
+    csv_files = glob.glob(os.path.join(results_dir, "*.csv"))
+    if not csv_files:
+        print(f"No CSV files found in {results_dir}")
+        return
+
+    all_dfs = [pd.read_csv(f) for f in csv_files]
+    df = pd.concat(all_dfs, ignore_index=True)
+
+    # 후반 10% 스텝 대상 수렴 결과 집계
+    max_step = df['step'].max()
+    eval_df = df[df['step'] >= max_step * 0.9]
+
+    seed_summary = []
+    grouped = eval_df.groupby(['condition_id', 'seed'])
+
+    for (cond, seed), group in grouped:
+        sys_tp = group['sys_throughput_gbps'].mean()
+        jain = group['jain_fairness'].mean()
+        overlap_sel = group['overlap_sta_select_cnt'].sum()
+        end_q = group['eval_end_queue_len'].iloc[-1]
+
+        # 정규화된 차단율 수식: BR = blocked_cnt / tx_attempts
+        tot_blocked = group['blocked_cnt_per_step'].sum()
+        tot_attempts = group['tx_attempt_per_step'].sum()
+        blocking_rate = (tot_blocked / tot_attempts) if tot_attempts > 0 else 0.0
+
+        tx_bits = group['transmitted_bits'].mean()
+
+        seed_summary.append({
+            'condition_id': cond,
+            'seed': seed,
+            'sys_throughput': sys_tp,
+            'jain_fairness': jain,
+            'overlap_select': overlap_sel,
+            'end_queue_len': end_q,
+            'blocking_rate': blocking_rate,
+            'tx_bits': tx_bits
+        })
+
+    summary_df = pd.DataFrame(seed_summary)
+
+    print("=" * 80)
+    print("[1] 조건별 주요 평가 지표 집계 요약")
+    print("=" * 80)
+    stats = summary_df.groupby('condition_id').agg({
+        'sys_throughput': ['mean', 'std'],
+        'jain_fairness': 'mean',
+        'blocking_rate': 'mean',
+        'end_queue_len': 'mean',
+        'tx_bits': 'mean'
+    }).reset_index()
+    print(stats.to_string(index=False))
+    print("\n")
+
+    # 5개 대조 사슬 짝지은 분석 실행
+    chains = [
+        ("C2 vs C1 (중앙 Critic 효과)", "C2", "C1"),
+        ("C3 vs C2 (공간 조율 효과)", "C3", "C2"),
+        ("C3 vs C5 (용량 효과 격리)", "C3", "C5"),
+        ("C4 vs C3 (VQ 압축 비용)", "C4", "C3"),
+        ("C4 vs C2 (제안 방식 총 이득)", "C4", "C2")
+    ]
+
+    paired_results = []
+    for label, cond_a, cond_b in chains:
+        sub_a = summary_df[summary_df['condition_id'] == cond_a].sort_values('seed')
+        sub_b = summary_df[summary_df['condition_id'] == cond_b].sort_values('seed')
+
+        if len(sub_a) == 0 or len(sub_b) == 0:
+            continue
+
+        tp_a = sub_a['sys_throughput'].values
+        tp_b = sub_b['sys_throughput'].values
+
+        mean_d, ci_l, ci_u, sig = bootstrap_paired_ci(tp_a, tp_b)
+
+        paired_results.append({
+            '비교 사슬': label,
+            '평균 차이 (Throughput)': f"{mean_d:+.4f}",
+            '95% 부트스트랩 CI': f"[{ci_l:+.4f}, {ci_u:+.4f}]",
+            '통계적 유의성': "유의함 (p < 0.05)" if sig else "유의하지 않음"
+        })
+
+    paired_df = pd.DataFrame(paired_results)
+    print("=" * 80)
+    print("[2] 동일 시드 짝지은 분석 및 부트스트랩 신뢰구간 (B=10,000) [cite: 1]")
+    print("=" * 80)
+    print(paired_df.to_string(index=False))
+
+
+if __name__ == "__main__":
+    run_analysis()

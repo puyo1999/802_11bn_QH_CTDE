@@ -9,6 +9,7 @@ src/training/single_run.py
 from __future__ import annotations
 
 from dataclasses import dataclass
+from time import perf_counter
 
 import numpy as np
 
@@ -38,6 +39,7 @@ def train_single_run(
     progress: bool = False,
 ) -> RunResult:
     """단일 (토폴로지, 시드) 조합에 대한 전체 학습을 실행한다."""
+    started_at = perf_counter()
     env = make_env(exp_cfg.env, topology=topology, seed_offset=run_id, topology_file=topology_file)
     space = validate_spaces(env, topology, declared_state_dim=exp_cfg.agent.state_dim, strict=True)
     agents = build_agents(space, exp_cfg.agent)
@@ -50,5 +52,13 @@ def train_single_run(
         reward_history[ep] = result.total_reward
         if progress and (ep % max(1, n_episodes // 10) == 0):
             print(f"    [{topo_id} run={run_id}] ep={ep:4d}/{n_episodes}  reward={result.total_reward:.2f}")
+
+    if progress:
+        elapsed_seconds = perf_counter() - started_at
+        print(
+            f"    [{topo_id} run={run_id}] complete  "
+            f"elapsed={elapsed_seconds:.1f}s  "
+            f"avg={elapsed_seconds / max(n_episodes, 1):.3f}s/episode"
+        )
 
     return RunResult(topology_id=topo_id, run_id=run_id, reward_history=reward_history, agents=agents)

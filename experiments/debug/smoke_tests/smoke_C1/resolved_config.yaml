@@ -1,0 +1,84 @@
+topology_file: configs/topologies.yaml
+env:
+  impl: qh_v2
+  mode: qh
+  topology: all
+  interact_slots: 55556
+  max_episodes: 600
+  seed: 42
+  queue_max_size: 100
+  traffic:
+    traffic_load_ratio: 0.7
+    poisson_lambda_min: 0.1
+    poisson_lambda_max: 3.0
+    init_fill_ratio: 0.0
+  k_stas: 4
+  harsh_mode_enabled: true
+  harsh_start_ratio: 0.5
+  harsh_interference_gain: 5.0
+  n_mcs: 16
+  tx_power_dbm: 15.0
+  noise_dbm: -95.0
+  overlap:
+    enabled: true
+    mode: hard
+    soft_gain_db: 10.0
+    expose_in_obs: true
+  reward:
+    lambda_fair: 0.5
+    lambda_latency: 0.2
+    lambda_overlap: 0.0
+    latency_deadline_ms: 5.0
+    latency_exp_scale: 0.02
+agent:
+  hidden_dim: 128
+  n_mcs: 16
+  lr: 0.0003
+  gamma: 0.99
+  tau: 0.005
+  batch_size: 32
+  mem_size: 5000
+  eps_start: 1.0
+  eps_end: 0.01
+  eps_decay: 0.995
+  use_quantization: true
+  vq_bits: 4
+  use_dsm: true
+  gamma_margin: 0.8
+  device: cpu
+train:
+  max_episodes: 1
+  n_runs: 5
+  eval_steps: 200
+  warmup_steps: 500
+  update_every: 1
+  target_update_every: 5
+  grad_clip: 1.0
+  log_interval: 10
+  save_interval: 100
+  device: cpu
+  result_dir: results
+  rollout_length: 128
+  ppo:
+    clip_ratio: 0.2
+    gae_lambda: 0.95
+    value_coef: 0.5
+    entropy_coef: 0.01
+    update_epochs: 4
+    minibatch_size: 64
+    grad_clip: 0.5
+communication_delay:
+  enabled: false
+  normal_delay_steps: 0
+  congested_delay_steps: 2
+  jitter_max_steps: 1
+  max_delay_steps: 3
+  normal_to_congested_prob: 0.05
+  congested_to_normal_prob: 0.25
+  initial_congested_prob: 0.1
+logging:
+  run_name: qh_ctde_scheduling
+  use_wandb: false
+  use_tb: true
+  log_dir: runs
+_config_path: C:\KPY_Research\Research Files\GitHub_code\802_11bn_QH_CTDE\configs\qh_ctde.yaml

@@ -1,331 +1,261 @@
-"""
-experiments/train_qh_ctde.py (QH-CTDE VQ & DSM 통합 고도화 버전)
-"""
+"""Train and evaluate the QH-CTDE centralized PPO implementation."""
+from __future__ import annotations
 
+import argparse
+from dataclasses import replace
 import os
-import sys
 import random
+import sys
+
 import numpy as np
 import torch
-import torch.nn as nn
-import torch.optim as optim
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.envs.qh_obss_env_mod1 import OBSSEnv
+from src.agents.ctde_ppo import CTDEActorCritic
 from src.config import load_config
-from src.envs.topology import FIXED_TOPOS_CW
-from experiments.plot.marl_plotter import MARLPlotter
-from experiments.run_baselines import run_eval as run_baseline_eval
-
-from src.agents.qh_ctde_agent import QHCTDEAgent
-
-def build_agents(n_aps: int, cfg: dict) -> list[QHCTDEAgent]:
-    """
-    YAML 설정 파일(qh_ctde.yaml)의 train 섹션을 바탕으로
-    모든 AP에 대한 QH-CTDE 에이전트 리스트를 생성합니다.
-    """
-    acfg = cfg["agent"]
-    tcfg = cfg["train"]
-
-    state_dim = acfg.get("state_dim", 10)
-    hidden_dim = acfg.get("hidden_dim", 128)
-    use_quantization = acfg.get("use_quantization", True)
-    vq_bits = acfg.get("vq_bits", 4)
-    use_dsm = acfg.get("use_dsm", True)
-    gamma_margin = acfg.get("gamma_margin", 0.8)
-
-    lr = acfg.get("lr", tcfg.get("learning_rate", 0.0003))
-    gamma = acfg.get("gamma", 0.99)
-    tau = acfg.get("tau", 0.005)
-
-    eps_start = acfg.get("eps_start", 1.0)
-    eps_end = acfg.get("eps_end", 0.01)
-    eps_decay = tcfg.get("epsilon_decay", acfg.get("eps_decay", 0.995))
-    device = tcfg.get("device", "cpu")
-
-    k_stas = cfg["env"].get("k_stas", 4)
-
-    return [
-        QHCTDEAgent(
-            ap_id=i,
-            state_dim=state_dim,
-            n_stas=k_stas,
-            n_mcs=16,
-            hidden_dim=hidden_dim,
-            use_quantization=use_quantization,
-            vq_bits=vq_bits,
-            use_dsm=use_dsm,
-            gamma_margin=gamma_margin,
-            lr=lr,
-            gamma=gamma,
-            tau=tau,
-            eps_start=eps_start,
-            eps_end=eps_end,
-            eps_decay=eps_decay,
-            batch_size=acfg.get("batch_size", 32),
-            mem_size=acfg.get("mem_size", 5000),
-            device=device,
-        )
-        for i in range(n_aps)
-    ]
-
-# ── 1. 적응형 벡터 양자화 (Adaptive Vector Quantizer with STE) ───────────
-class AdaptiveVectorQuantizer(nn.Module):
-    def __init__(self, max_embeddings=256, embedding_dim=10):
-        super().__init__()
-        self.embedding_dim = embedding_dim
-        self.embedding = nn.Embedding(max_embeddings, embedding_dim)
-        self.embedding.weight.data.uniform_(-0.1, 0.1)
-
-    def forward(self, x: torch.Tensor, bit_width: int = 4):
-        """
-        x: [batch_size, n_aps, obs_dim]
-        bit_width: 4 (K = 2^4 = 16) 또는 8 (K = 2^8 = 256)
-        """
-        num_embeddings = 2 ** bit_width
-        active_embedding = self.embedding.weight[:num_embeddings, :] # [K, dim]
-
-        batch_size, n_aps, dim = x.shape
-        flat_x = x.reshape(-1, dim) # [B * N, dim]
-
-        # L2 Distance 계산
-        d = torch.sum(flat_x**2, dim=1, keepdim=True) + \
-            torch.sum(active_embedding**2, dim=1) - \
-            2 * torch.matmul(flat_x, active_embedding.t())
-
-        encoding_indices = torch.argmin(d, dim=1)
-        quantized = active_embedding[encoding_indices].reshape(batch_size, n_aps, dim)
-
-        # Straight-Through Estimator (STE): Forward는 양자화값, Backward는 원본 x 전달
-        quantized_st = x + (quantized - x).detach()
-
-        # VQ Loss (Codebook Loss + Commitment Loss)
-        codebook_loss = nn.MSELoss()(quantized, x.detach())
-        commitment_loss = nn.MSELoss()(quantized.detach(), x)
-        vq_loss = codebook_loss + 0.25 * commitment_loss
-
-        return quantized_st, vq_loss
+from src.config.schema import ExperimentConfig
+from src.envs.env_factory import make_env
+from src.envs.topology_registry import load_topologies
+from src.envs.space_validator import build_adjacency, validate_spaces
+from src.training.centralized_execution import CentralizedExecutor
+from src.training.communication_delay import ObservationDelayChannel
+from src.training.ppo import CTDEPPOTrainer, PPOConfig, PPORollout
 
 
-# ── 2. QH-CTDE 전용 Attention Q-Network (Asymmetric Critic) ──────────────
-class QHAttentionQNetwork(nn.Module):
-    def __init__(self, obs_dim: int = 10, hidden_dim: int = 128, k_stas: int = 4):
-        super().__init__()
-        self.k_stas = k_stas
-        # QH 모드 액션: 각 AP당 STA(K개) * MCS(16개) = K * 16 조합 (또는 분리형 헤드)
-        self.n_actions_per_ap = k_stas * 16 
-
-        self.feature_net = nn.Sequential(
-            nn.Linear(obs_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU()
-        )
-        self.query_layer = nn.Linear(hidden_dim, hidden_dim)
-        self.key_layer   = nn.Linear(hidden_dim, hidden_dim)
-        self.value_layer = nn.Linear(hidden_dim, hidden_dim)
-        
-        self.q_head = nn.Sequential(
-            nn.Linear(hidden_dim * 2, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, self.n_actions_per_ap)
-        )
-
-    def forward(self, joint_obs: torch.Tensor, adj_matrix: torch.Tensor) -> torch.Tensor:
-        batch_size, n_aps, _ = joint_obs.size()
-        feat = self.feature_net(joint_obs)
-        Q = self.query_layer(feat)
-        K = self.key_layer(feat)
-        V = self.value_layer(feat)
-        
-        scores = torch.matmul(Q, K.transpose(-2, -1)) / np.sqrt(Q.size(-1))
-        mask = adj_matrix.unsqueeze(0).expand(batch_size, -1, -1)
-        scores = scores.masked_fill(mask == 0, -1e9)
-        attn_weights = torch.softmax(scores, dim=-1)
-        
-        context = torch.matmul(attn_weights, V)
-        combined = torch.cat([feat, context], dim=-1)
-        return self.q_head(combined) # [batch_size, n_aps, n_actions_per_ap]
+def _new_env(topo, cfg: dict, horizon: int, seed_offset: int = 0):
+    experiment = ExperimentConfig.from_dict(cfg)
+    env_config = replace(experiment.env, max_episodes=horizon,
+                         seed=experiment.env.seed + seed_offset)
+    if env_config.impl != "qh_v2":
+        raise ValueError("CTDE PPO entrypoint requires env.impl=qh_v2")
+    env = make_env(env_config, topology=topo, seed_offset=0,
+                   topology_file=experiment.topology_file)
+    declared_dim = experiment.agent.state_dim
+    space = validate_spaces(env, topo, declared_state_dim=declared_dim, strict=True)
+    expected_overlap = env_config.overlap
+    overlap_cfg = env.overlap_policy.cfg
+    if (overlap_cfg.enabled != bool(expected_overlap.get("enabled", True))
+            or overlap_cfg.mode != expected_overlap.get("mode", "hard")
+            or overlap_cfg.expose_in_obs != bool(expected_overlap.get("expose_in_obs", True))):
+        raise RuntimeError("env_factory did not propagate the configured overlap settings")
+    expected_load = float(env_config.traffic.get("traffic_load_ratio", 0.7))
+    if abs(env.traffic.cfg.traffic_load_ratio - expected_load) > 1e-12:
+        raise RuntimeError("env_factory did not propagate traffic_load_ratio")
+    env.space_spec = space
+    return env
 
 
-# ── 3. Centralized Replay Buffer ──────────────────────────────────────────
-class CentralizedReplayBuffer:
-    def __init__(self, capacity: int, n_aps: int, obs_dim: int):
-        self.capacity = capacity
-        self.pointer = 0
-        self.size = 0
-        self.obs_buf = np.zeros((capacity, n_aps, obs_dim), dtype=np.float32)
-        self.act_buf = np.zeros((capacity, n_aps), dtype=np.int64)
-        self.rew_buf = np.zeros(capacity, dtype=np.float32)
-        self.next_obs_buf = np.zeros((capacity, n_aps, obs_dim), dtype=np.float32)
-        self.done_buf = np.zeros(capacity, dtype=np.float32)
-
-    def store(self, obs, acts, rew, next_obs, done):
-        self.obs_buf[self.pointer] = obs
-        self.act_buf[self.pointer] = acts
-        self.rew_buf[self.pointer] = rew
-        self.next_obs_buf[self.pointer] = next_obs
-        self.done_buf[self.pointer] = float(done)
-        self.pointer = (self.pointer + 1) % self.capacity
-        self.size = min(self.size + 1, self.capacity)
-
-    def sample(self, batch_size: int):
-        indices = np.random.randint(0, self.size, size=batch_size)
-        return (
-            torch.FloatTensor(self.obs_buf[indices]),
-            torch.LongTensor(self.act_buf[indices]),
-            torch.FloatTensor(self.rew_buf[indices]),
-            torch.FloatTensor(self.next_obs_buf[indices]),
-            torch.FloatTensor(self.done_buf[indices])
-        )
-
-
-def unpack_qh_action(flat_actions: list[int], k_stas: int) -> np.ndarray:
-    """평탄화된 액션을 (STA, MCS) 튜플 환경 액션 배열로 변환"""
-    env_actions = []
-    for act in flat_actions:
-        sta_idx = act // 16
-        mcs_idx = act % 16
-        env_actions.extend([min(sta_idx, k_stas - 1), mcs_idx])
-    return np.array(env_actions, dtype=np.int32)
-
-
-# ── 4. QH-CTDE 학습 메인 함수 (build_agents 활용) ────────────────────────
-def train_qh_ctde(topo, cfg: dict) -> tuple[list[QHCTDEAgent], list[float]]:
-    ecfg = cfg.get("env", {})
-    tcfg = cfg.get("train", {})
-
-    max_episodes = tcfg.get("max_episodes", 300)
-    k_stas = ecfg.get("k_stas", 4)
-
-    env = OBSSEnv(
-        topology=topo,
-        mode=ecfg.get("mode", "qh"),
-        interact_slots=ecfg.get("interact_slots", 55556),
-        max_episodes=1,
-        k_stas_per_ap=k_stas
+def build_ctde_trainer(env, cfg: dict) -> CTDEPPOTrainer:
+    """Build the shared local policy, joint-state critic, and PPO optimizer."""
+    experiment = ExperimentConfig.from_dict(cfg)
+    agent_cfg = experiment.agent
+    train_cfg = experiment.train
+    delay_enabled = experiment.communication_delay.enabled
+    model = CTDEActorCritic(
+        observation_dim=env.space_spec.local_obs_dim + int(delay_enabled),
+        n_agents=env.space_spec.n_aps,
+        n_stas=env.space_spec.action_dims_per_ap[0],
+        n_mcs=env.space_spec.action_dims_per_ap[1],
+        hidden_dim=agent_cfg.hidden_dim,
+        vq_bits=agent_cfg.vq_bits,
+        adjacency=torch.as_tensor(build_adjacency(env.topo), dtype=torch.bool),
     )
-    n_aps = env.n_aps
+    return CTDEPPOTrainer(
+        model,
+        lr=agent_cfg.lr,
+        ppo_config=PPOConfig.from_dict(train_cfg.ppo),
+        device=train_cfg.device,
+    )
 
-    # 💡 새로 구성한 build_agents 함수를 호출하여 각 AP 에이전트 생성
-    agents = build_agents(n_aps, cfg)
-    reward_history = []
 
-    print(f" -> [{topo.name}] QH-CTDE (Agent Modularized VQ + DSM) 학습 개시...")
+def train_qh_ctde(topo, cfg: dict, seed_offset: int = 0,
+                  execution_mode: str = "auto",
+                  episode_metrics: list[dict] | None = None):
+    """Collect full rollouts, estimate GAE centrally, then perform PPO updates."""
+    experiment = ExperimentConfig.from_dict(cfg)
+    train_cfg = experiment.train
+    agent_cfg = experiment.agent
+    horizon = train_cfg.rollout_length
+    n_episodes = experiment.train.max_episodes
+    env = _new_env(topo, cfg, horizon, seed_offset)
+    trainer = build_ctde_trainer(env, cfg)
+    valid_counts = [len(stas) for stas in topo.sta_positions]
+    executor = CentralizedExecutor(
+        trainer.model, valid_counts,
+        threshold=agent_cfg.gamma_margin,
+        device=train_cfg.device,
+        execution_mode=execution_mode,
+        use_age_feature=experiment.communication_delay.enabled,
+    )
+    reward_history: list[float] = []
+    seed_base = int(cfg.get("env", {}).get("seed", 42)) + seed_offset
+    gamma = agent_cfg.gamma
+    ppo_config = PPOConfig.from_dict(train_cfg.ppo)
+    gae_lambda = ppo_config.gae_lambda
 
-    for episode in range(max_episodes):
-        obs, _ = env.reset()
+    for episode in range(n_episodes):
+        obs, _ = env.reset(seed=seed_base + episode)
+        delay_channel = None
+        if experiment.communication_delay.enabled:
+            delay_channel = ObservationDelayChannel(experiment.communication_delay, len(valid_counts))
+            delay_channel.reset(obs, seed=seed_base + episode + 50_000)
+        decision_step = 0
+        rollout = PPORollout.empty()
+        episode_reward = 0.0
+        overlap_stats = {
+            "centralized": {"steps": 0, "blocked": 0},
+            "decentralized": {"steps": 0, "blocked": 0},
+        }
         done = False
-        ep_cumulative_reward = 0.0
-
         while not done:
-            # 1. 각 AP별 에이전트가 자율적으로 행동 결정 (유효 STA 마스킹 반영)
-            actions_list = []
-            obs_dict = {}
-            actions_dict = {}
-            for i, agent in enumerate(agents):
-                valid_sta_cnt = len(topo.sta_positions[i])
-                act = agent.select_action(obs[i], valid_sta_cnt=valid_sta_cnt)
-                actions_list.extend(act)  # [sta_0, mcs_0, sta_1, mcs_1, ...]
-
-                # 에이전트별 저장용 딕셔너리 매핑
-                obs_dict[i] = obs[i]
-                actions_dict[i] = act
-
-            env_action = np.array(actions_list, dtype=np.int32)
-            next_obs, system_reward, done, _, info = env.step(env_action)
-
-            # 성능 어느 정도 개선되는지 검증
-            for i, agent in enumerate(agents):
-                # 1. 버퍼에 저장
-                agent.store_transition(obs[i], actions_dict[i], system_reward, next_obs[i], done)
-                # 2. 매 스텝 미니배치 학습 수행
-                agent.update()
-
-            agent.decay_epsilon()
-
+            delayed_obs = None
+            age_steps = None
+            if delay_channel is not None:
+                request_central = (
+                    execution_mode in {"joint_raw", "joint_vq"}
+                    or (execution_mode == "auto"
+                        and float(obs[0, -1]) <= agent_cfg.gamma_margin)
+                )
+                if request_central:
+                    delay_channel.transmit(obs, decision_step)
+                delayed_obs, age_steps = delay_channel.receive(decision_step)
+            execution = executor.act(
+                obs, deterministic=False,
+                delayed_observations=delayed_obs,
+                observation_age_steps=age_steps,
+            )
+            action_tensor = torch.as_tensor(execution.actions, dtype=torch.int32).reshape(-1).cpu().numpy()
+            next_obs, reward, done, _, info = env.step(action_tensor)
+            mode_name = "centralized" if execution.centralized_policy else "decentralized"
+            overlap_stats[mode_name]["steps"] += 1
+            overlap_stats[mode_name]["blocked"] += int(info.get("overlap_blocked_step", 0))
+            critic_obs = torch.as_tensor(execution.critic_observation, dtype=torch.float32, device=trainer.device).unsqueeze(0)
+            with torch.no_grad():
+                value = float(trainer.model.value(critic_obs).item())
+            rollout.add(
+                policy_obs=execution.policy_observations,
+                critic_obs=execution.critic_observation,
+                actions=execution.actions,
+                log_probs=execution.old_log_probs,
+                reward=reward,
+                value=value,
+                done=done,
+                quantized_policy=execution.quantized_policy,
+                centralized_policy=execution.centralized_policy,
+            )
+            episode_reward += float(reward)
             obs = next_obs
-            ep_cumulative_reward += system_reward
+            decision_step += 1
+        losses = trainer.update(rollout, np.asarray(valid_counts), gamma, gae_lambda)
+        reward_history.append(episode_reward)
+        if episode_metrics is not None:
+            central = overlap_stats["centralized"]
+            local = overlap_stats["decentralized"]
+            episode_metrics.append({
+                "episode": episode + 1,
+                "reward": episode_reward,
+                "centralized_steps": central["steps"],
+                "centralized_blocked_events": central["blocked"],
+                "centralized_blocked_events_per_step": (
+                    central["blocked"] / central["steps"] if central["steps"] else None),
+                "decentralized_steps": local["steps"],
+                "decentralized_blocked_events": local["blocked"],
+                "decentralized_blocked_events_per_step": (
+                    local["blocked"] / local["steps"] if local["steps"] else None),
+            })
+        if train_cfg.log_interval and (episode + 1) % train_cfg.log_interval == 0:
+            overlap_text = " ".join(
+                f"{mode}={stats['blocked']} events/{stats['steps']} steps"
+                for mode, stats in overlap_stats.items()
+            )
+            print(f"  [{topo.name}] episode {episode + 1}/{n_episodes}: "
+                  f"reward={episode_reward:.3f}; central={executor.central_steps}; "
+                  f"fallback={executor.local_steps}; backhaul={executor.total_transmitted_bits} bits; "
+                  f"overlap_blocked central/decentral=({overlap_text}); "
+                  f"actor_loss={losses['actor_loss']:.4f}; critic_loss={losses['critic_loss']:.4f}")
+    env.close()
+    return trainer.model, reward_history
 
-        reward_history.append(ep_cumulative_reward)
 
-    return agents, reward_history
-
-# ── 3. 학습 완료 모델 평가 함수 ──────────────────────────────────────────
-def eval_qh_ctde(env, agents: list[QHCTDEAgent], topo, test_steps=200) -> float:
+def eval_qh_ctde(env, model: CTDEActorCritic, topo, test_steps: int = 200,
+                 cfg: dict | None = None) -> tuple[float, int]:
+    """Run deterministic joint actions; centralized execution transmits VQ symbols."""
+    del topo
+    cfg = cfg or {}
+    experiment = ExperimentConfig.from_dict(cfg)
+    device = experiment.train.device
+    agent_cfg = experiment.agent
+    delay_config = experiment.communication_delay
+    valid_counts = [len(stas) for stas in env.topo.sta_positions]
+    executor = CentralizedExecutor(model, valid_counts,
+                                   agent_cfg.gamma_margin, device,
+                                   use_age_feature=delay_config.enabled)
     obs, _ = env.reset()
-    total_system_packets = 0
+    delay_channel = None
+    if delay_config.enabled:
+        delay_channel = ObservationDelayChannel(delay_config, len(valid_counts))
+        delay_channel.reset(obs, seed=experiment.env.seed + 50_000)
+    total_packets = 0.0
+    for step in range(test_steps):
+        delayed_obs = age_steps = None
+        if delay_channel is not None:
+            request_central = float(obs[0, -1]) <= agent_cfg.gamma_margin
+            if request_central:
+                delay_channel.transmit(obs, step)
+            delayed_obs, age_steps = delay_channel.receive(step)
+        execution = executor.act(
+            obs, deterministic=True,
+            delayed_observations=delayed_obs,
+            observation_age_steps=age_steps,
+        )
+        action = np.asarray(execution.actions, dtype=np.int32).reshape(-1)
+        obs, _, done, _, info = env.step(action)
+        total_packets += float(info.get("system_throughput", 0.0))
+        if done:
+            break
+    return total_packets, executor.total_transmitted_bits
 
-    for agent in agents:
-        agent.actor.eval()
-        agent.sta_head.eval()
-        agent.mcs_head.eval()
 
-    for _ in range(test_steps):
-        actions_list = []
-        for i, agent in enumerate(agents):
-            valid_sta_cnt = len(topo.sta_positions[i])
-            # 평가 시 탐험(Epsilon)을 0으로 고정하여 최적 정책 수행
-            orig_eps = agent.eps
-            agent.eps = 0.0
-            act = agent.select_action(obs[i], valid_sta_cnt=valid_sta_cnt)
-            agent.eps = orig_eps
-            actions_list.extend(act)
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config", default="configs/qh_ctde.yaml")
+    parser.add_argument("--topology", default=None, help="Override env.topology selector")
+    args = parser.parse_args()
+    cfg = load_config(args.config)
+    if args.topology:
+        cfg["env"]["topology"] = args.topology
 
-        env_action = np.array(actions_list, dtype=np.int32)
-        _, _, _, _, info = env.step(env_action)
-        total_system_packets += sum(info["thp"])
+    seed = int(cfg.get("env", {}).get("seed", 42))
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    selector = cfg.get("env", {}).get("topology", "all")
+    topology_file = cfg.get("topology_file", "configs/topologies.yaml")
+    topologies = load_topologies(selector, topology_file)
+    experiment = ExperimentConfig.from_dict(cfg)
+    train_cfg = experiment.train
+    eval_steps = train_cfg.eval_steps
+    all_rewards: dict[str, list[float]] = {}
+    result_dir = train_cfg.result_dir
+    os.makedirs(result_dir, exist_ok=True)
+    print("CTDE PPO: centralized critic + GAE; joint server action uses VQ symbol transport")
 
-    return float(total_system_packets)
+    for topo in topologies:
+        print(f"\n[{topo.name}] training centralized PPO")
+        model, history = train_qh_ctde(topo, cfg)
+        all_rewards[topo.name] = history
+        eval_env = _new_env(topo, cfg, eval_steps)
+        packets, bits = eval_qh_ctde(eval_env, model, topo, eval_steps, cfg)
+        eval_env.close()
+        print(f"  deterministic evaluation: {packets:.0f} packets; "
+              f"compressed backhaul payload: {bits} bits")
+        safe_name = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in topo.name)
+        torch.save(model.state_dict(), os.path.join(result_dir, f"qh_ctde_ppo_{safe_name}.pt"))
 
+    np.savez_compressed(os.path.join(result_dir, "qh_ctde_ppo_rewards.npz"),
+                        **{name: np.asarray(values) for name, values in all_rewards.items()})
 
-# ── 5. 통합 메인 실행 루프 ────────────────────────────────────────────────
-def main():
-    cfg = load_config("configs/qh_ctde.yaml")
-    test_steps = 200
-    topo_instances = [topo_fn() for topo_fn in FIXED_TOPOS_CW]
-    topo_names = [topo.name for topo in topo_instances]
-
-    final_results = {
-        "Random": [],
-        "Greedy": [],
-        "Round-Robin": [],
-        "Proposed CTDE": []
-    }
-
-    all_topo_rewards = {}
-    plotter = MARLPlotter(topo_names, test_steps, cfg["train"].get("max_episodes", 300))
-
-    print("==========================================================================")
-    for topo in topo_instances:
-        print(f"\n[Scenario Config] 무선 통신 토폴로지 구동: {topo.name}")
-        env = OBSSEnv(topology=topo, mode="qh", interact_slots=55556, max_episodes=test_steps)
-
-        # 1. 전통적 통신 Baseline 측정
-        for base_policy in ["Random", "Greedy", "Round-Robin"]:
-            score = run_baseline_eval(env, policy_type=base_policy, test_steps=test_steps)
-            final_results[base_policy].append(score)
-            print(f"  └─ 대조군 [{base_policy:11s}] 측정 완료: {score:.0f} pks")
-
-        # 2. QH-CTDE 학습 구동 (build_agents 내부 포함)
-        trained_agents, rew_history = train_qh_ctde(topo, cfg)
-        all_topo_rewards[topo.name] = rew_history
-
-        # 3. 모델 성능 평가
-        qh_score = eval_qh_ctde(env, trained_agents, topo, test_steps=test_steps)
-        final_results["Proposed CTDE"].append(qh_score)
-        print(f"  ▶ 종합 성과 확인 -> Proposed CTDE 스코어: {qh_score:.0f} 패킷 성공")
-
-    print("\n==========================================================================")
-    print("★ [시각화 1] 토폴로지별 학습 리워드 수렴 곡선 생성 중...")
-    plotter.plot_reward_convergence(all_topo_rewards)
-
-    print("\n==========================================================================")
-    print("★ [시각화 2] 논문 게재용 4종 멀티 바 차트 생성 중...")
-    plotter.plot_final_bar_chart(final_results)
-    print("==========================================================================")
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,103 @@
+"""Central-server observation transport and joint action execution."""
+from __future__ import annotations
+
+from dataclasses import dataclass
+import numpy as np
+import torch
+
+from src.agents.ctde_ppo import CTDEActorCritic
+
+
+@dataclass
+class ExecutionResult:
+    actions: np.ndarray
+    policy_observations: np.ndarray
+    critic_observation: np.ndarray
+    mode: str
+    transmitted_bits: int
+    old_log_probs: np.ndarray
+    quantized_policy: bool
+    centralized_policy: bool
+
+
+class CentralizedExecutor:
+    """Transmits VQ symbols to a server, which reconstructs observations and acts jointly."""
+
+    def __init__(self, model: CTDEActorCritic, valid_sta_counts: list[int],
+                 threshold: float, device: str = "cpu",
+                 execution_mode: str = "auto", use_age_feature: bool = False):
+        if execution_mode not in {"auto", "local", "joint_raw", "joint_vq"}:
+            raise ValueError("execution_mode must be auto, local, joint_raw, or joint_vq")
+        self.model = model
+        self.valid_sta_counts = torch.as_tensor(valid_sta_counts, dtype=torch.long, device=device)
+        self.threshold = threshold
+        self.execution_mode = execution_mode
+        self.use_age_feature = use_age_feature
+        self.device = torch.device(device)
+        self.total_transmitted_bits = 0
+        self.central_steps = 0
+        self.local_steps = 0
+
+    @torch.no_grad()
+    def act(self, observations: np.ndarray, deterministic: bool = False,
+            delayed_observations: np.ndarray | None = None,
+            observation_age_steps: np.ndarray | None = None) -> ExecutionResult:
+        obs = torch.as_tensor(observations, dtype=torch.float32, device=self.device)
+        expected_dim = self.model.observation_dim - int(self.use_age_feature)
+        if obs.ndim != 2 or obs.shape[1] != expected_dim:
+            raise ValueError(f"observations must have shape [n_agents, {expected_dim}]")
+        server_obs = (obs if delayed_observations is None else
+                      torch.as_tensor(delayed_observations, dtype=torch.float32, device=self.device))
+        ages = (torch.zeros(obs.shape[0], dtype=torch.float32, device=self.device)
+                if observation_age_steps is None else
+                torch.as_tensor(observation_age_steps, dtype=torch.float32, device=self.device))
+        if server_obs.shape != obs.shape or ages.shape != (obs.shape[0],):
+            raise ValueError("delayed observations/ages must match the fresh per-AP observation shape")
+        if self.use_age_feature:
+            # Age is explicit so the actor can distinguish fresh and stale AP data.
+            server_policy_obs = torch.cat((server_obs, ages[:, None]), dim=-1)
+            local_policy_obs = torch.cat((obs, torch.zeros_like(ages[:, None])), dim=-1)
+            critic_obs = torch.cat((obs, ages[:, None]), dim=-1)
+        else:
+            server_policy_obs = server_obs
+            local_policy_obs = obs
+            critic_obs = obs
+        # The mode signal is part of each local observation; it is common to all APs.
+        coherence_ratio = float(obs[0, -1].item())
+        use_central = (
+            self.execution_mode in {"joint_raw", "joint_vq"}
+            or (self.execution_mode == "auto" and coherence_ratio <= self.threshold)
+        )
+        if use_central:
+            if self.execution_mode == "joint_vq":
+                _, indices, _ = self.model.encode_observations(server_policy_obs.unsqueeze(0))
+                symbols = indices.squeeze(0)
+                bits = int(symbols.numel() * self.model.codec.bits_per_observation)
+                actor_input = self.model.codec.decode(symbols)
+                quantized = True
+            elif self.execution_mode == "joint_raw":
+                # Count the raw float32 payload for an apples-to-apples backhaul report.
+                actor_input = server_policy_obs
+                bits = int(server_policy_obs.numel() * 32)
+                quantized = False
+            else:
+                # Preserve the existing gate behavior: auto mode uses VQ in central mode.
+                _, indices, _ = self.model.encode_observations(server_policy_obs.unsqueeze(0))
+                symbols = indices.squeeze(0)
+                bits = int(symbols.numel() * self.model.codec.bits_per_observation)
+                actor_input = self.model.codec.decode(symbols)
+                quantized = True
+            # The server combines per-AP features through the topology-masked joint actor.
+            counts = self.valid_sta_counts.unsqueeze(0)
+            actions, log_probs, _ = self.model.sample_actions(actor_input.unsqueeze(0), counts, deterministic, centralized=True)
+            self.central_steps += 1
+            self.total_transmitted_bits += bits
+            return ExecutionResult(actions.squeeze(0).cpu().numpy(), server_policy_obs.cpu().numpy(),
+                                   critic_obs.cpu().numpy(), "centralized", bits,
+                                   log_probs.squeeze(0).cpu().numpy(), quantized, True)
+        # Backhaul-stale fallback: each AP acts on its own uncompressed local observation.
+        actions, log_probs, _ = self.model.sample_actions(local_policy_obs.unsqueeze(0), self.valid_sta_counts.unsqueeze(0), deterministic, centralized=False)
+        self.local_steps += 1
+        return ExecutionResult(actions.squeeze(0).cpu().numpy(), local_policy_obs.cpu().numpy(),
+                               critic_obs.cpu().numpy(), "decentralized", 0,
+                               log_probs.squeeze(0).cpu().numpy(), False, False)

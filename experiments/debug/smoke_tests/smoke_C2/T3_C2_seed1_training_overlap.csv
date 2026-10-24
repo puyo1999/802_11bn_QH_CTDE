@@ -1,0 +1,3 @@
+﻿topology,condition_id,seed,episode,mode,steps,blocked_events,blocked_events_per_step
+T3,C2,1,1,centralized,0,0,
+T3,C2,1,1,decentralized,128,110,0.859375
