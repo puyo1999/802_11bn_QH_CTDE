@@ -5,6 +5,8 @@
 from __future__ import annotations
 
 import csv
+import glob
+import json
 import os
 from collections import defaultdict
 
@@ -16,7 +18,7 @@ import numpy as np
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.dirname(os.path.abspath(__file__))
 HEADROOM = os.path.join(ROOT, "experiments/oracle_gap_results_envv2_headroom/oracle_gap.csv")
-PILOT = os.path.join(ROOT, "experiments/oracle_gap_results_envv2_mcs_pilot/oracle_gap.csv")
+FULL_JOBS = os.path.join(ROOT, "experiments/oracle_gap_results_envv2_full/jobs")
 
 INK, INK2, GRID = "#0b0b0b", "#52514e", "#e5e4e0"
 # Reference categorical slots in fixed order, keyed by topology (never by rank).
@@ -77,27 +79,30 @@ def fig_headroom():
         fig.savefig(os.path.join(OUT, f"fig_headroom.{ext}"), dpi=300)
 
 
-def pilot_table():
-    """LaTeX rows for the MCS-separation pilot: % of exact oracle (argmax / sampled)."""
-    rows = load(PILOT)
-    val = {(r["topology"], r["policy"]): float(r["throughput"]) for r in rows}
-    topos = ["T3", "T5", "T6"]
-    lines = []
-    for name, key in [("Co-TDMA", "co_tdma"), ("All-transmit SINR heuristic", "oracle")]:
-        lines.append(name + " & " + " & ".join(f"{100 * val[(t, key)] / val[(t, 'exact_oracle')]:.0f}" for t in topos) + r" \\")
-    for learner, lname in [("mappo", "MAPPO (0-bit)"), ("central", "Central PPO")]:
-        for mcs, mname in [("learned", "learned"), ("arf", "ARF"), ("genie", "genie")]:
-            cells = []
-            for t in topos:
-                ref = val[(t, "exact_oracle")]
-                a, s = val[(t, f"{learner}+{mcs}/argmax")], val[(t, f"{learner}+{mcs}/sampled")]
-                cells.append(f"{100 * a / ref:.0f} / {100 * s / ref:.0f}")
-            lines.append(f"{lname}, MCS {mname} & " + " & ".join(cells) + r" \\")
-    with open(os.path.join(OUT, "table_pilot_rows.tex"), "w") as handle:
+def full_table(load: float = 5.0, topos=("T1", "T3", "T4", "T5", "T6")):
+    """LaTeX rows: % of exact oracle, mean ± std over seeds, sampled actions (5-seed sweep)."""
+    rows = []
+    for path in glob.glob(os.path.join(FULL_JOBS, f"*_{load}_*.json")):
+        with open(path) as handle:
+            rows += json.load(handle)["rows"]
+    by = defaultdict(dict)
+    for r in rows:
+        by[(r["topology"], r["seed"])][r["policy"]] = r["throughput"]
+
+    def cell(topo, policy):
+        ratios = [100 * v[policy] / v["exact_oracle"] for (t, _), v in by.items() if t == topo and policy in v]
+        return f"{np.mean(ratios):.1f} $\\pm$ {np.std(ratios):.1f}"
+
+    entries = [("Co-TDMA", "co_tdma"), ("All-transmit SINR heuristic", "oracle")]
+    entries += [(f"{lname}, MCS {mname}", f"{learner}+{mcs}/sampled")
+                for learner, lname in [("mappo", "MAPPO (0-bit)"), ("central", "Central PPO")]
+                for mcs, mname in [("learned", "learned"), ("arf", "ARF"), ("genie", "ideal")]]
+    lines = [name + " & " + " & ".join(cell(t, key) for t in topos) + r" \\" for name, key in entries]
+    with open(os.path.join(OUT, f"table_load{load:g}_rows.tex"), "w") as handle:
         handle.write("\n".join(lines) + "\n")
 
 
 if __name__ == "__main__":
     fig_headroom()
-    pilot_table()
+    full_table(5.0)
     print("figures written to", OUT)
