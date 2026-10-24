@@ -1,0 +1,7 @@
+# configs/qh_ctde_mute.yaml — qh_ctde.yaml + 명시적 mute 행동.
+# 학습 정책이 STA 분기의 인덱스 K(mute)를 골라 슬롯을 쉴 수 있다. 기본값(false)인 qh_ctde.yaml 의
+# 기존 결과와 비교할 수 있도록 별도 설정으로 둔다.
+_base_: qh_ctde.yaml
+
+env:
+  allow_mute: true

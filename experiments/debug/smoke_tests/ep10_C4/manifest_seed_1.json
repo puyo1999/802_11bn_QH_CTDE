@@ -1,0 +1,12 @@
+{
+  "seed": 1,
+  "conditions": [
+    "C4"
+  ],
+  "topologies": [
+    "T3"
+  ],
+  "max_episodes": 10,
+  "rollout_length": 128,
+  "eval_steps": 200
+}

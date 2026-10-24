@@ -1,44 +1,46 @@
-# configs/qh_ctde.yaml — QH-CTDE 및 Q-MAPPO 알고리즘 전용 설정
+# configs/qh_ctde.yaml — QH-CTDE 전용 설정
+#
+# [수정 사항] 기존 파일은 train.learning_rate 줄의 주석 끝에 'agent:' 키가 붙어
+#   "# ... Standard LRagent:" 형태가 되면서 agent 섹션 전체가 주석에 삼켜졌다.
+#   그 결과 state_dim, vq_bits, use_dsm 등이 모두 train 섹션의 하위 키로 파싱되었다.
+#   deep merge 도입과 함께 섹션 구조를 정상화한다.
+
 _base_: base.yaml
 
 env:
-  # ── [주의] env 섹션 전체가 덮어써지므로 base.yaml의 필수 값 누락 없이 명시 ──
-  mode: "qh"              # QH-CTDE 환경 모드 활성화 (4인용 스케줄링)
-  k_stas: 4               # [추가] AP당 사용자 수 (K=4)
-  interact_slots: 555556   # base.yaml과 동일 유지 (5s / 9μs)
-  max_episodes: 600       # base.yaml과 동일 유지
-  episode_len: 200        # 학습/평가 공통 에피소드 길이 (harsh mode 는 episode_len // 2 부터)
-  seed: 42
-
-train:
-  max_episodes: 1000       # 👈 기존 300~500 수준이었다면 1000 이상으로 확대
-  epsilon_decay: 0.995     # 👈 탐험율이 너무 일찍 0.01로 떨어지지 않도록 완만하게 조정
-  learning_rate: 0.0003    # 👈 Q-Mix 계열 네트워크에 안정적인 Standard LR
+  impl: "qh_v2"
+  mode: "qh"
+  topology: "all"
+  k_stas: 4
+  overlap:
+    enabled: true
+    mode: "hard"
+    expose_in_obs: true
 
 agent:
-  state_dim: 10           # ✅ 10으로 수정
-  action_shape: [9, 16]
+  hidden_dim: 128
+  lr: 0.0003
+  gamma: 0.99
+  tau: 0.005
+  eps_decay: 0.995
+  use_quantization: true
+  vq_bits: 4
+  use_dsm: true
+  gamma_margin: 0.8
 
-  # ── [QH-CTDE 핵심 모듈 파라미터] ──────────────────────────────
-  use_quantization: true  # 벡터 양자화(VQ) 코드북 메커니즘 활성화
-  vq_bits: 4              # 시그널링 오버헤드 제약을 위한 4-bit 양자화 설정
-  use_dsm: true           # 동적 모드 스위칭(Dynamic Switching Module) 활성화
-  gamma_margin: 0.8       # DSM 채널 상태 안정성 기준 마진 가중치 (Γ)
-  hidden_dim: 128         # QH-CTDE 모델 은닉층 뉴런 수
-
-  # ── [기존 agent 파라미터 전체 명시 (파서 덮어쓰기 에러 방지)] ──
-  fused_dim: 8
-  history_len: 10
-
-  gamma: 0.99             # drlca_attn.yaml과 동일하게 0.99로 맞춤 (공정한 비교)
-  tau: 0.005              # drlca_attn.yaml과 동기화
-  eps_start: 1.0
-  eps_end: 0.01
-  eps_decay: 0.99
-  batch_size: 32
-  mem_size: 500
-  lr: 0.0005
-  dueling: false
+train:
+  max_episodes: 1000
+  n_runs: 5
+  eval_steps: 200
+  rollout_length: 128
+  ppo:
+    clip_ratio: 0.2
+    gae_lambda: 0.95
+    value_coef: 0.5
+    entropy_coef: 0.01
+    update_epochs: 4
+    minibatch_size: 64
+    grad_clip: 0.5
 
 logging:
   run_name: "qh_ctde_scheduling"

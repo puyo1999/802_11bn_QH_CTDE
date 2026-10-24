@@ -3,22 +3,19 @@ import numpy as np
 from src.agents.classical_ctde import ClassicalCTDE
 from src.config import load_config
 from src.envs.factory import make_scheduling_env, validate_state_contract
-from src.envs.topology import load_fixed_topologies
+from src.envs.topology_registry import get_registry
 
 
-def test_yaml_topologies_include_shared_sta_conditions():
-    topologies = load_fixed_topologies()
-    assert set(topologies) == {f"T{i}" for i in range(1, 7)}
+def test_yaml_topologies_include_overlap_conditions():
+    registry = get_registry()
+    assert set(registry.ids()) >= {f"T{i}" for i in range(1, 7)}
     for name in ("T3", "T6"):
-        group = topologies[name].shared_sta_groups[0]
-        first_ap, first_sta = group[0]
-        reference = topologies[name].sta_positions[first_ap][first_sta]
-        assert all(np.allclose(reference, topologies[name].sta_positions[ap][sta]) for ap, sta in group[1:])
+        assert registry.get(name).n_overlap_stas() > 0
 
 
 def test_dynamic_state_contract_and_classical_ctde_update():
     cfg = load_config("configs/classical_ctde.yaml")
-    topo = load_fixed_topologies()["T3"]
+    topo = get_registry().get("T3")
     env = make_scheduling_env(topo, cfg, episode_horizon=1)
     contract = validate_state_contract(env, cfg)
     assert contract.local_dim == 2 * cfg["env"]["k_stas"] + 2

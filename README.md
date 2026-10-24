@@ -102,20 +102,29 @@ Wi-Fi 8(802.11bn) 표준 사양에 맞춘 AP당 4인용 다중 사용자 환경(
 
 ---
 
-## Oracle gap 실험 (mute 행동 + genie oracle)
+## Oracle gap 실험 (env v2, mute 행동 + 정확 oracle)
 
-`allow_mute=True` 이면 각 AP의 STA 행동에 인덱스 `K`(= mute, 이번 슬롯 전송 안 함)가 추가되어
-Co-TDMA / Co-SR 선택을 학습할 수 있습니다. `src/agents/mapc_baselines.py` 의 `GenieOracle` 은
-다음 슬롯 도착 패킷까지 알고 모든 (STA | mute) 조합과 링크별 최적 MCS 를 전수 탐색하는
-슬롯 단위 정확 최적해입니다.
+`env.allow_mute: true` 이면 각 AP의 STA 분기에 인덱스 `K`(= mute, 이번 슬롯 전송 안 함)가 추가되어
+학습 정책이 Co-TDMA / Co-SR 선택을 표현할 수 있다 (`configs/qh_ctde_mute.yaml`). 기본값은 false 로,
+기존 `qh_ctde.yaml` 결과와 동일하다.
+
+`src/training/baseline_policies.py` 의 기준 정책:
+
+| 이름 | 설명 |
+|---|---|
+| `exact_oracle` | 모든 (STA \| mute) 조합과 링크별 최적 MCS 를 전수 탐색하는 슬롯 단위 정확 최적해 (다음 도착까지 아는 genie). **상한** |
+| `co_tdma` | 한 슬롯에 한 AP 만 라운드 로빈 전송 |
+| `oracle` | 모든 AP 동시 전송 전제에서 MCS 만 최적화하는 휴리스틱. **상한이 아님** |
+| `random`, `greedy`, `round_robin` | 무작위 / 최대 큐 + ARF / 순환 + ARF |
 
 ```bash
 python -m venv .venv && .venv/bin/pip install -r requirements.txt
-.venv/bin/python experiments/oracle_gap.py            # Random / Local Greedy / Co-TDMA / 0-bit MAPPO vs Oracle
-.venv/bin/python experiments/oracle_gap.py --quick    # 스모크 테스트
+.venv/bin/python experiments/oracle_gap.py --learners mappo central   # 기준 정책 + 0-bit MAPPO / ∞-bit CentralPPO vs exact oracle
+.venv/bin/python experiments/oracle_gap.py --quick                    # 스모크 테스트
 ```
 
-결과는 `experiments/oracle_gap_results/` (CSV, summary.json, 그림)에 저장됩니다.
+결과는 `experiments/oracle_gap_results_envv2/` 에 저장된다. `experiments/oracle_gap_results/` 는 이전
+mod1 환경 기준 결과(v1/v2)로, 참고용으로 남겨 둔다.
 
 ---
 

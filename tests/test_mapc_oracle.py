@@ -1,43 +1,39 @@
+"""Mute action, real-STA traffic, exact oracle and PPO learners on env v2 (qh_v2)."""
 import itertools
+from dataclasses import replace
 
 import numpy as np
 import pytest
 
-from src.agents.mapc_baselines import CoTDMA, GenieOracle, LocalGreedy, RandomScheduler, best_mcs
-from src.envs.qh_obss_env_mod1 import MCS_CAPACITY, OBSSEnv
-from src.envs.topology import load_fixed_topologies
+from src.config import load_config
+from src.config.schema import ExperimentConfig
+from src.envs.env_factory import make_env
+from src.envs.topology_registry import get_registry
+from src.training.baseline_policies import BaselinePolicy
+from src.training.oracle_policy import exact_oracle_actions, prospective_harsh, schedule_value
 
 
-def make_env(name="T6", **kwargs):
-    defaults = dict(mode="qh", max_episodes=20, k_stas=4, poisson_lambda=1.0, allow_mute=True)
-    defaults.update(kwargs)
-    return OBSSEnv(load_fixed_topologies()[name], **defaults)
+def make(topo_id="T6", load=1.0, steps=20, allow_mute=True, overlap_mode="hard"):
+    experiment = ExperimentConfig.from_dict(load_config("configs/qh_ctde.yaml"))
+    traffic = dict(experiment.env.traffic, traffic_load_ratio=0.0,
+                   poisson_lambda_min=load, poisson_lambda_max=load)
+    overlap = dict(experiment.env.overlap, mode=overlap_mode)
+    cfg = replace(experiment.env, impl="qh_v2", max_episodes=steps, traffic=traffic,
+                  allow_mute=allow_mute, overlap=overlap)
+    return make_env(cfg, topology=get_registry().get(topo_id), topology_file=experiment.topology_file)
 
 
-def test_harsh_mode_is_independent_of_one_step_horizon():
-    # Before the fix, max_episodes=1 made `step >= 1 // 2` true from step 0 (always harsh).
-    env = make_env(max_episodes=1, harsh_start_step=100)
+def test_mute_extends_action_space_and_silences_ap():
+    env = make()
+    assert env.action_space.nvec[0] == env.k_stas + 1 and env.mute_index == env.k_stas
     env.reset(seed=0)
-    assert not env.is_harsh
-    assert make_env(max_episodes=200).harsh_start_step == 100  # legacy default kept
-
-
-def test_mute_action_removes_interference_and_transmission():
-    env = make_env("T6")
-    env.reset(seed=0)
-    all_tx = env.link_sinr_db([0, 0, 0, 0])
-    solo = env.link_sinr_db([0, -1, -1, -1])
-    assert solo[0] > all_tx[0]
-    assert np.isneginf(solo[1:]).all()
-
-    env.reset(seed=0)
-    mute = env.mute_index
-    _, _, _, _, info = env.step(np.array([mute, 0] * env.n_aps))
+    _, _, _, _, info = env.step(np.array([env.mute_index, 0] * env.n_aps))
     assert info["system_throughput"] == 0
+    assert make(allow_mute=False).mute_index is None
 
 
 def test_padding_stas_receive_no_traffic():
-    env = make_env("T1", poisson_lambda=5.0)  # T1 has one real STA per AP
+    env = make("T1", load=5.0)  # one real STA per AP, K = 4
     env.reset(seed=0)
     for _ in range(5):
         env.step(np.array([env.mute_index, 0] * env.n_aps))
@@ -45,81 +41,83 @@ def test_padding_stas_receive_no_traffic():
     assert (env.queues()[:, 0] > 0).all()
 
 
-def test_padding_sinr_observation_uses_mw():
-    env = make_env("T1")
-    obs, _ = env.reset(seed=0)
-    k = env.k_stas
-    # -110 dBm vs -95 dBm noise floor => -15 dB SNR, normalised by 40.
-    assert obs[0, k + 1] == pytest.approx(-15.0 / 40.0, abs=1e-4)
-
-
 def test_peek_arrivals_does_not_consume_rng():
-    env = make_env()
+    env = make()
     env.reset(seed=3)
-    q0 = env.queues().copy()
+    before = env.queues().copy()
     peeked = env.peek_arrivals()
     env.step(np.array([env.mute_index, 0] * env.n_aps))
-    np.testing.assert_allclose(env.queues(), np.clip(q0 + peeked, 0, env.queue_max_size))
+    np.testing.assert_allclose(env.queues(), np.clip(before + peeked, 0, env.queue_max_size))
 
 
-def test_oracle_matches_brute_force_over_flat_actions():
-    env = make_env("T3")
+@pytest.mark.parametrize("overlap_mode", ["hard", "soft"])
+def test_exact_oracle_matches_independent_brute_force(overlap_mode):
+    env = make("T3", overlap_mode=overlap_mode)
     env.reset(seed=1)
     queues = np.clip(env.queues() + env.peek_arrivals(), 0, env.queue_max_size)
-    _, _, value = GenieOracle(env).solve(queues)
+    harsh = prospective_harsh(env)
+    actions = exact_oracle_actions(env)
+    stas = [-1 if a >= len(env.topo.sta_positions[i]) else int(a) for i, a in enumerate(actions[0::2])]
+    value, _ = schedule_value(env, stas, queues, harsh)
 
-    # Brute force over every joint (STA | mute, MCS) is too large; instead enumerate STA
-    # choices and pick each link's MCS by scanning all 16 — independent of best_mcs().
+    # Brute force over STA sets scanning every MCS, independent of best_mcs_for().
     best = 0.0
-    options = [[-1] + list(range(n)) for n in env.valid_sta_counts]
-    for stas in itertools.product(*options):
-        sinr = env.link_sinr_db(list(stas))
+    for combo in itertools.product(*[[-1] + list(range(n)) for n in env.valid_sta_counts]):
+        tx = [i for i, s in enumerate(combo) if s >= 0]
         total = 0.0
-        for i, sta in enumerate(stas):
-            if sta == -1:
+        for i in tx:
+            r = env.interference.compute(i, combo[i], tx, is_harsh=harsh)
+            if r.blocked_by_overlap:
                 continue
-            total += max([min(queues[i, sta], MCS_CAPACITY[m]) for m in range(16)
-                          if sinr[i] >= 2.0 + 1.5 * m] or [0.0])
+            total += max([min(queues[i, combo[i]], env.mcs_table.capacity(m))
+                          for m in range(env.mcs_table.n_mcs) if env.mcs_table.decodable(r.sinr_db, m)] or [0.0])
         best = max(best, total)
     assert value == pytest.approx(best)
 
 
-@pytest.mark.parametrize("name", ["T1", "T3", "T5", "T6"])
-def test_oracle_dominates_heuristics_on_same_arrivals(name):
-    def run(policy_cls, **kw):
-        env = make_env(name)
-        policy = policy_cls(env, **kw)
-        obs, _ = env.reset(seed=7)
+@pytest.mark.parametrize("topo_id", ["T1", "T3", "T5", "T6"])
+def test_exact_oracle_dominates_baselines_on_same_arrivals(topo_id):
+    def run(name):
+        env, policy = make(topo_id), BaselinePolicy(name, seed=0)
+        env.reset(seed=7)
         total, done = 0.0, False
         while not done:
-            obs, _, done, _, info = env.step(policy.act(obs))
+            _, _, done, _, info = env.step(policy.act(env))
+            policy.observe(info)
             total += info["system_throughput"]
         return total
 
-    oracle = run(GenieOracle)
-    for cls in (LocalGreedy, CoTDMA):
-        assert oracle >= run(cls)
-    assert oracle >= run(RandomScheduler, seed=0)
+    exact = run("exact_oracle")
+    for name in ("random", "greedy", "round_robin", "oracle", "co_tdma"):
+        assert exact >= run(name), name
 
 
-def test_best_mcs_edges():
-    assert best_mcs(1.9) is None
-    assert best_mcs(2.0) == 0
-    assert best_mcs(100.0) == 15
-
-
-def test_mappo_rollout_and_update_smoke():
+def test_ctde_mask_keeps_mute_available():
     torch = pytest.importorskip("torch")
-    from src.agents.mappo import MAPPO, train_mappo
+    from src.agents.ctde_ppo import CTDEActorCritic
 
-    env = make_env("T6", max_episodes=8)
-    learner = MAPPO(env.observation_space.shape[-1], env.n_aps, env.k_stas, env.valid_sta_counts, hidden_dim=16)
-    history = train_mappo(env, learner, episodes=2)
-    assert len(history) == 2
+    env = make("T6")
+    model = CTDEActorCritic(env.obs_dim, env.n_aps, env.k_stas + 1, 16, 16, 4,
+                            torch.ones(env.n_aps, env.n_aps), mute_index=env.mute_index)
+    sta_logits, _ = model.actor_logits(torch.zeros(1, env.n_aps, env.obs_dim),
+                                       torch.as_tensor([env.valid_sta_counts]))
+    allowed = sta_logits[0] > -1e8
+    for i, n_valid in enumerate(env.valid_sta_counts):
+        assert allowed[i, :n_valid].all() and allowed[i, env.mute_index]
+        assert not allowed[i, n_valid:env.k_stas].any()
+
+
+@pytest.mark.parametrize("learner", ["MAPPO", "CentralPPO"])
+def test_ppo_learners_smoke(learner):
+    pytest.importorskip("torch")
+    from src.agents import mappo
+
+    env = make("T6", steps=8)
+    cls = getattr(mappo, learner)
+    agent = cls(env.obs_dim, env.n_aps, env.k_stas, env.valid_sta_counts, hidden_dim=16)
+    assert len(mappo.train_mappo(env, agent, episodes=2, episodes_per_update=2)) == 2
     obs, _ = env.reset(seed=0)
-    action, log_prob, _ = learner.act(obs)
-    assert action.shape == (2 * env.n_aps,)
-    # Padding STAs (T6 AP2 has one real STA) are never sampled; mute (index K) is allowed.
+    action, log_prob, _ = agent.act(obs)
+    assert action.shape == (2 * env.n_aps,) and np.isfinite(log_prob)
     for i, n_valid in enumerate(env.valid_sta_counts):
         assert action[2 * i] < n_valid or action[2 * i] == env.mute_index
-    assert np.isfinite(log_prob)

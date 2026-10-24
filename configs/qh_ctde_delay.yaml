@@ -1,0 +1,13 @@
+# Communication-delay sensitivity configuration.
+# Delays are abstract integer decision cycles, not measured backhaul latency.
+_base_: qh_ctde.yaml
+
+communication_delay:
+  enabled: true
+  normal_delay_steps: 0
+  congested_delay_steps: 2
+  jitter_max_steps: 1
+  max_delay_steps: 3
+  normal_to_congested_prob: 0.05
+  congested_to_normal_prob: 0.25
+  initial_congested_prob: 0.1
