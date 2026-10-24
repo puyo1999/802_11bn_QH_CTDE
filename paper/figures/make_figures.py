@@ -105,4 +105,5 @@ def full_table(load: float = 5.0, topos=("T1", "T3", "T4", "T5", "T6")):
 if __name__ == "__main__":
     fig_headroom()
     full_table(5.0)
+    full_table(8.0)
     print("figures written to", OUT)

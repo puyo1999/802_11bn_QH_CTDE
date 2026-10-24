@@ -18,11 +18,11 @@ items still open are marked in red with `\todo{...}`.
 | Paper item | Source | Produced by |
 |---|---|---|
 | Fig. 1 (headroom vs load) | `experiments/oracle_gap_results_envv2_headroom/oracle_gap.csv` (7 loads × 6 topologies × 3 seeds) | `experiments/oracle_gap.py --learners --loads 0.25 0.5 1 2 3 5 8 --seeds 3` |
-| Table I (gap decomposition, λ = 5) | `experiments/oracle_gap_results_envv2_full/jobs/*_5.0_*.json` (5 seeds, 1000 episodes) | `experiments/oracle_gap.py --loads 5 8 --topos T1 T3 T4 T5 T6 --seeds 5 --learners mappo central --mcs learned arf genie --episodes 1000 --out experiments/oracle_gap_results_envv2_full` |
+| Tables I–II (gap decomposition, λ = 5 and 8) | `experiments/oracle_gap_results_envv2_full/jobs/*.json` (5 seeds, 1000 episodes) | `experiments/oracle_gap.py --loads 5 8 --topos T1 T3 T4 T5 T6 --seeds 5 --learners mappo central --mcs learned arf genie --episodes 1000 --out experiments/oracle_gap_results_envv2_full` |
 
 ## Open items before submission
 
-- Learner results at λ = 8 (sweep in progress; λ = 3 dropped as low-impact). The single-seed pilot (`experiments/oracle_gap_results_envv2_mcs_pilot/`) is superseded by the 5-seed results.
+- λ = 3 learner runs were dropped as low-impact. The single-seed pilot (`experiments/oracle_gap_results_envv2_mcs_pilot/`) is superseded by the 5-seed results.
 - Verify every entry of `references.bib` against publisher records; complete `yan2025marl`.
 - Related work on Co-SR / Co-TDMA analysis and Wi-Fi MARL for spatial reuse.
 - System-model figure (topologies T1–T6).
