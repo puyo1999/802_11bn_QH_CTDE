@@ -23,7 +23,7 @@ items still open are marked in red with `\todo{...}`.
 ## Open items before submission
 
 - λ = 3 learner runs were dropped as low-impact. The single-seed pilot (`experiments/oracle_gap_results_envv2_mcs_pilot/`) is superseded by the 5-seed results.
-- Verify every entry of `references.bib` against publisher records; complete `yan2025marl`.
+- `references.bib`: all 14 entries verified on 2026-10-26 (source noted per entry). New citations added later still need the same check.
 - Related work on Co-SR / Co-TDMA analysis and Wi-Fi MARL for spatial reuse.
 - System-model figure (topologies T1–T6).
 - Fading channel model or a justification of the deterministic path-loss model.
