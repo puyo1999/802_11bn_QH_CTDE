@@ -102,6 +102,34 @@ def full_table(load: float = 5.0, topos=("T1", "T3", "T4", "T5", "T6")):
         handle.write("\n".join(lines) + "\n")
 
 
+def fading_table(seeds=(0, 1, 2)):
+    """LaTeX rows: % of exact oracle without / with Rayleigh fading (mean over common seeds)."""
+    def collect(directory):
+        by = defaultdict(dict)
+        for path in glob.glob(os.path.join(ROOT, "experiments", directory, "jobs", "*.json")):
+            with open(path) as handle:
+                for r in json.load(handle)["rows"]:
+                    if r["seed"] in seeds:
+                        by[(r["load"], r["topology"], r["seed"])][r["policy"]] = r["throughput"]
+        return by
+
+    plain, faded = collect("oracle_gap_results_envv2_full"), collect("oracle_gap_results_envv2_fading")
+    cases = [(5.0, "T3"), (5.0, "T6"), (8.0, "T3"), (8.0, "T6")]
+
+    def mean_pct(by, load, topo, policy):
+        return np.mean([100 * by[(load, topo, s)][policy] / by[(load, topo, s)]["exact_oracle"] for s in seeds])
+
+    entries = [("Co-TDMA", "co_tdma"), ("All-transmit SINR heuristic", "oracle"),
+               ("MAPPO (0-bit), MCS learned", "mappo+learned/sampled"),
+               ("MAPPO (0-bit), MCS ideal", "mappo+genie/sampled"),
+               ("Central PPO, MCS learned", "central+learned/sampled"),
+               ("Central PPO, MCS ideal", "central+genie/sampled")]
+    lines = [name + " & " + " & ".join(f"{mean_pct(plain, l, t, key):.1f} / {mean_pct(faded, l, t, key):.1f}"
+                                       for l, t in cases) + r" \\" for name, key in entries]
+    with open(os.path.join(OUT, "table_fading_rows.tex"), "w") as handle:
+        handle.write("\n".join(lines) + "\n")
+
+
 def fig_topologies():
     """The six reference topologies: APs, associated STAs, and overlap STAs."""
     import sys
@@ -155,4 +183,5 @@ if __name__ == "__main__":
     fig_headroom()
     full_table(5.0)
     full_table(8.0)
+    fading_table()
     print("figures written to", OUT)

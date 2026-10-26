@@ -29,7 +29,11 @@ items still open are marked in red with `\todo{...}`.
 - Fig. `fig_topologies` (T1–T6) is generated from `configs/topologies.yaml`.
 - λ = 3 learner runs were dropped as low-impact. The single-seed pilot (`experiments/oracle_gap_results_envv2_mcs_pilot/`) is superseded by the 5-seed results.
 
+- Rayleigh fading robustness (Table III): `experiments/oracle_gap_results_envv2_fading/` (T3, T6 × λ ∈ {5, 8} × 3 seeds)
+  compared with the deterministic channel on the same seeds; baseline headroom sweep under fading in
+  `experiments/oracle_gap_results_envv2_fading_headroom/`.
+
 ## Open items before submission
 
-- Rayleigh fading robustness results (sweep in `experiments/oracle_gap_results_envv2_fading/`) and the corresponding paper section.
+- Random-topology generalization (plan: `docs/random_topology_experiment_plan.md`).
 - Author, affiliation, funding, biography.
