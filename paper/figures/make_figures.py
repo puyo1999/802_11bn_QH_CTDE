@@ -102,7 +102,56 @@ def full_table(load: float = 5.0, topos=("T1", "T3", "T4", "T5", "T6")):
         handle.write("\n".join(lines) + "\n")
 
 
+def fig_topologies():
+    """The six reference topologies: APs, associated STAs, and overlap STAs."""
+    import sys
+    sys.path.insert(0, ROOT)
+    from src.envs.topology_registry import get_registry
+
+    registry = get_registry(os.path.join(ROOT, "configs/topologies.yaml"))
+    accent = "#eb6834"  # single highlight for overlap STAs; shape also differs (diamond)
+    fig, axes = plt.subplots(2, 3, figsize=(7.2, 4.6))
+    for ax, topo_id in zip(axes.flat, [f"T{i}" for i in range(1, 7)]):
+        topo = registry.get(topo_id)
+        for i, (ap, stas) in enumerate(zip(topo.ap_positions, topo.sta_positions)):
+            for k, sta in enumerate(stas):
+                overlap = topo.sta_overlap[i][k]
+                ax.plot([ap[0], sta[0]], [ap[1], sta[1]], color=INK2, linewidth=0.8, zorder=1)
+                for j in overlap:
+                    peer = topo.ap_positions[j]
+                    ax.plot([peer[0], sta[0]], [peer[1], sta[1]], color=accent, linewidth=0.8,
+                            linestyle="--", zorder=1)
+                ax.scatter(*sta, s=34 if overlap else 22, marker="D" if overlap else "o",
+                           color=accent if overlap else "#ffffff", edgecolor=accent if overlap else INK,
+                           linewidth=1.0, zorder=3)
+            ax.scatter(*ap, s=70, marker="^", color=INK, zorder=4)
+            ax.annotate(f"AP{i + 1}", ap, textcoords="offset points", xytext=(-6, 4), ha="right",
+                        fontsize=7, color=INK)
+        ax.set_title(topo_id, loc="left", fontsize=9, color=INK, pad=10)
+        ax.set_aspect("equal", adjustable="datalim")
+        ax.margins(0.22)
+        ax.tick_params(labelsize=7, colors=INK2)
+        for side in ("top", "right"):
+            ax.spines[side].set_visible(False)
+    for ax in axes[1]:
+        ax.set_xlabel("x (m)", fontsize=8, color=INK2)
+    for ax in axes[:, 0]:
+        ax.set_ylabel("y (m)", fontsize=8, color=INK2)
+    handles = [
+        plt.Line2D([], [], marker="^", color=INK, linestyle="", markersize=7, label="AP"),
+        plt.Line2D([], [], marker="o", markerfacecolor="#ffffff", markeredgecolor=INK, color=INK2,
+                   markersize=5, label="STA and serving link"),
+        plt.Line2D([], [], marker="D", color=accent, linestyle="--", markersize=5,
+                   label="Overlap STA and overlapping AP"),
+    ]
+    fig.legend(handles=handles, loc="lower center", ncol=3, fontsize=8, frameon=False)
+    fig.tight_layout(rect=(0, 0.06, 1, 1))
+    for ext in ("pdf", "png"):
+        fig.savefig(os.path.join(OUT, f"fig_topologies.{ext}"), dpi=300)
+
+
 if __name__ == "__main__":
+    fig_topologies()
     fig_headroom()
     full_table(5.0)
     full_table(8.0)
