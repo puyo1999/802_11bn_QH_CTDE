@@ -13,13 +13,13 @@ from src.training.baseline_policies import BaselinePolicy
 from src.training.oracle_policy import exact_oracle_actions, prospective_harsh, schedule_value
 
 
-def make(topo_id="T6", load=1.0, steps=20, allow_mute=True, overlap_mode="hard"):
+def make(topo_id="T6", load=1.0, steps=20, allow_mute=True, overlap_mode="hard", fading="none"):
     experiment = ExperimentConfig.from_dict(load_config("configs/qh_ctde.yaml"))
     traffic = dict(experiment.env.traffic, traffic_load_ratio=0.0,
                    poisson_lambda_min=load, poisson_lambda_max=load)
     overlap = dict(experiment.env.overlap, mode=overlap_mode)
     cfg = replace(experiment.env, impl="qh_v2", max_episodes=steps, traffic=traffic,
-                  allow_mute=allow_mute, overlap=overlap)
+                  allow_mute=allow_mute, overlap=overlap, fading={"model": fading})
     return make_env(cfg, topology=get_registry().get(topo_id), topology_file=experiment.topology_file)
 
 
@@ -50,9 +50,9 @@ def test_peek_arrivals_does_not_consume_rng():
     np.testing.assert_allclose(env.queues(), np.clip(before + peeked, 0, env.queue_max_size))
 
 
-@pytest.mark.parametrize("overlap_mode", ["hard", "soft"])
-def test_exact_oracle_matches_independent_brute_force(overlap_mode):
-    env = make("T3", overlap_mode=overlap_mode)
+@pytest.mark.parametrize("overlap_mode,fading", [("hard", "none"), ("soft", "none"), ("hard", "rayleigh")])
+def test_exact_oracle_matches_independent_brute_force(overlap_mode, fading):
+    env = make("T3", overlap_mode=overlap_mode, fading=fading)
     env.reset(seed=1)
     queues = np.clip(env.queues() + env.peek_arrivals(), 0, env.queue_max_size)
     harsh = prospective_harsh(env)
@@ -146,3 +146,31 @@ def test_genie_mcs_matches_exact_value_for_chosen_set():
     expected, _ = schedule_value(env.env, stas, queues, prospective_harsh(env.env))
     _, _, _, _, info = env.step(np.array([0, 0] * env.n_aps))
     assert info["system_throughput"] == pytest.approx(expected)
+
+
+def test_no_fading_is_deterministic_path_loss():
+    env = make("T6")
+    env.reset(seed=0)
+    assert env.interference.fading_gain is None
+
+
+def test_rayleigh_fading_redraws_each_slot_without_touching_arrivals():
+    plain, faded = make("T6", load=5.0, steps=50), make("T6", load=5.0, steps=50, fading="rayleigh")
+    plain.reset(seed=4)
+    faded.reset(seed=4)
+    gains = []
+    silence = np.array([faded.mute_index, 0] * faded.n_aps)
+    for _ in range(40):
+        gains.append(faded.interference.fading_gain.copy())
+        plain.step(silence)
+        faded.step(silence)
+    # Arrivals use their own RNG, so queues match the no-fading run exactly.
+    np.testing.assert_allclose(plain.queues(), faded.queues())
+    gains = np.stack(gains)
+    assert not np.allclose(gains[0], gains[1])
+    assert 0.85 < gains.mean() < 1.15  # Exp(1) power gain
+
+
+def test_fading_does_not_change_mean_snr_observation():
+    plain, faded = make("T3"), make("T3", fading="rayleigh")
+    np.testing.assert_allclose(plain.reset(seed=1)[0], faded.reset(seed=1)[0])

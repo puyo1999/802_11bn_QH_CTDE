@@ -76,6 +76,7 @@ class QHOBSSEnv(gym.Env):
         overlap: dict[str, Any] | OverlapConfig | None = None,
         reward: dict[str, Any] | RewardConfig | None = None,
         allow_mute: bool = False,
+        fading: dict[str, Any] | None = None,
     ):
         super().__init__()
         self.topo = topology
@@ -88,6 +89,12 @@ class QHOBSSEnv(gym.Env):
             traffic if isinstance(traffic, TrafficConfig) else TrafficConfig.from_dict(traffic)
         )
         self._rng = np.random.default_rng(seed)
+        # 소규모 페이딩: "none"(결정적 경로손실) | "rayleigh"(슬롯마다 독립인 레일리 블록 페이딩).
+        # 트래픽과 분리된 RNG 를 써서 페이딩 여부와 무관하게 도착 과정이 같다.
+        self.fading_model = (fading or {}).get("model", "none")
+        if self.fading_model not in ("none", "rayleigh"):
+            raise ValueError(f"fading.model 은 none 또는 rayleigh 여야 합니다: {self.fading_model}")
+        self._fading_rng = np.random.default_rng(None if seed is None else (seed, 7))
         self._seed = seed
 
         # K는 토폴로지의 최대 STA 수 이상이어야 전 STA를 선택할 수 있다.
@@ -188,6 +195,9 @@ class QHOBSSEnv(gym.Env):
         self._step = 0
         self.is_harsh_interference = False
         self.overlap_policy.reset_stats()
+        if seed is not None:
+            self._fading_rng = np.random.default_rng((seed, 7))
+        self._draw_fading()
 
         return self.obs_builder.build([ap.queues for ap in self._aps], False), {}
 
@@ -220,6 +230,7 @@ class QHOBSSEnv(gym.Env):
 
         self._step += 1
         done = self._step >= self.max_episodes
+        self._draw_fading()  # 다음 슬롯의 채널
 
         info = {
             "is_harsh_mode": self.is_harsh_interference,
@@ -233,6 +244,14 @@ class QHOBSSEnv(gym.Env):
         return obs, breakdown.total, done, False, info
 
     # ── 내부 처리 ────────────────────────────────────────────────
+
+    def _draw_fading(self) -> None:
+        """다음 슬롯의 링크별 페이딩 전력 이득을 뽑는다. 레일리 페이딩의 전력 이득은 Exp(1)."""
+        if self.fading_model == "rayleigh":
+            self.interference.fading_gain = self._fading_rng.exponential(
+                1.0, size=(self.n_aps, self.n_aps, self.k_stas))
+        else:
+            self.interference.fading_gain = None
 
     def _parse_actions(self, actions: np.ndarray) -> tuple[list[int], list[int]]:
         """

@@ -40,6 +40,7 @@ class EnvConfig:
     reward: dict = field(default_factory=dict)    # src/envs/reward.py RewardConfig
     traffic: dict = field(default_factory=dict)   # src/envs/traffic.py TrafficConfig (traffic_load_ratio 등)
     allow_mute: bool = False            # STA 분기에 명시적 mute 행동(인덱스 K) 추가
+    fading: dict = field(default_factory=dict)    # 소규모 페이딩 {"model": "none" | "rayleigh"}
 
     @classmethod
     def from_dict(cls, cfg: dict[str, Any]) -> "EnvConfig":
