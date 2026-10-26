@@ -1,0 +1,253 @@
+% IEEE Access draft. Compile with the official IEEE Access LaTeX template (ieeeaccess.cls,
+% spotcolor.sty, the logo files) copied into this directory; see paper/README.md.
+\documentclass{ieeeaccess}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage[ruled,linesnumbered]{algorithm2e}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\graphicspath{{figures/}}
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+
+\begin{document}
+\history{Date of publication xxxx 00, 0000, date of current version xxxx 00, 0000.}
+\doi{10.1109/ACCESS.2026.0000000}
+
+\title{How Far Are Learned Multi-AP Schedulers From the Optimum? An Exact-Oracle Gap Analysis of Multi-Agent Reinforcement Learning for IEEE 802.11bn}
+\author{\uppercase{\todo{Author name}}\authorrefmark{1}}
+\address[1]{\todo{Affiliation}}
+\tfootnote{\todo{Funding statement}}
+
+\markboth
+{\todo{Author}: Exact-Oracle Gap Analysis of Learned Multi-AP Schedulers}
+{\todo{Author}: Exact-Oracle Gap Analysis of Learned Multi-AP Schedulers}
+
+\corresp{Corresponding author: \todo{Author} (e-mail: \todo{e-mail}).}
+
+\begin{abstract}
+Multi-access point coordination (MAPC) in IEEE 802.11bn lets neighboring access points (APs) decide jointly which AP serves which station (STA) in each transmission opportunity. Multi-agent reinforcement learning (MARL) with centralized training and decentralized execution (CTDE) is a common approach to this decision, yet learned schedulers are usually compared with heuristics whose distance from the optimum is unknown. This paper introduces an exact per-slot oracle that enumerates every joint choice of target STA or silence across APs together with the highest decodable modulation and coding scheme (MCS) per link, and uses it to decompose the throughput loss of learned schedulers. Across six reference topologies and arrival rates from 0.25 to 8 packets per STA per slot, coordinated time division multiple access (Co-TDMA) attains at least 99\% of the oracle up to 2 packets per STA per slot, so coordination gains beyond time sharing exist only at high load, where the oracle exceeds Co-TDMA by up to 34\%. A widely used signal-to-interference-plus-noise ratio (SINR) reference that lets all APs transmit attains as little as 25\% of the oracle and is therefore not an upper bound. At 5 and 8 packets per STA per slot and over five training seeds, replacing learned MCS selection with ideal link adaptation raises proximal policy optimization (PPO) agents by 5--31 percentage points, while giving the actor full information from every AP changes their throughput by $-2$ to $+9$ points. With ideal link adaptation, the learners exceed Co-TDMA by 13--14 points only in the two cases with the largest coordination headroom (24--25\%) and stay below Co-TDMA in all other cases. The bottleneck of current learned schedulers is therefore rate selection and policy optimization, not inter-AP information.
+\end{abstract}
+
+\begin{keywords}
+IEEE 802.11bn, multi-access point coordination, multi-agent reinforcement learning, centralized training with decentralized execution, coordinated spatial reuse, link adaptation, Wi-Fi 8.
+\end{keywords}
+
+\titlepgskip=-21pt
+
+\maketitle
+
+\section{Introduction}
+\label{sec:introduction}
+\PARstart{D}{ense} Wi-Fi deployments place several access points (APs) within mutual interference range, so that the throughput of one basic service set depends on the transmission decisions of its neighbors. IEEE 802.11bn, the amendment that defines Wi-Fi~8 with the target of ultra high reliability (UHR), addresses this coupling with multi-access point coordination (MAPC)~\cite{galati2024wifi8}. Under MAPC, APs exchange coordination information and decide jointly whether to share a transmission opportunity (TXOP) in time, as in coordinated time division multiple access (Co-TDMA), or in space, as in coordinated spatial reuse (Co-SR)~\cite{lopez2019ieee}.
+
+Selecting, in every TXOP, the station (STA) each AP serves, whether the AP stays silent, and the modulation and coding scheme (MCS) of every active link is a combinatorial decision over all APs. Multi-agent reinforcement learning (MARL) with centralized training and decentralized execution (CTDE)~\cite{lowe2017maddpg,foerster2018coma,yu2022mappo} is a natural fit: a centralized critic uses the joint observation during training, and each AP executes a local actor that needs no inter-AP message at run time. Recent work applies this template to IEEE 802.11bn channel access~\cite{yan2025marl} and augments it with learned, quantized inter-AP messages~\cite{vandenoord2017vqvae}.
+
+The evaluation practice of such schedulers has a structural gap. Learned policies are compared with random access, greedy rate selection, round-robin scheduling, or a signal-to-interference-plus-noise ratio (SINR) reference that assumes all APs transmit and picks the best MCS for that interference. None of these baselines is an upper bound, so a reported gain over them does not reveal how much throughput remains unexploited, nor whether the remaining loss stems from missing inter-AP information, from rate selection, or from policy optimization.
+
+This paper closes that gap with an exact per-slot oracle and a gap decomposition built on it. The contributions are as follows.
+\begin{itemize}
+\item An exact per-slot oracle for MAPC scheduling that enumerates all joint (STA or silence) decisions with the highest decodable MCS per link, together with an explicit silence action that lets learned schedulers represent Co-TDMA at all.
+\item A load sweep over six reference topologies that quantifies the coordination headroom beyond Co-TDMA and shows that the all-transmit SINR reference attains as little as 25\% of the oracle.
+\item A decomposition of the loss of CTDE schedulers based on proximal policy optimization (PPO)~\cite{schulman2017ppo,yu2022mappo} into a link-adaptation gap, an information gap, and a residual optimization gap, obtained by replacing learned MCS selection with automatic rate fallback (ARF)~\cite{kamerman1997arf} or ideal link adaptation, and by contrasting local actors with a full-information actor.
+\item An open-source simulator and evaluation suite in which every baseline, learner, and figure of this paper is reproducible from configuration files.
+\end{itemize}
+
+The remainder of the paper is organized as follows. Section~\ref{sec:related} reviews related work. Section~\ref{sec:system} defines the system model, and Section~\ref{sec:problem} formulates the scheduling problem. Section~\ref{sec:method} presents the exact oracle, the gap decomposition, and the learners. Section~\ref{sec:setup} details the experimental setup, Section~\ref{sec:results} reports the results, Section~\ref{sec:discussion} discusses their implications and limitations, and Section~\ref{sec:conclusion} concludes the paper.
+
+\section{Related Work}
+\label{sec:related}
+\subsection{MAPC in IEEE 802.11}
+MAPC was studied for IEEE 802.11be and is a core feature of IEEE 802.11bn~\cite{lopez2019ieee,galati2024wifi8}. Co-TDMA divides a TXOP among APs in time, whereas Co-SR lets APs transmit simultaneously and controls the resulting interference through power and rate selection. \todo{Add analytical and simulation studies of Co-SR / Co-TDMA gains (verify citations).}
+
+\subsection{MARL for Wi-Fi channel access}
+Deep reinforcement learning has been applied to contention window adaptation, channel bonding, and spatial reuse. In the CTDE family, the centralized critic of multi-agent deep deterministic policy gradient (MADDPG)~\cite{lowe2017maddpg} and counterfactual multi-agent policy gradients (COMA)~\cite{foerster2018coma}, value factorization as in QMIX~\cite{rashid2018qmix}, and multi-agent PPO (MAPPO)~\cite{yu2022mappo} are standard. Yan et~al.~\cite{yan2025marl} apply MARL to IEEE 802.11bn channel access. Learned communication between agents, as in CommNet~\cite{sukhbaatar2016commnet} and TarMAC~\cite{das2019tarmac}, motivates exchanging compact messages between APs, and vector quantization (VQ)~\cite{vandenoord2017vqvae} bounds the message size in bits. \todo{Add Wi-Fi-specific MARL works on spatial reuse and MAPC (verify citations).}
+
+\subsection{Optimality references in learned scheduling}
+Reported gains of learned Wi-Fi schedulers are typically measured against heuristics. An optimality reference requires solving the joint scheduling problem, which is tractable per slot for the network sizes of interest because the number of joint decisions grows as the product of the per-AP choice counts. This paper exploits that tractability to obtain an exact per-slot reference.
+
+\section{System Model}
+\label{sec:system}
+\subsection{Network}
+The network consists of $N$ Wi-Fi APs indexed by $i \in \mathcal{N} = \{1,\dots,N\}$. AP $i$ serves the set $\mathcal{S}_i$ of STAs, with $|\mathcal{S}_i| \le K$. Time is divided into scheduling slots of duration $T_{\text{slot}} = 1$~ms, each corresponding to one TXOP. All APs transmit with power $P_{\text{tx}} = 15$~dBm, and the thermal noise power is $P_{\text{N}} = -95$~dBm.
+
+The received power from AP $j$ at a receiver at distance $d$ follows the indoor path-loss model
+\begin{equation}
+P_{\text{rx}}(d) = P_{\text{tx}} - 46.67 - 30 \log_{10} \max(d, 1) \quad [\text{dBm}].
+\label{eq:pathloss}
+\end{equation}
+
+\subsection{Traffic and queues}
+Each STA $k \in \mathcal{S}_i$ has a downlink queue $q_{i,k}(t) \in [0, Q_{\max}]$ with $Q_{\max} = 100$ packets. In every slot, $A_{i,k}(t) \sim \text{Poisson}(\lambda)$ packets arrive, and the queue evolves as
+\begin{equation}
+q_{i,k}(t+1) = \min\bigl(q_{i,k}(t) + A_{i,k}(t), Q_{\max}\bigr) - D_{i,k}(t),
+\label{eq:queue}
+\end{equation}
+where $D_{i,k}(t)$ is the number of packets delivered to STA $k$ in slot $t$. Arrivals occur only at STAs that exist in the topology.
+
+\subsection{Actions}
+In slot $t$, AP $i$ selects a target $u_i(t) \in \mathcal{S}_i \cup \{\varnothing\}$, where $\varnothing$ denotes silence, and an MCS index $m_i(t) \in \{0,\dots,M-1\}$ with $M = 16$. The set of transmitting APs is $\mathcal{A}(t) = \{ i : u_i(t) \ne \varnothing,\ q_{i,u_i(t)}(t) > 0 \}$.
+
+\subsection{Interference and link outcome}
+The SINR of the link from AP $i$ to STA $k = u_i(t)$ is
+\begin{equation}
+\gamma_{i}(t) = \frac{P_{\text{rx}}(d_{i,k})}{g(t) \sum_{j \in \mathcal{A}(t) \setminus \{i\}} P_{\text{rx}}(d_{j,k}) + P_{\text{N}}},
+\label{eq:sinr}
+\end{equation}
+where all powers are in linear scale and $g(t) \ge 1$ is an interference gain. The gain equals 1 in the first half of each episode and $g_{\text{h}} = 5$ in the second half, which models a degraded interference regime. MCS $m$ requires an SINR of at least $\theta_m = 2 + 1.5m$~dB and carries $c_m = 1 + \lfloor 1.5 m \rfloor$ packets per slot. Some STAs lie in the overlap region of several APs; the set $\mathcal{O}_{i,k}$ lists the APs whose coverage overlaps STA $k$ of AP $i$. A transmission to such a STA fails whenever any AP in $\mathcal{O}_{i,k}$ transmits in the same slot. The delivered packets are therefore
+\begin{equation}
+D_{i,k}(t) = \mathbb{1}\bigl[\gamma_i(t) \ge \theta_{m_i(t)},\ \mathcal{O}_{i,k} \cap \mathcal{A}(t) = \varnothing\bigr] \min\bigl(\tilde{q}_{i,k}(t), c_{m_i(t)}\bigr),
+\label{eq:delivery}
+\end{equation}
+for $k = u_i(t)$ and $i \in \mathcal{A}(t)$, where $\tilde{q}_{i,k}(t) = \min(q_{i,k}(t) + A_{i,k}(t), Q_{\max})$ is the backlog after arrivals, and $D_{i,k}(t) = 0$ otherwise.
+
+\subsection{Observations}
+At the start of slot $t$, AP $i$ observes the local vector
+\begin{equation}
+o_i(t) = \bigl[\boldsymbol{\beta}_i(t),\ \boldsymbol{\gamma}^{0}_i,\ \boldsymbol{\omega}_i,\ \bar{r}_i,\ \tau(t)\bigr] \in \mathbb{R}^{3K+2},
+\label{eq:obs}
+\end{equation}
+where $\boldsymbol{\beta}_i(t)$ holds the normalized queue lengths $q_{i,k}(t)/Q_{\max}$, $\boldsymbol{\gamma}^{0}_i$ holds the interference-free signal-to-noise ratios (SNRs) of the links normalized by 40~dB, $\boldsymbol{\omega}_i$ holds per-STA overlap indicators, $\bar{r}_i$ is the normalized mean received power from neighboring APs, and $\tau(t)$ indicates the interference regime. Entries of absent STAs are zero. The joint observation is $\mathbf{o}(t) = [o_1(t),\dots,o_N(t)]$.
+
+\section{Problem Formulation}
+\label{sec:problem}
+The slot throughput of the joint decision $(\mathbf{u}, \mathbf{m}) = (u_1,\dots,u_N,m_1,\dots,m_N)$ is
+\begin{equation}
+R(\mathbf{u}, \mathbf{m}; t) = \sum_{i \in \mathcal{A}(t)} D_{i,u_i}(t).
+\label{eq:slot_throughput}
+\end{equation}
+The scheduling objective over an episode of $T$ slots is to maximize the expected cumulative throughput
+\begin{equation}
+J(\pi) = \mathbb{E}_{\pi}\Bigl[\sum_{t=0}^{T-1} R\bigl(\mathbf{u}(t), \mathbf{m}(t); t\bigr)\Bigr],
+\label{eq:objective}
+\end{equation}
+where $\pi$ maps observations to joint decisions. Under CTDE, $\pi$ factorizes into local actors $\pi_i(u_i, m_i \mid o_i)$ that run at the APs, while a centralized critic $V_\phi(\mathbf{o})$ that uses the joint observation exists only during training. The problem is a decentralized partially observable Markov decision process~\cite{oliehoek2016dec}: no AP observes the queues, the decisions, or the realized interference of the other APs at execution time.
+
+\section{Exact Oracle, Gap Decomposition, and Learners}
+\label{sec:method}
+\subsection{Exact per-slot oracle}
+For a fixed target vector $\mathbf{u}$, the transmitting set $\mathcal{A}(t)$ and hence every SINR in~\eqref{eq:sinr} are determined, because the MCS choice does not change interference. The throughput-maximizing MCS of each link is therefore the highest index whose threshold the link SINR meets,
+\begin{equation}
+m_i^{\star}(\mathbf{u}) = \max\{ m : \theta_m \le \gamma_i(t) \},
+\label{eq:best_mcs}
+\end{equation}
+and the joint problem reduces to a search over $\mathbf{u}$ alone. The oracle enumerates every $\mathbf{u} \in \prod_{i} (\mathcal{S}_i^{+} \cup \{\varnothing\})$, where $\mathcal{S}_i^{+}$ contains the STAs of AP $i$ with a non-empty backlog $\tilde{q}_{i,k}(t)$, and returns
+\begin{equation}
+\mathbf{u}^{\star}(t) = \arg\max_{\mathbf{u}} R\bigl(\mathbf{u}, \mathbf{m}^{\star}(\mathbf{u}); t\bigr).
+\label{eq:oracle}
+\end{equation}
+The oracle observes $\tilde{q}_{i,k}(t)$, i.e., the arrivals of slot $t$, and is therefore a genie reference that no causal scheduler matches. For the topologies of this paper, the search covers at most 54 target vectors per slot. Algorithm~\ref{alg:oracle} summarizes the procedure.
+
+\begin{algorithm}
+\caption{Exact per-slot oracle}
+\label{alg:oracle}
+\KwIn{backlogs $\tilde{q}_{i,k}(t)$, interference gain $g(t)$, overlap sets $\mathcal{O}_{i,k}$}
+\KwOut{targets $\mathbf{u}^{\star}(t)$ and MCS indices $\mathbf{m}^{\star}(t)$}
+$R^{\star} \leftarrow -1$\;
+\ForEach{$\mathbf{u} \in \prod_i (\mathcal{S}_i^{+} \cup \{\varnothing\})$}{
+  $\mathcal{A} \leftarrow \{ i : u_i \ne \varnothing \}$\;
+  \ForEach{$i \in \mathcal{A}$}{
+    compute $\gamma_i$ by~\eqref{eq:sinr} and $m_i^{\star}(\mathbf{u})$ by~\eqref{eq:best_mcs}\;
+  }
+  $R \leftarrow R(\mathbf{u}, \mathbf{m}^{\star}(\mathbf{u}); t)$ by~\eqref{eq:delivery} and~\eqref{eq:slot_throughput}\;
+  \If{$R > R^{\star}$}{
+    $R^{\star} \leftarrow R$; $\mathbf{u}^{\star} \leftarrow \mathbf{u}$; $\mathbf{m}^{\star} \leftarrow \mathbf{m}^{\star}(\mathbf{u})$\;
+  }
+}
+\Return{$\mathbf{u}^{\star}, \mathbf{m}^{\star}$}\;
+\end{algorithm}
+
+The oracle maximizes the throughput of each slot given the current backlog. Over an episode, the cumulative arrivals $\sum_t \sum_{i,k} A_{i,k}(t)$ plus the initial backlog form a strict upper bound on~\eqref{eq:objective}, and the oracle is reported together with this arrival bound.
+
+\subsection{Reference schedulers}
+Co-TDMA activates one AP per slot in round-robin order over the APs with a non-empty backlog; the active AP serves its longest queue with the highest MCS that the interference-free SNR supports. The all-transmit SINR reference lets every AP transmit to its longest non-overlap queue with the highest MCS decodable when all APs transmit. Greedy and round-robin schedulers select the longest queue or cycle through STAs at every AP and adapt the MCS by ARF, which raises the MCS after 10 consecutive successes and lowers it after 2 consecutive failures or after a failed probe~\cite{kamerman1997arf}.
+
+\subsection{Learned schedulers}
+Both learners extend the target set of every AP with the silence action $\varnothing$; without it, a learned scheduler transmits whenever its selected queue is non-empty and cannot represent Co-TDMA. The 0-bit learner is MAPPO~\cite{yu2022mappo}: AP $i$ executes a local actor $\pi_{\theta_i}(u_i, m_i \mid o_i)$, and a centralized critic $V_\phi(\mathbf{o})$ is used only for training. The full-information learner (Central PPO) executes a single actor on $\mathbf{o}$ that selects the targets and MCS indices of all APs autoregressively, so that the decision of AP $i$ conditions on the decisions of APs $1,\dots,i-1$. Both learners are trained with PPO~\cite{schulman2017ppo} and generalized advantage estimation~\cite{schulman2016gae} on the normalized slot throughput $R/(10N)$.
+
+\subsection{Gap decomposition}
+Let $T^{\star}$ denote the episode throughput of the oracle and $T_{b,\ell}$ that of a learner with information level $b \in \{0, \infty\}$ and MCS control $\ell \in \{\text{learned}, \text{ARF}, \text{ideal}\}$. Under ideal control, the MCS of every transmitting AP equals $m_i^{\star}(\mathbf{u})$ for the targets that the learner selects, so the learner decides only $\mathbf{u}$. With $\rho_{b,\ell} = T_{b,\ell}/T^{\star}$, the loss of a learner decomposes into the link-adaptation gap $\Delta_{\text{LA}} = \rho_{b,\text{ideal}} - \rho_{b,\text{learned}}$, the information gap $\Delta_{\text{I}} = \rho_{\infty,\ell} - \rho_{0,\ell}$, and the residual optimization gap $\Delta_{\text{opt}} = 1 - \rho_{\infty,\text{ideal}}$. The coordination headroom of the network itself is $H = 1 - T_{\text{Co-TDMA}}/T^{\star}$.
+
+\section{Experimental Setup}
+\label{sec:setup}
+Six reference topologies are evaluated. T1 and T2 place three APs on a line with 20~m spacing and one STA per AP; T2 re-indexes T1 and yields identical results. T3 places four APs on a 30~m square grid with two overlap STAs. T4 uses the same grid with one STA per AP and no overlap. T5 clusters four APs at 10~m pitch, with AP~1 serving two STAs. T6 arranges four APs in a T-shape with three overlap STAs, one of which overlaps three APs. Every AP has $K = 4$ target slots, and absent STAs are masked.
+
+An episode lasts $T = 200$ slots, and the degraded interference regime starts at slot 100. Arrival rates range over $\lambda \in \{0.25, 0.5, 1, 2, 3, 5, 8\}$ packets per STA per slot. Evaluation uses three seeds per configuration with identical arrival sequences across schedulers.
+
+Both learners use two-layer actors and critics with 128 hidden units and hyperbolic tangent activations. Each PPO update uses four episodes (800 transitions), four epochs over four minibatches, a clip ratio of 0.2, a discount factor of 0.99, a generalized advantage estimation parameter of 0.95, a learning rate of $3 \times 10^{-4}$ with linear decay, and an entropy coefficient of 0.01 with linear decay. Learners train for 1000 episodes with five seeds per configuration and are evaluated with both the most probable action (argmax) and sampled actions. Learner evaluation covers T1 and T3--T6 at $\lambda \in \{5, 8\}$.
+
+\section{Results}
+\label{sec:results}
+\subsection{Coordination headroom}
+Fig.~\ref{fig:headroom}(a) shows that Co-TDMA attains at least 99\% of the oracle in all topologies up to $\lambda = 2$, where the oracle itself attains at least 98\% of the arrival bound. In this regime the network delivers almost every arriving packet, and the only coordination required is to avoid simultaneous transmissions that fail. The headroom $H$ opens at high load: at $\lambda = 5$, the oracle exceeds Co-TDMA by 25\% in T3, 12\% in T5, and 10\% in T6, and at $\lambda = 8$ the gap reaches 34\% in T3 and 30\% in T4. These gains come from Co-SR, i.e., simultaneous transmissions of APs whose links tolerate the mutual interference.
+
+Fig.~\ref{fig:headroom}(b) shows that the all-transmit SINR reference is not an upper bound. It attains 100\% of the oracle in the sparse topology T4 at low and moderate load but only 25--59\% in T5 and 36--57\% in T6 across all loads, because forcing every AP to transmit removes the option of silence.
+
+\begin{figure}
+\centering
+\includegraphics[width=\columnwidth]{fig_headroom}
+\caption{Throughput relative to the exact per-slot oracle versus the arrival rate, mean over three seeds with standard deviation. (a) Co-TDMA. (b) All-transmit SINR reference. T2 coincides with T1 and is omitted.}
+\label{fig:headroom}
+\end{figure}
+
+\subsection{Gap decomposition of learned schedulers}
+Table~\ref{tab:load5} reports all schedulers at $\lambda = 5$ as mean and standard deviation over five seeds, with sampled actions for the learners. At this load the headroom $H$ is 0.3\% in T1, 20.5\% in T3, 0.7\% in T4, 11.3\% in T5, and 9.7\% in T6, so T1 and T4 act as controls in which Co-TDMA is already optimal.
+
+\begin{table*}
+\caption{THROUGHPUT AS PERCENTAGE OF THE EXACT ORACLE AT $\lambda = 5$ (MEAN $\pm$ STANDARD DEVIATION OVER FIVE SEEDS, SAMPLED ACTIONS FOR LEARNERS)}
+\label{tab:load5}
+\centering
+\begin{tabular}{lccccc}
+\toprule
+Scheduler & T1 & T3 & T4 & T5 & T6 \\
+\midrule
+\input{figures/table_load5_rows.tex}
+\bottomrule
+\end{tabular}
+\end{table*}
+
+Three observations follow from Table~\ref{tab:load5}. First, the link-adaptation gap $\Delta_{\text{LA}}$ is the largest controllable loss: ideal MCS control raises MAPPO by 23.6, 17.3, 28.2, 9.0, and 15.1 percentage points and Central PPO by 18.0, 19.4, 31.4, 10.9, and 15.6 points in T1, T3, T4, T5, and T6. ARF does not substitute for ideal control; its effect on MAPPO ranges from $-7.8$ points in T5 to $+13.6$ points in T4. Second, the information gap $\Delta_{\text{I}}$ under ideal MCS control is 7.9, 2.9, $-0.2$, 6.3, and 1.1 points, i.e., at most 8 points. Third, the residual optimization gap $\Delta_{\text{opt}}$ is 7.5\%, 22.2\%, 2.6\%, 28.1\%, and 32.2\%. The full-information learner with ideal link adaptation therefore stays below Co-TDMA in every topology: by 1.7 and 1.9 points in T3 and T4, and by 7.2, 16.8, and 22.5 points in T1, T5, and T6.
+
+The argmax policy of the 0-bit learner falls below its sampled policy and varies strongly across seeds (e.g., $51.7 \pm 17.9$\% versus $65.6 \pm 4.0$\% in T5 with ideal MCS control).
+
+Table~\ref{tab:load8} repeats the evaluation at $\lambda = 8$, where the headroom $H$ is 3.2\% in T1, 25.1\% in T3, 23.5\% in T4, 4.4\% in T5, and 11.6\% in T6. The link-adaptation gap persists: ideal MCS control raises MAPPO by 18.7, 18.9, 27.4, 7.8, and 16.1 points and Central PPO by 23.4, 16.0, 21.9, 5.4, and 10.2 points in T1, T3, T4, T5, and T6, while the effect of ARF on MAPPO ranges from $-12.1$ points in T5 to $+11.9$ points in T4. The information gap under ideal MCS control is 9.3, 0.8, 0.0, $-1.2$, and $-2.3$ points. In T3 and T4, the two cases with the largest headroom in this study, the learners with ideal MCS control exceed Co-TDMA: MAPPO by 12.6 and 14.1 points and Central PPO by 13.4 and 14.1 points, which corresponds to 53\% and 60\% of the headroom for Central PPO. In T1, T5, and T6, Central PPO with ideal MCS control stays 11.1, 22.2, and 12.5 points below Co-TDMA.
+
+\begin{table*}
+\caption{THROUGHPUT AS PERCENTAGE OF THE EXACT ORACLE AT $\lambda = 8$ (MEAN $\pm$ STANDARD DEVIATION OVER FIVE SEEDS, SAMPLED ACTIONS FOR LEARNERS)}
+\label{tab:load8}
+\centering
+\begin{tabular}{lccccc}
+\toprule
+Scheduler & T1 & T3 & T4 & T5 & T6 \\
+\midrule
+\input{figures/table_load8_rows.tex}
+\bottomrule
+\end{tabular}
+\end{table*} Local actors with no shared state and nearly constant observations at saturation select the same action at every AP under argmax execution, and randomization is their only mechanism for time sharing.
+
+\section{Discussion}
+\label{sec:discussion}
+The results separate two questions that evaluations of learned MAPC schedulers commonly merge. The first concerns the network: up to moderate load, Co-TDMA is within 1\% of the oracle, so a learned scheduler cannot demonstrate a coordination gain there, and evaluations at such loads measure the ability to avoid failed simultaneous transmissions. The second concerns the learner: at high load the headroom is real, and the tested PPO learners with ideal link adaptation realize part of it only where it is large: they exceed Co-TDMA in T3 and T4 at $\lambda = 8$, where the headroom is 25.1\% and 23.5\%, and stay below Co-TDMA in all other evaluated cases, including T3 at $\lambda = 5$ with a headroom of 20.5\%.
+
+These findings set the agenda for learned inter-AP messages. An information gap of at most 9 percentage points across both loads bounds what any message exchange contributes to the present learners, whereas the link-adaptation and optimization gaps are larger. Measuring the throughput of learned schedulers as a function of the message size in bits is meaningful only after the full-information learner approaches the oracle. \todo{Discuss candidate remedies: action decomposition, imitation of the oracle, curriculum over load.}
+
+The study has limitations. The oracle is exact per slot but myopic across slots, and it observes the arrivals of the current slot. The channel model is deterministic path loss without fading, and the degraded interference regime is a fixed gain. The learner results cover two high-load operating points with 1000 training episodes. \todo{Add fading before submission.}
+
+\section{Conclusion}
+\label{sec:conclusion}
+This paper introduced an exact per-slot oracle for IEEE 802.11bn MAPC scheduling and used it to decompose the throughput loss of CTDE schedulers. Co-TDMA attains at least 99\% of the oracle up to 2 packets per STA per slot, and coordination gains of up to 34\% beyond Co-TDMA appear only at high load. The all-transmit SINR reference attains as little as 25\% of the oracle and is not an upper bound. At high load, ideal link adaptation raises PPO learners by 5--31 percentage points, whereas full inter-AP information changes their throughput by at most 9 points; with ideal link adaptation, the learners exceed Co-TDMA only in the two cases with the largest coordination headroom. Future learned schedulers therefore benefit more from better rate selection and policy optimization than from richer inter-AP messages.
+
+\section*{Acknowledgment}
+\todo{Acknowledgment.}
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\begin{biography}{\todo{Author name}}
+\todo{Biography.}
+\end{biography}
+
+\EOD
+
+\end{document}

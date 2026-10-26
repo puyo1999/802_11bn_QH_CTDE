@@ -1,0 +1,5 @@
+# configs/qh_ctde_vq_b6.yaml — T6 C4 codebook-size test (harsh tuning H6). Only vq_bits differs.
+_base_: qh_ctde.yaml
+
+agent:
+  vq_bits: 6

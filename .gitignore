@@ -2,9 +2,17 @@ __pycache__/
 *.pyc
 *.pyo
 .env
+.venv/
 runs/
 results/
+plots/
 *.pt
 *.pth
+*.npy
 wandb/
 .DS_Store
+.pytest_cache/
+*.egg-info/
+*.bak
+*.bk
+*.zip

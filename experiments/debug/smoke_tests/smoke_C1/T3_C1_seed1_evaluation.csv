@@ -1,0 +1,2 @@
+﻿topology,condition_id,seed,evaluation_seed,throughput_packets,blocked_events,evaluation_steps,blocked_events_per_step,backhaul_bits,backhaul_bits_per_step,overlap_sta_selections_eval,overlap_sta_final_queue_sum,fairness_mean
+T3,C1,1,10001,1646.0,0,200,0.0,0,0.0,0.0,,
