@@ -122,7 +122,67 @@ def schedule_value(env, stas: list[int], queues: np.ndarray, harsh: bool, comput
     return total, mcs
 
 
+def link_tables(env, harsh: bool):
+    """이번 슬롯의 링크 전력 표 (페이딩, soft 이득, harsh 이득 반영).
+
+    signal[i, k]       : AP i -> 자기 STA k 수신 전력 (mW)
+    interference[j,i,k]: AP j 가 전송할 때 (i, k) 수신기에 주는 간섭 전력 (mW, harsh 이득 포함)
+    blocks[j, i, k]    : hard 모드에서 AP j 의 전송이 (i, k) 전송을 막는지
+    """
+    inter, policy = env.interference, env.overlap_policy
+    n, k_max = env.n_aps, env.k_stas
+    signal = np.zeros((n, k_max))
+    interference = np.zeros((n, n, k_max))
+    blocks = np.zeros((n, n, k_max), dtype=bool)
+    gain = inter.harsh_interference_gain if harsh else 1.0
+    saved = (policy.blocked_count, policy.soft_penalty_count)
+    try:
+        for i in range(n):
+            for k in range(len(env.topo.sta_positions[i])):
+                pos = inter.sta_position(i, k)
+                signal[i, k] = inter.rx_power(i, pos) * inter._fading(i, i, k)
+                for j in range(n):
+                    if j == i:
+                        continue
+                    interference[j, i, k] = (inter.rx_power(j, pos) * inter._fading(j, i, k)
+                                             * policy.interference_gain(i, k, j, [j]) * gain)
+                    blocks[j, i, k] = policy.blocks_transmission(i, k, [j])
+    finally:
+        policy.blocked_count, policy.soft_penalty_count = saved
+    return signal, interference, blocks
+
+
 def exact_oracle_actions(env) -> np.ndarray:
+    """모든 (STA | mute) 조합을 numpy 로 한 번에 평가한다. exact_oracle_actions_reference 와 같은 해."""
+    harsh = prospective_harsh(env)
+    queues = np.clip(env.queues() + env.peek_arrivals(), 0, env.queue_max_size)
+    options = [[-1] + [k for k in range(len(env.topo.sta_positions[i])) if queues[i, k] > 0]
+               for i in range(env.n_aps)]
+    combos = np.array(list(itertools.product(*options)), dtype=np.int64)       # (C, N)
+    signal, interference, blocks = link_tables(env, harsh)
+    tx = combos >= 0
+    sta = np.where(tx, combos, 0)
+    thresholds = np.asarray(env.mcs_table.sinr_thresholds)
+    capacities = np.asarray(env.mcs_table.capacities, dtype=float)
+    total = np.zeros(len(combos))
+    mcs = np.zeros(combos.shape, dtype=np.int64)
+    for i in range(env.n_aps):
+        s = sta[:, i]
+        others = tx.copy()
+        others[:, i] = False
+        interf = (interference[:, i, s].T * others).sum(axis=1) + env.interference.noise_mw
+        sinr_db = 10.0 * np.log10(np.maximum(signal[i, s] / interf, 1e-30))
+        m = (sinr_db[:, None] >= thresholds[None, :]).sum(axis=1) - 1
+        blocked = (blocks[:, i, s].T & others).any(axis=1)
+        ok = tx[:, i] & ~blocked & (m >= 0)
+        mcs[:, i] = np.where(ok, m, 0)
+        total += np.where(ok, np.minimum(queues[i, s], capacities[np.maximum(m, 0)]), 0.0)
+    best = int(np.argmax(total))
+    return _flat(env, combos[best].tolist(), mcs[best].tolist())
+
+
+def exact_oracle_actions_reference(env) -> np.ndarray:
+    """조합마다 interference.compute 를 부르는 원본 구현 (검증용)."""
     harsh = prospective_harsh(env)
     queues = np.clip(env.queues() + env.peek_arrivals(), 0, env.queue_max_size)
     options = [[-1] + [k for k in range(len(env.topo.sta_positions[i])) if queues[i, k] > 0]
