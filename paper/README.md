@@ -18,6 +18,7 @@ items still open are marked in red with `\todo{...}`.
 | Paper item | Source | Produced by |
 |---|---|---|
 | Fig. 1 (headroom vs load) | `experiments/oracle_gap_results_envv2_headroom/oracle_gap.csv` (7 loads × 6 topologies × 3 seeds) | `experiments/oracle_gap.py --learners --loads 0.25 0.5 1 2 3 5 8 --seeds 3` |
+| Fig. `fig_learning_curves` (training convergence, T3/T6) | training curves in `experiments/oracle_gap_results_envv2_full/jobs/*.json` | `paper/figures/make_figures.py` |
 | Tables I–II (gap decomposition, λ = 5 and 8) | `experiments/oracle_gap_results_envv2_full/jobs/*.json` (5 seeds, 1000 episodes) | `experiments/oracle_gap.py --loads 5 8 --topos T1 T3 T4 T5 T6 --seeds 5 --learners mappo central --mcs learned arf genie --episodes 1000 --out experiments/oracle_gap_results_envv2_full` |
 
 ## Status
@@ -33,7 +34,13 @@ items still open are marked in red with `\todo{...}`.
   compared with the deterministic channel on the same seeds; baseline headroom sweep under fading in
   `experiments/oracle_gap_results_envv2_fading_headroom/`.
 
+- Significance: differences from Co-TDMA are reported with t-statistics over the five per-seed differences
+  (T3 at λ = 5 is not significant, t = −0.93). Learned-MCS variants are still improving at 1000 episodes
+  (episodes 900–999 vs 500–599: +9.7% MAPPO, +9.6% Central PPO), so Δ_LA is reported at a fixed training budget.
+- Oracle runtime (Python, one core, 2.8 GHz Xeon, λ = 5): 1.3 / 3.0 / 5.8 ms per slot in T5 / T3 / T6.
+
 ## Open items before submission
 
 - Random-topology generalization (plan: `docs/random_topology_experiment_plan.md`).
-- Author, affiliation, funding, biography.
+- Author, affiliation, funding, biography, acknowledgment.
+- Code-availability statement (repository URL, public or not).

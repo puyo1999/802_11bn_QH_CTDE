@@ -130,6 +130,55 @@ def fading_table(seeds=(0, 1, 2)):
         handle.write("\n".join(lines) + "\n")
 
 
+def fig_learning_curves(window=25):
+    """Training throughput per episode (moving average, mean +- std over seeds) relative to the
+    mean exact-oracle throughput on the evaluation seeds of the same configuration."""
+    jobs = defaultdict(list)
+    oracle, cotdma = defaultdict(list), defaultdict(list)
+    for path in glob.glob(os.path.join(FULL_JOBS, "*.json")):
+        with open(path) as handle:
+            j = json.load(handle)
+        kind, load, topo = j["job"][:3]
+        if kind == "learner":
+            jobs[(load, topo, j["job"][4], j["job"][5])].append(np.asarray(j["curve"], dtype=float))
+        else:
+            for r in j["rows"]:
+                if r["policy"] == "exact_oracle":
+                    oracle[(load, topo)].append(r["throughput"])
+                elif r["policy"] == "co_tdma":
+                    cotdma[(load, topo)].append(r["throughput"])
+    series = [("mappo", "learned", "MAPPO, MCS learned", "#2a78d6", "--"),
+              ("mappo", "genie", "MAPPO, MCS ideal", "#2a78d6", "-"),
+              ("central", "learned", "Central PPO, MCS learned", "#eb6834", "--"),
+              ("central", "genie", "Central PPO, MCS ideal", "#eb6834", "-")]
+    panels = [(5.0, "T3"), (5.0, "T6"), (8.0, "T3"), (8.0, "T6")]
+    kernel = np.ones(window) / window
+    fig, axes = plt.subplots(2, 2, figsize=(7.2, 4.8), sharex=True, sharey=True)
+    for ax, (load, topo) in zip(axes.flat, panels):
+        ref = np.mean(oracle[(load, topo)])
+        for key, mcs, label, color, ls in series:
+            curves = np.stack([np.convolve(c, kernel, mode="valid") for c in jobs[(load, topo, key, mcs)]])
+            pct = 100 * curves / ref
+            x = np.arange(window, window + pct.shape[1])
+            ax.plot(x, pct.mean(0), color=color, linestyle=ls, linewidth=1.6, label=label)
+            ax.fill_between(x, pct.mean(0) - pct.std(0), pct.mean(0) + pct.std(0), color=color, alpha=0.12,
+                            linewidth=0)
+        ax.axhline(100 * np.mean(cotdma[(load, topo)]) / ref, color=INK2, linewidth=1.0, linestyle=":",
+                   label="Co-TDMA")
+        ax.set_title(f"{topo}, λ = {load:g}", loc="left", fontsize=9, color=INK)
+        ax.set_ylim(0, 105)
+        style(ax)
+    for ax in axes[1]:
+        ax.set_xlabel("Training episode", color=INK2)
+    for ax in axes[:, 0]:
+        ax.set_ylabel("Throughput (% of oracle)", color=INK2)
+    handles, labels = axes[0, 0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="lower center", ncol=3, fontsize=8, frameon=False)
+    fig.tight_layout(rect=(0, 0.09, 1, 1))
+    for ext in ("pdf", "png"):
+        fig.savefig(os.path.join(OUT, f"fig_learning_curves.{ext}"), dpi=300)
+
+
 def fig_topologies():
     """The six reference topologies: APs, associated STAs, and overlap STAs."""
     import sys
@@ -181,6 +230,7 @@ def fig_topologies():
 if __name__ == "__main__":
     fig_topologies()
     fig_headroom()
+    fig_learning_curves()
     full_table(5.0)
     full_table(8.0)
     fading_table()
