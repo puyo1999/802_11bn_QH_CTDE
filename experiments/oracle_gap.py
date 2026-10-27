@@ -61,7 +61,7 @@ def make_oracle_env(args, topo, load: float):
     traffic = dict(experiment.env.traffic, traffic_load_ratio=0.0,
                    poisson_lambda_min=load, poisson_lambda_max=load, init_fill_ratio=0.0)
     env_cfg = replace(experiment.env, impl="qh_v2", max_episodes=args.episode_len,
-                      traffic=traffic, allow_mute=True)
+                      traffic=traffic, allow_mute=True, fading={"model": args.fading})
     return make_env(env_cfg, topology=topo, topology_file=experiment.topology_file)
 
 
@@ -147,6 +147,8 @@ def main() -> None:
     parser.add_argument("--learners", nargs="*", default=["mappo"], choices=list(LEARNERS))
     parser.add_argument("--mcs", nargs="+", default=["learned"], choices=list(MCS_CONTROL),
                         help="MCS control for learners: learned (action head), arf, genie")
+    parser.add_argument("--fading", default="none", choices=["none", "rayleigh"],
+                        help="small-scale fading: none (deterministic path loss) or per-slot Rayleigh block fading")
     parser.add_argument("--episodes", type=int, default=600)
     parser.add_argument("--episodes-per-update", type=int, default=4)
     parser.add_argument("--out", default="experiments/oracle_gap_results_envv2")

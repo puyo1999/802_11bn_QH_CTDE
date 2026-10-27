@@ -65,6 +65,9 @@ class InterferenceModel:
         self.tx_power_dbm = tx_power_dbm
         self.noise_mw = dbm_to_mw(noise_dbm)
         self.harsh_interference_gain = harsh_interference_gain
+        # 슬롯별 소규모 페이딩 전력 이득 fading_gain[tx_ap, serving_ap, sta] (평균 1).
+        # None 이면 결정적 경로손실만 쓴다. 환경이 슬롯마다 갱신한다.
+        self.fading_gain: np.ndarray | None = None
 
     # ── 좌표 조회 ────────────────────────────────────────────────
     _ISOLATED_POSITION = np.array([9999.0, 9999.0], dtype=np.float32)
@@ -106,7 +109,7 @@ class InterferenceModel:
         def power_of(j: int) -> float:
             return self.tx_power_dbm if tx_powers is None else tx_powers[j]
 
-        rx_mw = self.rx_power(ap_idx, sta_pos, power_of(ap_idx))
+        rx_mw = self.rx_power(ap_idx, sta_pos, power_of(ap_idx)) * self._fading(ap_idx, ap_idx, sta_idx)
 
         # 1. 중첩 제약 판정 (hard 모드)
         active_peers = self.overlap.active_peers(ap_idx, sta_idx, transmitting)
@@ -115,7 +118,7 @@ class InterferenceModel:
         # 2. 동시 전송 AP의 간섭 누적 (soft 모드 이득 포함)
         interference_mw = 0.0
         for j in transmitting:
-            contribution = self.rx_power(j, sta_pos, power_of(j))
+            contribution = self.rx_power(j, sta_pos, power_of(j)) * self._fading(j, ap_idx, sta_idx)
             contribution *= self.overlap.interference_gain(ap_idx, sta_idx, j, transmitting)
             interference_mw += contribution
 
@@ -134,8 +137,15 @@ class InterferenceModel:
             active_overlap_peers=active_peers,
         )
 
+    def _fading(self, tx_ap: int, ap_idx: int, sta_idx: int) -> float:
+        """tx_ap 에서 (ap_idx 의 sta_idx) 수신기로 가는 링크의 이번 슬롯 페이딩 이득."""
+        gain = self.fading_gain
+        if gain is None or not 0 <= sta_idx < gain.shape[2]:
+            return 1.0
+        return float(gain[tx_ap, ap_idx, sta_idx])
+
     def link_sinr_db(self, ap_idx: int, sta_idx: int) -> float:
-        """간섭 없는 조건의 링크 SINR(잡음 대비). 관측 벡터의 채널 품질 특징에 사용한다."""
+        """간섭 없는 조건의 평균 링크 SNR(잡음 대비, 페이딩 제외). 관측 벡터의 채널 품질 특징에 사용한다."""
         sta_pos = self.sta_position(ap_idx, sta_idx)
         rx_mw = self.rx_power(ap_idx, sta_pos)
         return mw_to_db(rx_mw / self.noise_mw)

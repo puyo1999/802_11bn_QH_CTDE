@@ -32,7 +32,7 @@ _COMMON_KWARGS = {
 _IMPL_EXTRA_KWARGS: dict[str, set[str]] = {
     "qh_v2":  {"k_stas", "n_mcs", "tx_power_dbm", "noise_dbm",
                "harsh_mode_enabled", "harsh_start_ratio", "harsh_interference_gain",
-               "overlap", "reward", "traffic", "allow_mute"},
+               "overlap", "reward", "traffic", "allow_mute", "fading"},
     "qh":     {"k_stas", "k_stas_per_ap", "poisson_lambda", "poisson_arrival_rate", "traffic_type",
                "allow_mute"},
     "ctde":   {"poisson_arrival_rate", "traffic_type"},
@@ -75,6 +75,7 @@ def build_env_kwargs(cfg: EnvConfig, seed_offset: int = 0) -> dict[str, Any]:
         "overlap": cfg.overlap,
         "reward": cfg.reward,
         "allow_mute": cfg.allow_mute,
+        "fading": cfg.fading,
     }
     return {k: v for k, v in candidates.items() if k in allowed}
 
