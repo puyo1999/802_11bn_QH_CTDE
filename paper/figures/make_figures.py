@@ -19,6 +19,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 OUT = os.path.dirname(os.path.abspath(__file__))
 HEADROOM = os.path.join(ROOT, "experiments/oracle_gap_results_envv2_headroom/oracle_gap.csv")
 FULL_JOBS = os.path.join(ROOT, "experiments/oracle_gap_results_envv2_full/jobs")
+RANDOM_STAGE1 = os.path.join(ROOT, "experiments/oracle_gap_results_random_stage1/oracle_gap.csv")
+RANDOM_TOPOS = os.path.join(ROOT, "configs/topologies_random.yaml")
+CO_TDMA_CAPACITY = 23.0  # packets per slot: one link at the highest MCS
 
 INK, INK2, GRID = "#0b0b0b", "#52514e", "#e5e4e0"
 # Reference categorical slots in fixed order, keyed by topology (never by rank).
@@ -227,10 +230,68 @@ def fig_topologies():
         fig.savefig(os.path.join(OUT, f"fig_topologies.{ext}"), dpi=300)
 
 
+def fig_random_headroom():
+    """Headroom H = 1 - Co-TDMA / oracle versus normalized offered load rho = lambda * n_STA / 23."""
+    import yaml
+    from src.envs.topology_registry import get_registry
+
+    design = {t: spec["design"] for t, spec in yaml.safe_load(open(RANDOM_TOPOS))["topologies"].items()}
+    data = ratio_by_load(load(RANDOM_STAGE1), "co_tdma", "exact_oracle")
+    n_colors = {3: "#2a78d6", 4: "#eb6834", 5: "#1baf7a", 6: "#eda100"}
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 2.9), gridspec_kw={"width_ratios": [1.6, 1]})
+    ax = axes[0]
+    for n, color in n_colors.items():
+        xs, ys = [], []
+        for topo, (loads, mean, _) in data.items():
+            if design[topo]["n_aps"] != n:
+                continue
+            n_sta = n * design[topo]["stas_per_ap"]
+            xs += [lam * n_sta / CO_TDMA_CAPACITY for lam in loads]
+            ys += [100 * (1 - m) for m in mean]
+        ax.scatter(xs, ys, s=7, color=color, alpha=0.7, linewidths=0, label=f"N = {n}")
+    fixed = ratio_by_load(load(HEADROOM), "co_tdma", "exact_oracle")
+    registry = get_registry()
+    xs, ys = [], []
+    for topo in TOPO_STYLE:
+        n_sta = sum(len(s) for s in registry.get(topo).sta_positions)
+        loads, mean, _ = fixed[topo]
+        xs += [lam * n_sta / CO_TDMA_CAPACITY for lam in loads]
+        ys += [100 * (1 - m) for m in mean]
+    ax.scatter(xs, ys, s=16, facecolors="none", edgecolors=INK, linewidths=0.8, label="T1, T3–T6")
+    ax.axvline(1.0, color=INK2, linewidth=0.8, linestyle=":")
+    ax.set_xscale("log")
+    ax.set_xticks([0.05, 0.1, 0.2, 0.5, 1, 2, 5], ["0.05", "0.1", "0.2", "0.5", "1", "2", "5"])
+    ax.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
+    ax.set_xlabel("Offered load / Co-TDMA capacity ρ", color=INK2)
+    ax.set_ylabel("Headroom H (%)", color=INK2)
+    ax.set_title("(a) Headroom versus offered load", loc="left", fontsize=9, color=INK)
+    ax.legend(fontsize=7, frameon=False, loc="upper left")
+    style(ax)
+    ax = axes[1]
+    for k, lam in enumerate((5.0, 8.0)):
+        groups = [[100 * (1 - data[t][1][data[t][0].index(lam)]) for t in data if design[t]["n_aps"] == n]
+                  for n in n_colors]
+        pos = np.arange(len(n_colors)) + (k - 0.5) * 0.36
+        box = ax.boxplot(groups, positions=pos, widths=0.3, patch_artist=True, showfliers=False,
+                         medianprops={"color": INK, "linewidth": 1})
+        for patch in box["boxes"]:
+            patch.set(facecolor=("#2a78d6", "#eb6834")[k], alpha=0.6, linewidth=0.6)
+        ax.plot([], [], color=("#2a78d6", "#eb6834")[k], linewidth=6, alpha=0.6, label=f"λ = {lam:g}")
+    ax.set_xticks(range(len(n_colors)), [str(n) for n in n_colors])
+    ax.set_xlabel("Number of APs N", color=INK2)
+    ax.set_title("(b) Headroom by network size", loc="left", fontsize=9, color=INK)
+    ax.legend(fontsize=7, frameon=False, loc="upper left")
+    style(ax)
+    fig.tight_layout()
+    for ext in ("pdf", "png"):
+        fig.savefig(os.path.join(OUT, f"fig_random_headroom.{ext}"), dpi=300)
+
+
 if __name__ == "__main__":
     fig_topologies()
     fig_headroom()
     fig_learning_curves()
+    fig_random_headroom()
     full_table(5.0)
     full_table(8.0)
     fading_table()
