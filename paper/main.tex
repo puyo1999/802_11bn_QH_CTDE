@@ -17,15 +17,15 @@
 
 \title{How Far Are Learned Multi-AP Schedulers From the Optimum? An Exact-Oracle Gap Analysis of Multi-Agent Reinforcement Learning for IEEE 802.11bn}
 \author{\uppercase{Pyoungyun Kim}\authorrefmark{1}, \IEEEmembership{Student Member, IEEE}, and \uppercase{Taeyoon Kim}\authorrefmark{2}}
-\address[1]{Visual Display Division, Samsung Electronics, \todo{City Postal code}, Republic of Korea}
-\address[2]{School of Mobile System Engineering, Dankook University, \todo{City Postal code}, Republic of Korea}
+\address[1]{Korea University, 145 Anam-ro, Seongbuk-gu, Seoul 02841, Republic of Korea}
+\address[2]{School of Mobile System Engineering, Dankook University, Yongin 16890, Republic of Korea}
 \tfootnote{\todo{Funding statement}}
 
 \markboth
 {P. Kim \emph{et al.}: Exact-Oracle Gap Analysis of Learned Multi-AP Schedulers}
 {P. Kim \emph{et al.}: Exact-Oracle Gap Analysis of Learned Multi-AP Schedulers}
 
-\corresp{Corresponding author: Taeyoon Kim (e-mail: \todo{e-mail}).}
+\corresp{Corresponding author: Taeyoon Kim (e-mail: 2000kty@dankook.ac.kr).}
 
 \begin{abstract}
 Multi-access point coordination (MAPC) in IEEE 802.11bn lets neighboring access points (APs) decide jointly which AP serves which station (STA). Learned schedulers based on multi-agent reinforcement learning (MARL) with centralized training and decentralized execution (CTDE) are usually compared with heuristics whose distance from the optimum is unknown. This paper introduces an exact per-slot oracle that enumerates every joint choice of target STA or silence across APs with the highest decodable modulation and coding scheme (MCS) per link, and uses it to decompose the loss of learned schedulers. Across six topologies and arrival rates from 0.25 to 8 packets per STA per slot, coordinated time division multiple access (Co-TDMA) attains at least 99\% of the oracle up to 2 packets per STA per slot, and the oracle exceeds Co-TDMA by up to 34\% only at high load. A signal-to-interference-plus-noise ratio (SINR) reference that lets all APs transmit attains as little as 25\% of the oracle. At high load and over five training seeds, ideal link adaptation raises proximal policy optimization (PPO) agents by 5--31 percentage points, whereas full information from every AP changes their throughput by $-2$ to $+9$ points. With ideal link adaptation, the learners exceed Co-TDMA by 13--14 points in the two cases with the largest coordination headroom and do not exceed it in any other case. Under per-slot Rayleigh fading, the headroom and the link-adaptation gap grow while the information gap stays within $\pm 5$ points. The bottleneck is therefore rate selection and policy optimization, not inter-AP information.
