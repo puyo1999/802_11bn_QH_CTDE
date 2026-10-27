@@ -173,12 +173,12 @@ Let $\Theta^{\star}$ denote the episode throughput of the oracle and $\Theta_{b,
 
 \section{Experimental Setup}
 \label{sec:setup}
-Six reference topologies are evaluated. T1 and T2 place three APs on a line with 20~m spacing and one STA per AP; T2 re-indexes T1 and yields identical results. T3 places four APs on a 30~m square grid with two overlap STAs. T4 uses the same grid with one STA per AP and no overlap. T5 clusters four APs at 10~m pitch, with AP~1 serving two STAs. T6 arranges four APs in a T-shape with three overlap STAs, one of which overlaps three APs. Every AP has $K = 4$ target slots, and absent STAs are masked. Fig.~\ref{fig:topologies} shows the six topologies.
+Six reference topologies are evaluated. T1 and T2 place three APs on a line with 20~m spacing and one STA per AP; T2 re-indexes T1 and yields identical results. T3 places four APs on a 30~m square grid with two overlap STAs. T4 uses the same grid with one STA per AP and no overlap. T5 clusters four APs at 10~m pitch, with AP~1 serving two STAs. T6 arranges four APs in a T-shape with three overlap STAs, one of which overlaps three APs. Every AP has $K = 4$ target slots, and absent STAs are masked. Fig.~\ref{fig:topologies} shows T1 and T3--T6 on a common scale, together with one of the random topologies of the generalization study.
 
 \begin{figure*}
 \centering
-\includegraphics[width=0.9\textwidth]{fig_topologies}
-\caption{Reference topologies T1--T6. Solid lines connect each STA to its serving AP; dashed lines connect each overlap STA to the APs whose coverage it overlaps.}
+\includegraphics[width=\textwidth]{fig_topologies}
+\caption{Evaluated topologies on a common scale: T1, T3--T6, and the random topology R052. Solid lines connect each STA to its serving AP, and dashed lines connect each overlap STA to the APs whose coverage it overlaps. The background shows the best SINR at each location when all APs transmit without the interference gain $g(t)$, and the dashed contour marks 2~dB, the threshold of the lowest MCS. Panel titles give the number of APs $N$, the number of STAs, and the coordination headroom $H$ at $\lambda = 8$. T2 re-indexes T1 and is omitted.}
 \label{fig:topologies}
 \end{figure*}
 
