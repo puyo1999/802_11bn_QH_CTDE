@@ -16,16 +16,17 @@
 \doi{10.1109/ACCESS.2026.0000000}
 
 \title{How Far Are Learned Multi-AP Schedulers From the Optimum? An Exact-Oracle Gap Analysis of Multi-Agent Reinforcement Learning for IEEE 802.11bn}
-\author{\uppercase{Pyoungyun Kim}\authorrefmark{1}, \IEEEmembership{Student Member, IEEE}, and \uppercase{Taeyoon Kim}\authorrefmark{2}}
-\address[1]{Visual Display Division, Samsung Electronics, \todo{City Postal code}, Republic of Korea}
-\address[2]{School of Mobile System Engineering, Dankook University, \todo{City Postal code}, Republic of Korea}
-\tfootnote{\todo{Funding statement}}
+\author{\uppercase{Pyoungyun Kim}\authorrefmark{1,2}, \IEEEmembership{Student Member, IEEE}, and \uppercase{Taeyoon Kim}\authorrefmark{3}}
+\address[1]{Korea University, 145 Anam-ro, Seongbuk-gu, Seoul 02841, Republic of Korea}
+\address[2]{Visual Display Division, Samsung Electronics, Republic of Korea}
+\address[3]{School of Mobile System Engineering, Dankook University, Yongin 16890, Republic of Korea}
+% Funding statement: none yet. Add \tfootnote{This work was supported by ...} when available.
 
 \markboth
 {P. Kim \emph{et al.}: Exact-Oracle Gap Analysis of Learned Multi-AP Schedulers}
 {P. Kim \emph{et al.}: Exact-Oracle Gap Analysis of Learned Multi-AP Schedulers}
 
-\corresp{Corresponding author: Taeyoon Kim (e-mail: \todo{e-mail}).}
+\corresp{Corresponding author: Taeyoon Kim (e-mail: 2000kty@dankook.ac.kr).}
 
 \begin{abstract}
 Multi-access point coordination (MAPC) in IEEE 802.11bn lets neighboring access points (APs) decide jointly which AP serves which station (STA). Learned schedulers based on multi-agent reinforcement learning (MARL) with centralized training and decentralized execution (CTDE) are usually compared with heuristics whose distance from the optimum is unknown. This paper introduces an exact per-slot oracle that enumerates every joint choice of target STA or silence across APs with the highest decodable modulation and coding scheme (MCS) per link, and uses it to decompose the loss of learned schedulers. Across six topologies and arrival rates from 0.25 to 8 packets per STA per slot, coordinated time division multiple access (Co-TDMA) attains at least 99\% of the oracle up to 2 packets per STA per slot, and the oracle exceeds Co-TDMA by up to 34\% only at high load. A signal-to-interference-plus-noise ratio (SINR) reference that lets all APs transmit attains as little as 25\% of the oracle. At high load and over five training seeds, ideal link adaptation raises proximal policy optimization (PPO) agents by 5--31 percentage points, whereas full information from every AP changes their throughput by $-2$ to $+9$ points. With ideal link adaptation, the learners exceed Co-TDMA by 13--14 points in the two cases with the largest coordination headroom and do not exceed it in any other case. Under per-slot Rayleigh fading, the headroom and the link-adaptation gap grow while the information gap stays within $\pm 5$ points. The bottleneck is therefore rate selection and policy optimization, not inter-AP information.
@@ -52,7 +53,7 @@ This paper addresses that question with an exact per-slot oracle and a gap decom
 \item An exact per-slot oracle for MAPC scheduling that enumerates all joint (STA or silence) decisions with the highest decodable MCS per link, together with an explicit silence action that lets learned schedulers represent Co-TDMA at all.
 \item A load sweep over six reference topologies that quantifies the coordination headroom beyond Co-TDMA and shows that the all-transmit SINR reference attains as little as 25\% of the oracle.
 \item A decomposition of the loss of CTDE schedulers based on proximal policy optimization (PPO)~\cite{schulman2017ppo,yu2022mappo} into a link-adaptation gap, an information gap, and a residual optimization gap, obtained by replacing learned MCS selection with automatic rate fallback (ARF)~\cite{kamerman1997arf} or ideal link adaptation, and by contrasting local actors with a full-information actor.
-\item An open-source simulator and evaluation suite in which every baseline, learner, and figure of this paper is reproducible from configuration files.
+\item A simulator and evaluation suite, to be released publicly, in which every baseline, learner, and figure of this paper is reproducible from configuration files.
 \end{itemize}
 
 The remainder of the paper is organized as follows. Section~\ref{sec:related} reviews related work. Section~\ref{sec:system} defines the system model, and Section~\ref{sec:problem} formulates the scheduling problem. Section~\ref{sec:method} presents the exact oracle, the gap decomposition, and the learners. Section~\ref{sec:setup} details the experimental setup, Section~\ref{sec:results} reports the results, Section~\ref{sec:discussion} discusses their implications and limitations, and Section~\ref{sec:conclusion} concludes the paper.
@@ -274,17 +275,19 @@ The study has limitations. The oracle is exact per slot but myopic across slots,
 \label{sec:conclusion}
 This paper introduced an exact per-slot oracle for IEEE 802.11bn MAPC scheduling and used it to decompose the throughput loss of CTDE schedulers. Co-TDMA attains at least 99\% of the oracle up to 2 packets per STA per slot, and coordination gains of up to 34\% beyond Co-TDMA appear only at high load. The all-transmit SINR reference attains as little as 25\% of the oracle and is not an upper bound. At high load, ideal link adaptation raises PPO learners by 5--31 percentage points, whereas full inter-AP information changes their throughput by at most 9 points; with ideal link adaptation, the learners exceed Co-TDMA only in the two cases with the largest coordination headroom. These conclusions hold under per-slot Rayleigh fading, which enlarges both the headroom and the link-adaptation gap. Future learned schedulers therefore benefit more from better rate selection and policy optimization than from richer inter-AP messages.
 
-\section*{Acknowledgment}
-\todo{Acknowledgment.}
+% Acknowledgment: none yet. Add \section*{Acknowledgment} here when available.
+
+\section*{Code Availability}
+The simulator, the exact oracle, the learners, and the scripts that reproduce every figure and table of this paper will be made publicly available.
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}
 
-\begin{biography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{photo/kpy.jpg}}]{Pyoungyun Kim} (S'25)
+\begin{biography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{photo/kpy.eps}}]{Pyoungyun Kim} (S'25)
 received the B.S. and M.S. degrees from Korea University, Seoul, Korea, in 2005 and 2007, respectively. Since 2007, he has been with Samsung Electronics, where he has contributed to smart recommendation agents, the integration of the Consumer Electronics Control (CEC) protocol into television systems, and Tizen-based TV software applications. He is currently a Senior Engineer with the Product S/W Lab, Visual Display Division, Samsung Electronics, where he works on multi-view features for smart TVs and screen control for projectors. His research interests include on-device artificial intelligence (AI) for smart displays, embedded deep learning optimization, and resource-efficient deep reinforcement learning (DRL).
 \end{biography}
 
-\begin{biography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{a.eps}}]{Taeyoon Kim}
+\begin{biography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{photo/kty.eps}}]{Taeyoon Kim}
 received the B.S., M.S., and Ph.D. degrees in electronics and computer engineering from Korea University in 2005, 2007, and 2019, respectively. He was a Research Engineer with Hyundai Motors from 2007 to 2010 and an Assistant Professor with Soonchunhyang University from 2019 to 2021. In 2021, he joined Dankook University as an Assistant Professor with the School of Mobile System Engineering. He was a Visiting Researcher with the University of British Columbia in 2017. His research interests include network architectures and protocols for next-generation networks, such as WLAN, 5G, and time-sensitive networking (TSN), and AI-enabled edge intelligence.
 \end{biography}
 

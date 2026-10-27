@@ -42,5 +42,5 @@ items still open are marked in red with `\todo{...}`.
 ## Open items before submission
 
 - Random-topology generalization (plan: `docs/random_topology_experiment_plan.md`).
-- Author, affiliation, funding, biography, acknowledgment.
-- Code-availability statement (repository URL, public or not).
+- Funding statement and acknowledgment (none yet; placeholders are comments in `main.tex`).
+- Repository URL in the Code Availability section once the repository is made public.
