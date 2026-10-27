@@ -174,3 +174,50 @@ def test_rayleigh_fading_redraws_each_slot_without_touching_arrivals():
 def test_fading_does_not_change_mean_snr_observation():
     plain, faded = make("T3"), make("T3", fading="rayleigh")
     np.testing.assert_allclose(plain.reset(seed=1)[0], faded.reset(seed=1)[0])
+
+
+def make_random(topo_id, load=8.0, steps=30, overlap_mode="hard", fading="none"):
+    experiment = ExperimentConfig.from_dict(load_config("configs/qh_ctde.yaml"))
+    traffic = dict(experiment.env.traffic, traffic_load_ratio=0.0,
+                   poisson_lambda_min=load, poisson_lambda_max=load)
+    overlap = dict(experiment.env.overlap, mode=overlap_mode)
+    cfg = replace(experiment.env, impl="qh_v2", max_episodes=steps, traffic=traffic,
+                  allow_mute=True, overlap=overlap, fading={"model": fading})
+    return make_env(cfg, topology=get_registry("configs/topologies_random.yaml").get(topo_id))
+
+
+@pytest.mark.parametrize("overlap_mode,fading", [("hard", "none"), ("soft", "rayleigh")])
+def test_vectorized_oracle_matches_reference_on_large_topologies(overlap_mode, fading):
+    from src.training.oracle_policy import exact_oracle_actions_reference
+
+    registry = get_registry("configs/topologies_random.yaml")
+    big = [t for t in registry.ids() if registry.get(t).n_aps == 6 and registry.get(t).n_overlap_stas() > 0][:1]
+    for topo_id in big:
+        env = make_random(topo_id, steps=8, overlap_mode=overlap_mode, fading=fading)
+        env.reset(seed=0)
+        done = False
+        while not done:
+            fast, ref = exact_oracle_actions(env), exact_oracle_actions_reference(env)
+            np.testing.assert_array_equal(fast, ref)
+            _, _, done, _, _ = env.step(ref)
+
+
+def test_random_topologies_follow_design_variables():
+    import yaml
+    from src.envs.random_topology import RANGES, build_spec, design_points
+
+    raw = yaml.safe_load(open("configs/topologies_random.yaml"))
+    registry = get_registry("configs/topologies_random.yaml")
+    assert len(raw["groups"]["stage1"]) == 200 and len(raw["groups"]["stage2"]) == 20
+    for topo_id in registry.ids():
+        design, topo = raw["topologies"][topo_id]["design"], registry.get(topo_id)
+        aps = topo.ap_positions
+        d_min = min(np.linalg.norm(aps[i] - aps[j]) for i in range(topo.n_aps) for j in range(i))
+        assert d_min == pytest.approx(design["d"], abs=0.05)
+        assert topo.n_aps == design["n_aps"]
+        assert all(len(s) == design["stas_per_ap"] for s in topo.sta_positions)
+        for name, (lo, hi) in RANGES.items():
+            assert lo <= design[name] <= hi
+    # Same seed -> same topology.
+    point = design_points(5, seed=1)[3]
+    assert build_spec(point, seed=9) == build_spec(point, seed=9)

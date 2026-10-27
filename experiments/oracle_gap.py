@@ -12,6 +12,7 @@ with allow_mute=True so learners can stay silent, and with a fixed Poisson rate 
     python experiments/oracle_gap.py --learners mappo central --loads 5.0 --topos T3 T6
     python experiments/oracle_gap.py --mcs arf genie        # learners pick STA/mute only; MCS by ARF / genie
     python experiments/oracle_gap.py --quick               # smoke run
+    python experiments/oracle_gap.py --topology-file configs/topologies_random.yaml --topos group:stage1
 """
 from __future__ import annotations
 
@@ -96,7 +97,7 @@ def run_job(args, job: tuple) -> list[dict]:
 
     kind, load, topo_id, seed = job[:4]
     torch.set_num_threads(1)
-    topo = get_registry().get(topo_id)
+    topo = get_registry(args.topology_file).get(topo_id)
     env = make_oracle_env(args, topo, load)
     eval_seed = 10_000 + seed
     rows, extra = [], {}
@@ -139,7 +140,9 @@ def run_job(args, job: tuple) -> list[dict]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="configs/qh_ctde.yaml")
-    parser.add_argument("--topos", nargs="+", default=[f"T{i}" for i in range(1, 7)])
+    parser.add_argument("--topos", nargs="+", default=[f"T{i}" for i in range(1, 7)],
+                        help="topology IDs, 'group:<name>' or 'all' (resolved in --topology-file)")
+    parser.add_argument("--topology-file", default="configs/topologies.yaml")
     parser.add_argument("--loads", nargs="+", type=float, default=[1.0, 5.0],
                         help="Poisson arrivals per STA per slot")
     parser.add_argument("--seeds", type=int, default=3)
@@ -157,6 +160,17 @@ def main() -> None:
     args = parser.parse_args()
     if args.quick:
         args.topos, args.loads, args.seeds, args.episode_len, args.episodes = ["T3", "T6"], [1.0], 1, 50, 8
+
+    registry = get_registry(args.topology_file)
+    topos = []
+    for selector in args.topos:
+        if selector == "all":
+            topos += registry.ids()
+        elif selector.startswith("group:"):
+            topos += registry.group_ids(selector.split(":", 1)[1])
+        else:
+            topos.append(selector)
+    args.topos = list(dict.fromkeys(topos))
 
     os.makedirs(args.out, exist_ok=True)
     jobs = []
