@@ -21,6 +21,8 @@ HEADROOM = os.path.join(ROOT, "experiments/oracle_gap_results_envv2_headroom/ora
 FULL_JOBS = os.path.join(ROOT, "experiments/oracle_gap_results_envv2_full/jobs")
 RANDOM_STAGE1 = os.path.join(ROOT, "experiments/oracle_gap_results_random_stage1/oracle_gap.csv")
 RANDOM_TOPOS = os.path.join(ROOT, "configs/topologies_random.yaml")
+RANDOM_STAGE2_JOBS = os.path.join(ROOT, "experiments/oracle_gap_results_random_stage2/jobs")
+T_CRIT_19 = 2.093  # two-sided 95% Student t, 19 degrees of freedom
 CO_TDMA_CAPACITY = 23.0  # packets per slot: one link at the highest MCS
 
 INK, INK2, GRID = "#0b0b0b", "#52514e", "#e5e4e0"
@@ -335,11 +337,111 @@ def fig_random_headroom():
         fig.savefig(os.path.join(OUT, f"fig_random_headroom.{ext}"), dpi=300)
 
 
+def job_ratios(job_dir, load_filter=None):
+    """{(load, topo): {policy: mean over seeds of throughput / exact oracle}} from per-job JSONs."""
+    by = defaultdict(dict)
+    for path in glob.glob(os.path.join(job_dir, "*.json")):
+        with open(path) as handle:
+            for r in json.load(handle)["rows"]:
+                by[(r["load"], r["topology"], r["seed"])][r["policy"]] = r["throughput"]
+    acc = defaultdict(lambda: defaultdict(list))
+    for (lam, topo, _), vals in by.items():
+        if "exact_oracle" not in vals or (load_filter and lam not in load_filter):
+            continue
+        for policy, thp in vals.items():
+            acc[(lam, topo)][policy].append(thp / vals["exact_oracle"])
+    return {k: {p: float(np.mean(v)) for p, v in d.items()} for k, d in acc.items()}
+
+
+def fig_random_gap():
+    """(a) Advantage of Central PPO with ideal MCS over Co-TDMA versus headroom H; (b) gap components."""
+    rand = job_ratios(RANDOM_STAGE2_JOBS)
+    fixed = job_ratios(FULL_JOBS)
+    learner = "central+genie/sampled"
+    load_style = {5.0: ("#2a78d6", "o"), 8.0: ("#eb6834", "s")}
+    fig, axes = plt.subplots(1, 2, figsize=(7.16, 2.9), gridspec_kw={"width_ratios": [1.15, 1]})
+    ax = axes[0]
+    xs_all, ys_all = [], []
+    for lam, (color, marker) in load_style.items():
+        pts = [(100 * (1 - v["co_tdma"]), 100 * (v[learner] - v["co_tdma"])) for (l, t), v in rand.items() if l == lam]
+        xs, ys = zip(*pts)
+        xs_all += xs
+        ys_all += ys
+        ax.scatter(xs, ys, s=18, color=color, marker=marker, alpha=0.85, linewidths=0, label=f"Random, λ = {lam:g}")
+        fx = [(100 * (1 - v["co_tdma"]), 100 * (v[learner] - v["co_tdma"])) for (l, t), v in fixed.items()
+              if l == lam and learner in v]
+        ax.scatter(*zip(*fx), s=26, facecolors="none", edgecolors=color, marker=marker, linewidths=1.0,
+                   label=f"T1, T3–T6, λ = {lam:g}")
+    grid = np.linspace(0, 80, 2)
+    ax.plot(grid, grid, color=INK2, linewidth=0.8, linestyle="--", label="Exact oracle")
+    ax.axhline(0, color=INK, linewidth=0.8)
+    slope, intercept = np.polyfit(xs_all, ys_all, 1)
+    ax.plot(grid, slope * grid + intercept, color=INK, linewidth=0.8, linestyle=":",
+            label=f"Fit: {slope:.2f}H − {abs(intercept):.1f}")
+    ax.set_xlabel("Headroom H (%)", color=INK2)
+    ax.set_ylabel("Advantage over Co-TDMA (pt)", color=INK2)
+    ax.set_title("(a) Central PPO, ideal MCS, versus Co-TDMA", loc="left", fontsize=9, color=INK)
+    ax.set_xlim(0, 80)
+    ax.legend(fontsize=6.5, frameon=False, loc="upper left")
+    style(ax)
+    ax = axes[1]
+    comps = [("Δ$_{LA}$ MAPPO", "mappo+genie/sampled", "mappo+learned/sampled"),
+             ("Δ$_{LA}$ Central", "central+genie/sampled", "central+learned/sampled"),
+             ("Δ$_{I}$ learned", "central+learned/sampled", "mappo+learned/sampled"),
+             ("Δ$_{I}$ ideal", "central+genie/sampled", "mappo+genie/sampled")]
+    for k, (lam, (color, _)) in enumerate(load_style.items()):
+        data = [[100 * (v[a] - v[b]) for (l, t), v in rand.items() if l == lam] for _, a, b in comps]
+        pos = np.arange(len(comps)) + (k - 0.5) * 0.36
+        box = ax.boxplot(data, positions=pos, widths=0.3, patch_artist=True, showfliers=True,
+                         medianprops={"color": INK, "linewidth": 1},
+                         flierprops={"markersize": 2.5, "markeredgecolor": INK2})
+        for patch in box["boxes"]:
+            patch.set(facecolor=color, alpha=0.6, linewidth=0.6)
+        ax.plot([], [], color=color, linewidth=6, alpha=0.6, label=f"λ = {lam:g}")
+    ax.axhline(0, color=INK, linewidth=0.8)
+    ax.set_xticks(range(len(comps)), [c[0] for c in comps], fontsize=7.5)
+    ax.set_ylabel("Gap (percentage points)", color=INK2)
+    ax.set_title("(b) Gap components, 20 topologies", loc="left", fontsize=9, color=INK)
+    ax.legend(fontsize=7, frameon=False, loc="upper right")
+    style(ax)
+    fig.tight_layout()
+    for ext in ("pdf", "png"):
+        fig.savefig(os.path.join(OUT, f"fig_random_gap.{ext}"), dpi=300)
+
+
+def random_table():
+    """LaTeX rows: gap components over the 20 stage-2 topologies, mean [95% CI] in percentage points."""
+    rand = job_ratios(RANDOM_STAGE2_JOBS)
+    entries = [("Headroom $H$", lambda v: 1 - v["co_tdma"]),
+               ("MAPPO, MCS learned", lambda v: v["mappo+learned/sampled"]),
+               ("MAPPO, MCS ideal", lambda v: v["mappo+genie/sampled"]),
+               ("Central PPO, MCS learned", lambda v: v["central+learned/sampled"]),
+               ("Central PPO, MCS ideal", lambda v: v["central+genie/sampled"]),
+               (r"$\Delta_{\text{LA}}$, MAPPO", lambda v: v["mappo+genie/sampled"] - v["mappo+learned/sampled"]),
+               (r"$\Delta_{\text{LA}}$, Central PPO", lambda v: v["central+genie/sampled"] - v["central+learned/sampled"]),
+               (r"$\Delta_{\text{I}}$, MCS learned", lambda v: v["central+learned/sampled"] - v["mappo+learned/sampled"]),
+               (r"$\Delta_{\text{I}}$, MCS ideal", lambda v: v["central+genie/sampled"] - v["mappo+genie/sampled"]),
+               (r"$\Delta_{\text{opt}}$", lambda v: 1 - v["central+genie/sampled"]),
+               ("Central PPO, MCS ideal $-$ Co-TDMA", lambda v: v["central+genie/sampled"] - v["co_tdma"])]
+    lines = []
+    for name, fn in entries:
+        cells = []
+        for lam in (5.0, 8.0):
+            x = 100 * np.array([fn(v) for (l, t), v in rand.items() if l == lam])
+            half = T_CRIT_19 * x.std(ddof=1) / np.sqrt(len(x))
+            cells.append(f"{x.mean():.1f} [{x.mean() - half:.1f}, {x.mean() + half:.1f}]")
+        lines.append(name + " & " + " & ".join(cells) + r" \\")
+    with open(os.path.join(OUT, "table_random_rows.tex"), "w") as handle:
+        handle.write("\n".join(lines) + "\n")
+
+
 if __name__ == "__main__":
     fig_topologies()
     fig_headroom()
     fig_learning_curves()
     fig_random_headroom()
+    fig_random_gap()
+    random_table()
     full_table(5.0)
     full_table(8.0)
     fading_table()

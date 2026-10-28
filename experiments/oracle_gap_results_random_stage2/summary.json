@@ -1,0 +1,3549 @@
+{
+  "config": {
+    "config": "configs/qh_ctde.yaml",
+    "topos": [
+      "L00",
+      "L01",
+      "L02",
+      "L03",
+      "L04",
+      "L05",
+      "L06",
+      "L07",
+      "L08",
+      "L09",
+      "L10",
+      "L11",
+      "L12",
+      "L13",
+      "L14",
+      "L15",
+      "L16",
+      "L17",
+      "L18",
+      "L19"
+    ],
+    "topology_file": "configs/topologies_random.yaml",
+    "loads": [
+      5.0,
+      8.0
+    ],
+    "seeds": 1,
+    "episode_len": 200,
+    "learners": [
+      "mappo",
+      "central"
+    ],
+    "mcs": [
+      "learned",
+      "genie"
+    ],
+    "fading": "none",
+    "episodes": 1000,
+    "episodes_per_update": 4,
+    "workers": 4,
+    "quick": false
+  },
+  "policies": [
+    "random",
+    "greedy",
+    "round_robin",
+    "oracle",
+    "co_tdma",
+    "exact_oracle",
+    "mappo+learned/argmax",
+    "mappo+learned/sampled",
+    "mappo+genie/argmax",
+    "mappo+genie/sampled",
+    "central+learned/argmax",
+    "central+learned/sampled",
+    "central+genie/argmax",
+    "central+genie/sampled"
+  ],
+  "results": {
+    "5.0": {
+      "L00": {
+        "arrival_bound": 6158.0,
+        "random": {
+          "mean": 780.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.15996718621821165,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 1300.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.2666119770303528,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 1632.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.33470057424118127,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 2769.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5678835110746514,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4559.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9349876948318294,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 4876.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 2583.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5297374897456932,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 2591.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5313781788351107,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 3668.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7522559474979491,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 3728.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7645611156685808,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 1553.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.31849876948318295,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 3295.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6757588187038556,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 2110.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.43273174733388026,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 3376.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6923707957342083,
+          "ratio_std": 0.0
+        }
+      },
+      "L01": {
+        "arrival_bound": 12108.0,
+        "random": {
+          "mean": 989.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.14783258594917786,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 1681.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.25127055306427504,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 2455.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.36696562032884905,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 3259.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.48714499252615845,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4556.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.68101644245142,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 6690.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 3658.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5467862481315396,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 4165.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6225710014947683,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 4451.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6653213751868461,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 5183.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7747384155455904,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 2429.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3630792227204783,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 4034.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6029895366218236,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 2031.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.30358744394618836,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 5122.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7656203288490284,
+          "ratio_std": 0.0
+        }
+      },
+      "L02": {
+        "arrival_bound": 6112.0,
+        "random": {
+          "mean": 1313.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.23812114617337685,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 3004.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5447950671019224,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 3004.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5447950671019224,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 3147.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5707290533188248,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4545.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.824265505984766,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 5514.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 3561.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6458106637649619,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 3576.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6485310119695321,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 3921.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7110990206746464,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 4391.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7963365977511788,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 2575.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4669931084512151,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 3496.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6340224882118245,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 2656.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4816829887558941,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 4649.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.843126586869786,
+          "ratio_std": 0.0
+        }
+      },
+      "L03": {
+        "arrival_bound": 10155.0,
+        "random": {
+          "mean": 1537.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.21436541143654114,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 3306.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4610878661087866,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 3582.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.499581589958159,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 5444.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7592747559274756,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4508.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6287308228730822,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 7170.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 5092.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7101813110181311,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 5216.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7274755927475592,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 5075.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7078103207810321,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 6433.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.89721059972106,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 3590.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.500697350069735,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 5579.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7781032078103208,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 4998.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6970711297071129,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 6308.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8797768479776849,
+          "ratio_std": 0.0
+        }
+      },
+      "L04": {
+        "arrival_bound": 6158.0,
+        "random": {
+          "mean": 3075.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5104581673306773,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 5441.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9032204515272244,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 4227.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7016932270916335,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 5926.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9837317397078353,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4559.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7568061088977424,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 6024.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 4043.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.671148738379814,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 4028.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6686586985391766,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 5119.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8497675962815405,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 5719.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9493691899070386,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 2886.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.47908366533864544,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 3937.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6535524568393094,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 3399.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5642430278884463,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 5613.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9317729083665338,
+          "ratio_std": 0.0
+        }
+      },
+      "L05": {
+        "arrival_bound": 12151.0,
+        "random": {
+          "mean": 7216.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6882212684787792,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 6305.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6013352408202194,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 8135.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7758702908917501,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 8136.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7759656652360515,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4560.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.43490701001430615,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 10485.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 7080.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6752503576537912,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 7672.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7317119694802098,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 5104.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.48679065331425847,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 9105.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8683834048640916,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 4793.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.45712923223652835,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 7703.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7346685741535527,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 3773.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3598474010491178,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 8965.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.855030996661898,
+          "ratio_std": 0.0
+        }
+      },
+      "L06": {
+        "arrival_bound": 5087.0,
+        "random": {
+          "mean": 686.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.1379449024733561,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 1794.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3607480394128293,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 1794.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3607480394128293,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 2058.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4138347074200684,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4548.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9145385079428916,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 4973.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 2601.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5230243313895033,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 2676.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5381057711642871,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 3577.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7192841343253569,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 3881.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7804142368791473,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 3573.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7184797908707018,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 3561.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7160667605067363,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 3610.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7259199678262618,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 4264.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8574301226623768,
+          "ratio_std": 0.0
+        }
+      },
+      "L07": {
+        "arrival_bound": 6112.0,
+        "random": {
+          "mean": 4305.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7207433450527373,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 5105.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8546793905909928,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 5105.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8546793905909928,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 5105.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8546793905909928,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4545.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7609241587142139,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 5973.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 5105.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8546793905909928,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 4831.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8088062949941403,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 4661.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.780344885317261,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 5600.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9375523187677883,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 4580.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7667838607065126,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 4676.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7828561861711033,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 4982.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.834086723589486,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 5570.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9325297170601038,
+          "ratio_std": 0.0
+        }
+      },
+      "L08": {
+        "arrival_bound": 12151.0,
+        "random": {
+          "mean": 1792.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.2171331636980492,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 3595.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.43559917605719134,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 4319.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5233248515691263,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 6891.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8349691021446747,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4469.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.54150006058403,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 8253.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 4103.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4971525505876651,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 4662.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5648854961832062,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 5305.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6427965588270932,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 6664.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8074639525021204,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 4286.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5193263055858476,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 4970.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6022052586938084,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 5529.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6699382042893494,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 6991.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8470859081546105,
+          "ratio_std": 0.0
+        }
+      },
+      "L09": {
+        "arrival_bound": 12108.0,
+        "random": {
+          "mean": 2867.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3259806708357021,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 3726.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4236498010233087,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 6330.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7197271176805002,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 8615.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9795338260375214,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4556.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5180216031836271,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 8795.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 3885.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.44172825469016486,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 5127.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5829448550312678,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 6834.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7770324047754406,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 7930.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9016486640136441,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 4100.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4661739624786811,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 5989.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.680955088118249,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 3951.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.44923251847640705,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 7651.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8699260943718021,
+          "ratio_std": 0.0
+        }
+      },
+      "L10": {
+        "arrival_bound": 4082.0,
+        "random": {
+          "mean": 2865.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7046237088047221,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 3016.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7417609444171176,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 3016.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7417609444171176,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 3016.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7417609444171176,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4048.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9955730447614363,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 4066.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 3013.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7410231185440236,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 3059.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7523364485981309,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 3765.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9259714707329071,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 3805.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9358091490408263,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 3015.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7415150024594196,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 3105.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.763649778652238,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 2594.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6379734382685687,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 3904.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9601574028529267,
+          "ratio_std": 0.0
+        }
+      },
+      "L11": {
+        "arrival_bound": 6112.0,
+        "random": {
+          "mean": 3403.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5632240979808011,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 5105.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8449189010261503,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 5105.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8449189010261503,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 5115.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8465739821251241,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4545.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7522343594836147,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 6042.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 4596.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7606752730883813,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 4262.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7053955643826547,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 3964.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.656074147633234,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 5785.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9574644157563721,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 4090.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6769281694803045,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 4083.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6757696127110229,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 5475.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9061569016881827,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 5777.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.956140350877193,
+          "ratio_std": 0.0
+        }
+      },
+      "L12": {
+        "arrival_bound": 9131.0,
+        "random": {
+          "mean": 2295.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.31105990783410137,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 4882.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6616969368392518,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 4579.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6206288967199783,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 6811.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9231499051233396,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4559.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6179181349959338,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 7378.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 3528.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4781783681214421,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 4567.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6190024396855517,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 5609.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7602331255082678,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 6115.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8288153971265926,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 2003.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.2714827866630523,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 4069.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5515044727568447,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 2942.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3987530496069395,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 6375.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8640552995391705,
+          "ratio_std": 0.0
+        }
+      },
+      "L13": {
+        "arrival_bound": 15057.0,
+        "random": {
+          "mean": 8407.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6035175879396985,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 11776.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8453697056712132,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 12719.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9130653266331659,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 13940.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0007178750897343,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4556.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3270638908829864,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 13930.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 6024.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.43244795405599423,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 9151.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6569274946159368,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 8969.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.643862167982771,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 12832.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9211773151471644,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 4684.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.33625269203158653,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 9844.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7066762383345297,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 6681.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4796123474515434,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 13100.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9404163675520459,
+          "ratio_std": 0.0
+        }
+      },
+      "L14": {
+        "arrival_bound": 9131.0,
+        "random": {
+          "mean": 784.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.14759036144578314,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 943.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.17752259036144577,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 1962.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3693524096385542,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 2973.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5596762048192772,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4559.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8582454819277109,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 5312.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 1459.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.27466114457831325,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 3170.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5967620481927711,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 3372.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.634789156626506,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 4352.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8192771084337349,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 1634.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.307605421686747,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 3563.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6707454819277109,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 2053.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.38648343373493976,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 4133.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7780496987951807,
+          "ratio_std": 0.0
+        }
+      },
+      "L15": {
+        "arrival_bound": 5087.0,
+        "random": {
+          "mean": 2195.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4328534805758233,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 3576.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7051863537763755,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 3576.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7051863537763755,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 3696.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7288503253796096,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4548.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8968645237625715,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 5071.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 3434.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6771839873792151,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 3501.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6903963715243542,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 4356.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8590021691973969,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 4798.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9461644646026425,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 1758.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.34667718398737923,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 3222.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.635377637546835,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 3427.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6758035890356932,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 4686.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9240780911062907,
+          "ratio_std": 0.0
+        }
+      },
+      "L16": {
+        "arrival_bound": 8183.0,
+        "random": {
+          "mean": 3220.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5128205128205128,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 5670.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.903010033444816,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 3430.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5462653288740246,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 6116.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9740404523013219,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4455.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7095078834209269,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 6279.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 4009.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6384774645644211,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 4506.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7176301958910655,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 5454.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8686096512183469,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 6029.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9601847427934385,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 2020.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.32170727822901735,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 4252.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.677177894569199,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 4550.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7246376811594203,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 6026.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9597069597069597,
+          "ratio_std": 0.0
+        }
+      },
+      "L17": {
+        "arrival_bound": 15057.0,
+        "random": {
+          "mean": 2083.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.21630321910695743,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 4393.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4561786085150571,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 4846.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5032191069574247,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 8037.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8345794392523365,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4556.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4731048805815161,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 9630.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 3897.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4046728971962617,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 4846.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5032191069574247,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 5125.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5321910695742471,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 7990.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.829698857736241,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 3578.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3715472481827622,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 5284.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5487019730010384,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 4633.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4811007268951194,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 7527.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7816199376947041,
+          "ratio_std": 0.0
+        }
+      },
+      "L18": {
+        "arrival_bound": 9131.0,
+        "random": {
+          "mean": 730.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.13260672116257946,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 536.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.09736603088101725,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 2627.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.47720254314259763,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 3847.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.698819255222525,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4559.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8281562216167121,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 5505.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 2483.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4510445049954587,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 3350.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6085376930063578,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 3082.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5598546775658493,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 4325.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7856494096276113,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 2752.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.49990917347865577,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 4075.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.740236148955495,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 2495.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.45322434150772023,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 4430.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8047229791099001,
+          "ratio_std": 0.0
+        }
+      },
+      "L19": {
+        "arrival_bound": 4082.0,
+        "random": {
+          "mean": 576.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.14197683017007642,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 1544.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3805767808725659,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 1544.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3805767808725659,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 1689.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.41631747596746366,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4048.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9977816120285925,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 4057.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 2002.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.49346807986196695,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 2123.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5232930736997782,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 2382.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5871333497658369,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 2819.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6948484101552872,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 2543.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6268178456987922,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 2551.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.628789746117821,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 2356.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5807246734039931,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 3689.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9092925807246734,
+          "ratio_std": 0.0
+        }
+      }
+    },
+    "8.0": {
+      "L00": {
+        "arrival_bound": 9567.0,
+        "random": {
+          "mean": 787.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.15556434077881004,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 1481.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.29274560189760823,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 1679.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3318837714963431,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 3087.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6101996441984582,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4570.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9033405811425183,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 5059.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 3264.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6451867958094485,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 3189.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6303617315675034,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 3188.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6301640640442775,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 3734.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7380905317256374,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 3311.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6544771694010674,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 3504.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6926270013836726,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 3208.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6341174145087962,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 3927.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7762403637082428,
+          "ratio_std": 0.0
+        }
+      },
+      "L01": {
+        "arrival_bound": 19193.0,
+        "random": {
+          "mean": 997.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.1398905570366213,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 1665.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.2336186333660727,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 2455.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.34446471165988496,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 3264.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.45797670829240916,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4576.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6420653851550442,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 7127.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 3203.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.44941770731022873,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 4324.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6067068892942332,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 4619.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6480987792900239,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 5103.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7160095411814228,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 3971.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5571769327907956,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 4429.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6214395959029044,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 4464.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6263504981057949,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 5343.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7496842991441,
+          "ratio_std": 0.0
+        }
+      },
+      "L02": {
+        "arrival_bound": 9647.0,
+        "random": {
+          "mean": 1344.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.2119539504809967,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 4128.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6510014193344899,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 4128.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6510014193344899,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 4557.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7186563633496293,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4572.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7210219208326762,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 6341.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 5167.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8148557009935341,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 4779.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7536666140987226,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 4936.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7784261157546128,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 5483.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8646901119697209,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 4003.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6312884403090995,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 4019.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6338117016243495,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 5394.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.850654470903643,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 5568.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8780949377069863,
+          "ratio_std": 0.0
+        }
+      },
+      "L03": {
+        "arrival_bound": 15927.0,
+        "random": {
+          "mean": 1555.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.17417114695340502,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 3476.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.38933691756272404,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 3824.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4283154121863799,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 6528.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7311827956989247,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4562.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5109767025089605,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 8928.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 4748.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5318100358422939,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 5209.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5834453405017921,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 7148.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8006272401433692,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 7064.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7912186379928315,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 4786.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5360663082437276,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 5049.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5655241935483871,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 6391.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7158378136200717,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 7551.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8457661290322581,
+          "ratio_std": 0.0
+        }
+      },
+      "L04": {
+        "arrival_bound": 9567.0,
+        "random": {
+          "mean": 3105.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3826719250677841,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 6540.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.806014296278038,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 5580.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6877002711363076,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 7930.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9773231451811684,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4570.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5632240571851121,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 8114.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 4376.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5393147646043874,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 4477.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.551762385999507,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 7484.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9223564210007394,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 7644.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9420754251910278,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 3997.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.49260537342864186,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 4851.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5978555582943061,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 4914.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6056199161942322,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 7333.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9037466107961548,
+          "ratio_std": 0.0
+        }
+      },
+      "L05": {
+        "arrival_bound": 19219.0,
+        "random": {
+          "mean": 7831.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5455622126236589,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 9982.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6954159119409223,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 12707.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8852584645395012,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 12802.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8918768287585342,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4572.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3185174864149366,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 14354.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 8118.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5655566392643165,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 9727.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6776508290372022,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 9737.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6783474989549951,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 12794.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8913194928242999,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 7225.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5033440156054062,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 9924.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6913752264177233,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 8711.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6068691653894385,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 11684.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8139891319492825,
+          "ratio_std": 0.0
+        }
+      },
+      "L06": {
+        "arrival_bound": 8029.0,
+        "random": {
+          "mean": 695.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.11315532399869749,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 2162.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3520026050146532,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 2162.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3520026050146532,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 2649.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4312927385216542,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4568.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7437316834907196,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 6142.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 3999.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6510908498860306,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 3820.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6219472484532725,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 5026.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8183002279387822,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 5095.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8295343536307391,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 4794.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7805275154672745,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 4388.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7144252686421361,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 5157.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.839628785411918,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 5191.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8451644415499837,
+          "ratio_std": 0.0
+        }
+      },
+      "L07": {
+        "arrival_bound": 9647.0,
+        "random": {
+          "mean": 6064.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7411390857980934,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 8023.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.980567098508922,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 8023.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.980567098508922,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 8059.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.984967000733317,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4572.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5587875824981667,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 8182.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 6957.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8502811048643364,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 6609.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8077487166951846,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 8063.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9854558787582498,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 8169.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9984111464189684,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 6154.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7521388413590809,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 6804.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8315815204106576,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 8063.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9854558787582498,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 8163.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9976778293815693,
+          "ratio_std": 0.0
+        }
+      },
+      "L08": {
+        "arrival_bound": 19219.0,
+        "random": {
+          "mean": 1799.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.18573198430724758,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 3717.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3837497418955193,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 4547.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.46944042948585585,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 8147.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.841110881684906,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4476.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.46211026223415236,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 9686.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 4441.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4584967995044394,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 4911.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5070204418748709,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 7059.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7287838116869709,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 8008.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8267602725583316,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 5280.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5451166632252736,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 5243.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5412967169110056,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 8265.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8532934131736527,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 8313.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8582490192029734,
+          "ratio_std": 0.0
+        }
+      },
+      "L09": {
+        "arrival_bound": 19193.0,
+        "random": {
+          "mean": 2899.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.2669920795726653,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 4039.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3719837907533616,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 6700.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.61705654816725,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 10200.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9393995210904402,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4576.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.42144041259900533,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 10858.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 5420.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4991711180696261,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 5201.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4790016577638607,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 6995.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6442254558850617,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 9467.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8718916927610978,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 5831.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.537023392890035,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 6412.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5905323263952846,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 6250.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.575612451648554,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 9090.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.837170749677657,
+          "ratio_std": 0.0
+        }
+      },
+      "L10": {
+        "arrival_bound": 6408.0,
+        "random": {
+          "mean": 4046.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6636050516647531,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 4798.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7869443988846974,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 4798.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7869443988846974,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 4798.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7869443988846974,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4576.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7505330490405118,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 6097.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 4798.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7869443988846974,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 4464.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7321633590290306,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 5261.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8628833852714449,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 5430.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8906019353780548,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 4798.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7869443988846974,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 4704.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7715269804822044,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 5152.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8450057405281286,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 5298.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8689519435788092,
+          "ratio_std": 0.0
+        }
+      },
+      "L11": {
+        "arrival_bound": 9647.0,
+        "random": {
+          "mean": 3810.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.43428701698392796,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 7446.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8487404536646529,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 7446.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8487404536646529,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 7860.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8959306964550325,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4572.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5211444203807135,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 8773.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 5682.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6476689843839052,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 4926.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.561495497549299,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 8329.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9493901743987233,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 8419.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9596489228314146,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 6473.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7378319844978912,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 6422.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7320186937193662,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 7604.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8667502564687108,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 8314.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9476803829932748,
+          "ratio_std": 0.0
+        }
+      },
+      "L12": {
+        "arrival_bound": 14455.0,
+        "random": {
+          "mean": 2315.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.2737701040681173,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 4795.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5670529801324503,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 4614.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5456480605487228,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 7109.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8407048249763481,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4570.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5404446546830652,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 8456.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 4759.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5627956480605487,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 4757.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5625591296121097,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 3312.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.391674550614948,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 6707.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7931646168401135,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 3978.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4704351939451277,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 5232.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.618732261116367,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 4993.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5904683065279092,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 6688.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7909176915799432,
+          "ratio_std": 0.0
+        }
+      },
+      "L13": {
+        "arrival_bound": 23984.0,
+        "random": {
+          "mean": 8609.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.44668707518289835,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 14801.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7679655476573445,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 16234.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8423182690810979,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 19188.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9955896850516266,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4568.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.23701551393140663,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 19273.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 7330.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.38032480672443314,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 10902.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5656618066725471,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 11455.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5943547968660821,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 17195.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8921807710268251,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 5319.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.2759819436517408,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 10934.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5673221605354641,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 10511.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5453743579100295,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 16746.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8688839308877705,
+          "ratio_std": 0.0
+        }
+      },
+      "L14": {
+        "arrival_bound": 14455.0,
+        "random": {
+          "mean": 791.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.13682753848815085,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 1276.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.22072305829441274,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 1962.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3393876491956409,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 3067.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5305310499913509,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4570.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7905206711641585,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 5781.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 2478.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4286455630513752,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 3752.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6490226604393704,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 4217.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7294585711814565,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 4893.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8463933575505967,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 2448.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.42345614945511156,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 4264.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7375886524822695,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 3360.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5812143227815257,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 3950.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6832727901747102,
+          "ratio_std": 0.0
+        }
+      },
+      "L15": {
+        "arrival_bound": 8029.0,
+        "random": {
+          "mean": 2610.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3499597747385358,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 5296.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7101099490480022,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 5296.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7101099490480022,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 5579.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7480557790292304,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4568.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.612496647894878,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 7458.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 4845.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6496379726468222,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 4357.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5842048806650576,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 5705.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7649503888441942,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 6577.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.881871815500134,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 4042.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5419683561276482,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 4097.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5493429873960848,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 5698.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7640117994100295,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 6499.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8714132475194422,
+          "ratio_std": 0.0
+        }
+      },
+      "L16": {
+        "arrival_bound": 12768.0,
+        "random": {
+          "mean": 3350.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3861671469740634,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 6828.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7870893371757925,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 4443.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5121613832853026,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 8222.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9477809798270893,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4498.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5185014409221902,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 8675.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 4885.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5631123919308357,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 4784.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5514697406340058,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 7238.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8343515850144092,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 7957.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9172334293948127,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 3216.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3707204610951009,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 4942.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5696829971181556,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 5008.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5772910662824208,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 7977.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.9195389048991355,
+          "ratio_std": 0.0
+        }
+      },
+      "L17": {
+        "arrival_bound": 23984.0,
+        "random": {
+          "mean": 2087.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.19631267049195747,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 4336.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.40786379456307026,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 4846.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.45583670397892956,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 8222.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7733985514062647,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4568.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4296867651208729,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 10631.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 3161.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.29733797385006117,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 4832.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4545198005832001,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 6491.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6105728529771424,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 8051.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7573135170727119,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 5467.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5142507760323582,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 4900.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.46091618850531463,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 6770.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6368168563634653,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 7871.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7403819019847615,
+          "ratio_std": 0.0
+        }
+      },
+      "L18": {
+        "arrival_bound": 14455.0,
+        "random": {
+          "mean": 730.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.12667013708138122,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 749.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.1299670310602117,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 2627.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4558389727572445,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 4217.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7317369425646365,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4570.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.792989762276592,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 5763.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 1627.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.282318237029325,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 2939.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.5099774423043554,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 3919.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6800277633177164,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 4427.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7681762970674996,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 2430.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4216553878188444,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 3620.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6281450633350686,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 4013.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6963387124761409,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 4328.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7509977442304355,
+          "ratio_std": 0.0
+        }
+      },
+      "L19": {
+        "arrival_bound": 6408.0,
+        "random": {
+          "mean": 589.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.11392649903288202,
+          "ratio_std": 0.0
+        },
+        "greedy": {
+          "mean": 2043.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3951644100580271,
+          "ratio_std": 0.0
+        },
+        "round_robin": {
+          "mean": 2043.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.3951644100580271,
+          "ratio_std": 0.0
+        },
+        "oracle": {
+          "mean": 2316.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.4479690522243714,
+          "ratio_std": 0.0
+        },
+        "co_tdma": {
+          "mean": 4576.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.8851063829787233,
+          "ratio_std": 0.0
+        },
+        "exact_oracle": {
+          "mean": 5170.0,
+          "std": 0.0,
+          "ratio_to_oracle": 1.0,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/argmax": {
+          "mean": 3143.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6079303675048356,
+          "ratio_std": 0.0
+        },
+        "mappo+learned/sampled": {
+          "mean": 3199.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.618762088974855,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/argmax": {
+          "mean": 3912.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7566731141199227,
+          "ratio_std": 0.0
+        },
+        "mappo+genie/sampled": {
+          "mean": 3931.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.760348162475822,
+          "ratio_std": 0.0
+        },
+        "central+learned/argmax": {
+          "mean": 3212.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6212765957446809,
+          "ratio_std": 0.0
+        },
+        "central+learned/sampled": {
+          "mean": 3377.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.6531914893617021,
+          "ratio_std": 0.0
+        },
+        "central+genie/argmax": {
+          "mean": 3794.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7338491295938104,
+          "ratio_std": 0.0
+        },
+        "central+genie/sampled": {
+          "mean": 4047.0,
+          "std": 0.0,
+          "ratio_to_oracle": 0.7827852998065764,
+          "ratio_std": 0.0
+        }
+      }
+    }
+  }
+}
