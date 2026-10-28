@@ -1,6 +1,7 @@
 # Paper 2 draft — MAPC-assisted roaming (IEEE Access)
 
 Follow-up to `paper/` (exact-oracle gap analysis). Model and placement plan: `docs/mobility_association_model.md`.
+Experiment plan (scenarios, factors, schedulers, experiments E0–E6): `docs/paper2_experiment_plan.md`.
 
 ## Status
 
