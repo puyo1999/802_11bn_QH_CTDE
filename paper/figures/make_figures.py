@@ -281,7 +281,7 @@ def fig_topologies():
 
 
 def fig_random_headroom():
-    """Headroom H = 1 - Co-TDMA / oracle versus normalized offered load rho = lambda * n_STA / 23."""
+    """Headroom H = 1 - Co-TDMA / oracle versus normalized offered load eta = lambda * n_STA / 23."""
     import yaml
     from src.envs.topology_registry import get_registry
 
@@ -312,7 +312,7 @@ def fig_random_headroom():
     ax.set_xscale("log")
     ax.set_xticks([0.05, 0.1, 0.2, 0.5, 1, 2, 5], ["0.05", "0.1", "0.2", "0.5", "1", "2", "5"])
     ax.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
-    ax.set_xlabel("Offered load / Co-TDMA capacity ρ", color=INK2)
+    ax.set_xlabel("Offered load / Co-TDMA capacity η", color=INK2)
     ax.set_ylabel("Headroom H (%)", color=INK2)
     ax.set_title("(a) Headroom versus offered load", loc="left", fontsize=9, color=INK)
     ax.legend(fontsize=7, frameon=False, loc="upper left")
