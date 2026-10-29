@@ -9,7 +9,7 @@ Experiment plan (scenarios, factors, schedulers, experiments E0–E6): `docs/pap
 |---|---|
 | Abstract, I. Introduction | Written; quantitative results and roaming citations marked `\todo` |
 | II. Related Work | MAPC part written; roaming and handover parts outlined (citations to verify) |
-| III. System Model | Written: Gauss–Markov mobility, filtered RSSI, hysteresis/TTT/threshold roaming, handover interruption, queue transfer |
+| III. System Model | Written: Gauss–Markov mobility parameterized by correlation time τ (straight-line motion as the τ → ∞ limit), filtered RSSI, hysteresis/TTT/threshold roaming, handover interruption, queue transfer |
 | IV. Analysis | Written: closed-form mis-association distance, filtered-noise variance, flapping probability, roaming loss |
 | V. Problem Formulation | Written: fixed-association objective, serving-AP switching with switching cost |
 | VI. Method | Outlined (`\todo`) |
