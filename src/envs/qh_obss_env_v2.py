@@ -89,11 +89,16 @@ class QHOBSSEnv(gym.Env):
             traffic if isinstance(traffic, TrafficConfig) else TrafficConfig.from_dict(traffic)
         )
         self._rng = np.random.default_rng(seed)
-        # 소규모 페이딩: "none"(결정적 경로손실) | "rayleigh"(슬롯마다 독립인 레일리 블록 페이딩).
+        # 소규모 페이딩: "none"(결정적 경로손실) | "rayleigh"(슬롯마다 독립인 레일리 블록 페이딩)
+        # | "gauss_markov"(시간 상관 레일리 페이딩: 복소 이득 h(t) = rho h(t-1) + sqrt(1-rho^2) n(t)).
         # 트래픽과 분리된 RNG 를 써서 페이딩 여부와 무관하게 도착 과정이 같다.
         self.fading_model = (fading or {}).get("model", "none")
-        if self.fading_model not in ("none", "rayleigh"):
-            raise ValueError(f"fading.model 은 none 또는 rayleigh 여야 합니다: {self.fading_model}")
+        if self.fading_model not in ("none", "rayleigh", "gauss_markov"):
+            raise ValueError(f"fading.model 은 none, rayleigh, gauss_markov 중 하나여야 합니다: {self.fading_model}")
+        self.fading_rho = float((fading or {}).get("rho", 0.0))
+        if self.fading_model == "gauss_markov" and not 0.0 <= self.fading_rho < 1.0:
+            raise ValueError(f"fading.rho 는 [0, 1) 이어야 합니다: {self.fading_rho}")
+        self._fading_h: np.ndarray | None = None  # gauss_markov 의 복소 이득, reset 에서 정상분포로 초기화
         self._fading_rng = np.random.default_rng(None if seed is None else (seed, 7))
         self._seed = seed
 
@@ -197,6 +202,7 @@ class QHOBSSEnv(gym.Env):
         self.overlap_policy.reset_stats()
         if seed is not None:
             self._fading_rng = np.random.default_rng((seed, 7))
+        self._fading_h = None  # 에피소드마다 정상분포에서 새로 시작
         self._draw_fading()
 
         return self.obs_builder.build([ap.queues for ap in self._aps], False), {}
@@ -247,9 +253,20 @@ class QHOBSSEnv(gym.Env):
 
     def _draw_fading(self) -> None:
         """다음 슬롯의 링크별 페이딩 전력 이득을 뽑는다. 레일리 페이딩의 전력 이득은 Exp(1)."""
+        shape = (self.n_aps, self.n_aps, self.k_stas)
         if self.fading_model == "rayleigh":
-            self.interference.fading_gain = self._fading_rng.exponential(
-                1.0, size=(self.n_aps, self.n_aps, self.k_stas))
+            self.interference.fading_gain = self._fading_rng.exponential(1.0, size=shape)
+        elif self.fading_model == "gauss_markov":
+            # 1차 가우스-마르코프 복소 이득. 주변분포는 CN(0, 1)이라 전력 이득은 매 슬롯 Exp(1)이고,
+            # 인접 슬롯 상관만 rho 로 정해진다 (rho = 0 이면 rayleigh 와 같은 분포).
+            noise = (self._fading_rng.standard_normal(shape)
+                     + 1j * self._fading_rng.standard_normal(shape)) / np.sqrt(2.0)
+            if self._fading_h is None:
+                self._fading_h = noise
+            else:
+                rho = self.fading_rho
+                self._fading_h = rho * self._fading_h + np.sqrt(1.0 - rho**2) * noise
+            self.interference.fading_gain = np.abs(self._fading_h) ** 2
         else:
             self.interference.fading_gain = None
 

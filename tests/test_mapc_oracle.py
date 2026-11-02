@@ -13,13 +13,14 @@ from src.training.baseline_policies import BaselinePolicy
 from src.training.oracle_policy import exact_oracle_actions, prospective_harsh, schedule_value
 
 
-def make(topo_id="T6", load=1.0, steps=20, allow_mute=True, overlap_mode="hard", fading="none"):
+def make(topo_id="T6", load=1.0, steps=20, allow_mute=True, overlap_mode="hard", fading="none", rho=None):
     experiment = ExperimentConfig.from_dict(load_config("configs/qh_ctde.yaml"))
     traffic = dict(experiment.env.traffic, traffic_load_ratio=0.0,
                    poisson_lambda_min=load, poisson_lambda_max=load)
     overlap = dict(experiment.env.overlap, mode=overlap_mode)
+    fading_cfg = {"model": fading, **({} if rho is None else {"rho": rho})}
     cfg = replace(experiment.env, impl="qh_v2", max_episodes=steps, traffic=traffic,
-                  allow_mute=allow_mute, overlap=overlap, fading={"model": fading})
+                  allow_mute=allow_mute, overlap=overlap, fading=fading_cfg)
     return make_env(cfg, topology=get_registry().get(topo_id), topology_file=experiment.topology_file)
 
 
@@ -50,9 +51,10 @@ def test_peek_arrivals_does_not_consume_rng():
     np.testing.assert_allclose(env.queues(), np.clip(before + peeked, 0, env.queue_max_size))
 
 
-@pytest.mark.parametrize("overlap_mode,fading", [("hard", "none"), ("soft", "none"), ("hard", "rayleigh")])
+@pytest.mark.parametrize("overlap_mode,fading", [("hard", "none"), ("soft", "none"), ("hard", "rayleigh"),
+                                                 ("hard", "gauss_markov")])
 def test_exact_oracle_matches_independent_brute_force(overlap_mode, fading):
-    env = make("T3", overlap_mode=overlap_mode, fading=fading)
+    env = make("T3", overlap_mode=overlap_mode, fading=fading, rho=0.99 if fading == "gauss_markov" else None)
     env.reset(seed=1)
     queues = np.clip(env.queues() + env.peek_arrivals(), 0, env.queue_max_size)
     harsh = prospective_harsh(env)
@@ -174,6 +176,43 @@ def test_rayleigh_fading_redraws_each_slot_without_touching_arrivals():
 def test_fading_does_not_change_mean_snr_observation():
     plain, faded = make("T3"), make("T3", fading="rayleigh")
     np.testing.assert_allclose(plain.reset(seed=1)[0], faded.reset(seed=1)[0])
+    correlated = make("T3", fading="gauss_markov", rho=0.99)
+    np.testing.assert_allclose(plain.reset(seed=1)[0], correlated.reset(seed=1)[0])
+
+
+def gauss_markov_gains(rho, slots=400, seed=3):
+    env = make("T6", load=5.0, steps=slots, fading="gauss_markov", rho=rho)
+    env.reset(seed=seed)
+    silence = np.array([env.mute_index, 0] * env.n_aps)
+    gains = []
+    for _ in range(slots - 1):
+        gains.append(env.interference.fading_gain.copy())
+        env.step(silence)
+    return env, np.stack(gains).reshape(len(gains), -1)
+
+
+@pytest.mark.parametrize("rho", [0.0, 0.9])
+def test_gauss_markov_fading_has_exp1_power_and_lag_one_correlation_rho_squared(rho):
+    _, gains = gauss_markov_gains(rho)
+    assert 0.9 < gains.mean() < 1.1  # marginal power gain stays Exp(1)
+    # For a complex Gaussian AR(1) process, corr(|h_t|^2, |h_{t+1}|^2) = rho^2.
+    lag1 = np.mean([np.corrcoef(g[:-1], g[1:])[0, 1] for g in gains.T])
+    assert lag1 == pytest.approx(rho**2, abs=0.05)
+
+
+def test_gauss_markov_fading_keeps_arrivals():
+    plain = make("T6", load=5.0, steps=50)
+    plain.reset(seed=4)
+    env, _ = gauss_markov_gains(0.99, slots=41, seed=4)
+    silence = np.array([plain.mute_index, 0] * plain.n_aps)
+    for _ in range(40):
+        plain.step(silence)
+    np.testing.assert_allclose(plain.queues(), env.queues())
+
+
+def test_gauss_markov_fading_rejects_rho_outside_unit_interval():
+    with pytest.raises(ValueError):
+        make("T6", fading="gauss_markov", rho=1.0)
 
 
 def make_random(topo_id, load=8.0, steps=30, overlap_mode="hard", fading="none"):

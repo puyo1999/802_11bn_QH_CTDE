@@ -48,6 +48,13 @@ def tstat(x: np.ndarray) -> float:
     return float(x.mean() / (x.std(ddof=1) / np.sqrt(len(x))))
 
 
+def ci(x: np.ndarray) -> str:
+    """95% confidence interval of the mean over topologies (t distribution), in percent."""
+    from scipy.stats import t
+    half = t.ppf(0.975, len(x) - 1) * x.std(ddof=1) / np.sqrt(len(x))
+    return f"[{100*(x.mean()-half):.1f}, {100*(x.mean()+half):.1f}]"
+
+
 def stage1() -> None:
     ratios = per_topology(load_rows("stage1"))
     loads = sorted({k[0] for k in ratios})
@@ -80,17 +87,23 @@ def stage2() -> None:
         return
     ratios = per_topology(rows)
     print("\n== Stage 2: gap decomposition over random topologies (sampled actions) ==")
+    learners = [f"{key}+{mcs}/sampled" for key in ("mappo", "central") for mcs in ("learned", "genie")]
     for load in sorted({k[0] for k in ratios}):
-        topos = sorted(t for (l, t) in ratios if l == load and "central+genie/sampled" in ratios[(l, t)])
-        if not topos:
+        topos = sorted(t for (l, t) in ratios if l == load and all(p in ratios[(l, t)] for p in learners))
+        if len(topos) < 2:
             continue
         get = lambda p: np.array([ratios[(load, t)][p] for t in topos])
         cot = get("co_tdma")
+        best = np.maximum(cot, get("oracle"))   # better of Co-TDMA and the all-transmit SINR reference
         print(f"λ={load}: n={len(topos)} topologies, H mean {100*(1-cot).mean():.1f}%")
-        for key in ("mappo", "central"):
-            for mcs in ("learned", "genie"):
-                x = get(f"{key}+{mcs}/sampled")
-                print(f"   {key}+{mcs}: {100*x.mean():.1f}% ± {100*x.std(ddof=1):.1f}")
+        print(f"   co_tdma {100*cot.mean():.1f}% {ci(cot)} | SINR ref {100*get('oracle').mean():.1f}% "
+              f"{ci(get('oracle'))} | best heuristic {100*best.mean():.1f}% {ci(best)}")
+        for p in learners:
+            x = get(p)
+            print(f"   {p.split('/')[0]}: {100*x.mean():.1f}% {ci(x)} | above Co-TDMA {int((x > cot).sum())}/{len(x)}"
+                  f", above best heuristic {int((x > best).sum())}/{len(x)} "
+                  f"(mean {100*(x-best).mean():+.1f}pt, t {tstat(x-best):+.1f}) | corr(x-CoTDMA, H) "
+                  f"{np.corrcoef(x - cot, 1 - cot)[0, 1]:+.2f}")
         for key in ("mappo", "central"):
             d = get(f"{key}+genie/sampled") - get(f"{key}+learned/sampled")
             print(f"   ΔLA {key}: {100*d.mean():+.1f}pt (t {tstat(d):+.1f})")

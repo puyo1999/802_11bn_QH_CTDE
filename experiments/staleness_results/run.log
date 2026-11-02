@@ -1,0 +1,44 @@
+[8.0_T3_0_mappo_genie] train 2479s | 0m: 88% | 1m: 87% | 3m: 81% | 5m: 78%
+[8.0_T3_1_mappo_genie] train 2520s | 0m: 88% | 1m: 88% | 3m: 87% | 5m: 84%
+[8.0_T3_1_central_genie] train 3972s | 0m: 87% | 1m: 87% | 3m: 93% | 5m: 83%
+[8.0_T3_0_central_genie] train 3981s | 0m: 86% | 1m: 87% | 3m: 76% | 5m: 72%
+[8.0_T3_2_mappo_genie] train 2265s | 0m: 87% | 1m: 86% | 3m: 84% | 5m: 80%
+[8.0_T4_0_mappo_genie] train 2170s | 0m: 91% | 1m: 91% | 3m: 83% | 5m: 79%
+[8.0_T3_2_central_genie] train 3717s | 0m: 86% | 1m: 83% | 3m: 81% | 5m: 79%
+[8.0_T4_1_mappo_genie] train 2217s | 0m: 90% | 1m: 88% | 3m: 90% | 5m: 91%
+[8.0_T4_0_central_genie] train 3666s | 0m: 91% | 1m: 92% | 3m: 81% | 5m: 76%
+[8.0_T4_2_mappo_genie] train 2266s | 0m: 92% | 1m: 91% | 3m: 87% | 5m: 88%
+[8.0_T6_0_mappo_genie] train 2279s | 0m: 67% | 1m: 66% | 3m: 60% | 5m: 56%
+[8.0_T4_1_central_genie] train 3766s | 0m: 91% | 1m: 88% | 3m: 91% | 5m: 89%
+[8.0_T4_2_central_genie] train 3866s | 0m: 91% | 1m: 88% | 3m: 91% | 5m: 96%
+[8.0_T6_1_mappo_genie] train 2821s | 0m: 74% | 1m: 75% | 3m: 69% | 5m: 61%
+[8.0_T6_0_central_genie] train 4495s | 0m: 78% | 1m: 77% | 3m: 68% | 5m: 62%
+[8.0_T6_2_mappo_genie] train 3095s | 0m: 78% | 1m: 78% | 3m: 75% | 5m: 77%
+[8.0_T6_1_central_genie] train 4562s | 0m: 77% | 1m: 77% | 3m: 77% | 5m: 59%
+[8.0_T6_2_central_genie] train 2819s | 0m: 70% | 1m: 68% | 3m: 65% | 5m: 67%
+
+ load topo  learner          shift mis-assoc  Co-TDMA  sampled   argmax   (% of exact oracle on the displaced topology)
+  8.0 T3    central+genie       0m        0%    75.8%    86.3%    88.9%
+  8.0 T3    central+genie       1m       20%    75.6%    86.7%    89.3%
+  8.0 T3    central+genie       3m       14%    77.8%    86.2%    86.1%
+  8.0 T3    central+genie       5m       16%    82.2%    78.9%    74.0%
+  8.0 T3    mappo+genie         0m        0%    75.8%    87.8%    84.2%
+  8.0 T3    mappo+genie         1m       20%    75.6%    86.8%    84.1%
+  8.0 T3    mappo+genie         3m       14%    77.8%    86.2%    85.3%
+  8.0 T3    mappo+genie         5m       16%    82.2%    80.3%    76.0%
+  8.0 T4    central+genie       0m        0%    77.0%    90.8%    90.7%
+  8.0 T4    central+genie       1m        0%    76.6%    90.5%    91.2%
+  8.0 T4    central+genie       3m        0%    78.1%    90.8%    89.1%
+  8.0 T4    central+genie       5m        0%    82.3%    80.0%    76.8%
+  8.0 T4    mappo+genie         0m        0%    77.0%    91.0%    90.8%
+  8.0 T4    mappo+genie         1m        0%    76.6%    90.4%    89.2%
+  8.0 T4    mappo+genie         3m        0%    78.1%    89.5%    87.6%
+  8.0 T4    mappo+genie         5m        0%    82.3%    80.9%    77.0%
+  8.0 T6    central+genie       0m       29%    88.3%    74.6%    74.4%
+  8.0 T6    central+genie       1m       19%    87.8%    74.2%    72.8%
+  8.0 T6    central+genie       3m       21%    86.3%    70.3%    68.4%
+  8.0 T6    central+genie       5m       25%    88.8%    65.8%    61.0%
+  8.0 T6    mappo+genie         0m       29%    88.3%    73.1%    62.4%
+  8.0 T6    mappo+genie         1m       19%    87.8%    72.9%    61.2%
+  8.0 T6    mappo+genie         3m       21%    86.3%    68.9%    58.6%
+  8.0 T6    mappo+genie         5m       25%    88.8%    67.6%    56.6%
