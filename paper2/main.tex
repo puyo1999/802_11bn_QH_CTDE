@@ -74,16 +74,16 @@ MAPC is a core feature of IEEE 802.11bn~\cite{galati2024wifi8,lopez2019ieee}, an
 \section{System Model}
 \label{sec:system}
 \subsection{Network and mobility}
-The network consists of $N$ APs indexed by $i \in \mathcal{N} = \{1,\dots,N\}$ at fixed positions $\mathbf{p}_i \in \mathbb{R}^2$ and $M$ STAs indexed by $k \in \mathcal{K} = \{1,\dots,M\}$. Time is divided into scheduling slots of duration $T_{\text{slot}} = 1$~ms. STA $k$ moves according to the Gauss--Markov mobility model
+The network consists of $N$ APs indexed by $i \in \mathcal{N} = \{1,\dots,N\}$ at fixed positions $\mathbf{p}_i \in \mathbb{R}^2$ and $M$ STAs indexed by $k \in \mathcal{K} = \{1,\dots,M\}$. Time is divided into scheduling slots of duration $T_{\text{slot}} = 1$~ms. STA $k$ moves according to the Gauss--Markov mobility model~\todo{cite Liang and Haas (1999) once verified}. The velocity is updated once per mobility epoch of duration $T_{\text{mob}} = n_{\text{mob}} T_{\text{slot}}$, and the position once per slot:
 \begin{equation}
-\mathbf{v}_k(t) = \beta\,\mathbf{v}_k(t-1) + (1-\beta)\,\bar{\mathbf{v}}_k + \sqrt{1-\beta^2}\,\sigma_v\,\mathbf{w}_k(t),
+\mathbf{v}_k(\ell) = \beta\,\mathbf{v}_k(\ell-1) + (1-\beta)\,\bar{\mathbf{v}}_k + \sqrt{1-\beta^2}\,\sigma_v\,\mathbf{w}_k(\ell), \qquad \beta = e^{-T_{\text{mob}}/\tau},
 \label{eq:velocity}
 \end{equation}
 \begin{equation}
-\mathbf{x}_k(t+1) = \mathbf{x}_k(t) + T_{\text{slot}}\,\mathbf{v}_k(t),
+\mathbf{x}_k(t+1) = \mathbf{x}_k(t) + T_{\text{slot}}\,\mathbf{v}_k\bigl(\lfloor t/n_{\text{mob}} \rfloor\bigr),
 \label{eq:position}
 \end{equation}
-where $\mathbf{x}_k(t)$ and $\mathbf{v}_k(t)$ are the position and velocity of STA $k$, $\beta \in [0,1]$ is the memory parameter, $\bar{\mathbf{v}}_k$ is the mean velocity, $\sigma_v$ is the velocity standard deviation, and $\mathbf{w}_k(t)$ is a standard bivariate Gaussian vector. The distance between AP $i$ and STA $k$ is $d_{i,k}(t) = \|\mathbf{p}_i - \mathbf{x}_k(t)\|$, and the received power follows the indoor path-loss model
+where $\mathbf{x}_k(t)$ is the position of STA $k$ in slot $t$, $\mathbf{v}_k(\ell)$ is its velocity in epoch $\ell$, $\tau > 0$ is the velocity correlation time, $\bar{\mathbf{v}}_k$ is the mean velocity, $\sigma_v$ is the stationary standard deviation of each velocity component, and $\mathbf{w}_k(\ell)$ is a standard bivariate Gaussian vector. Defining the memory parameter $\beta$ through $\tau$ keeps the motion independent of the epoch duration. The model spans two limits. For $\tau \to \infty$ and $\sigma_v = 0$, with $\mathbf{v}_k(0) = \bar{\mathbf{v}}_k$, the STA moves on a straight line at constant velocity, as in the mobility scenarios of IEEE~802.11 evaluations~\todo{cite primary source once verified}; for $\tau \to 0$, the velocity is uncorrelated across epochs. The correlation time therefore sets how predictable the motion is. With $\bar{\mathbf{v}}_k = \mathbf{0}$, the velocity is a sampled Ornstein--Uhlenbeck process, and the STA lingers around its initial position. At the edge of the deployment area, the position is reflected, and the components of $\mathbf{v}_k$ and $\bar{\mathbf{v}}_k$ normal to the edge change sign. The distance between AP $i$ and STA $k$ is $d_{i,k}(t) = \|\mathbf{p}_i - \mathbf{x}_k(t)\|$, and the received power follows the indoor path-loss model
 \begin{equation}
 P_{\text{rx}}(d) = P_{\text{tx}} - 46.67 - 30 \log_{10} \max(d, 1) \quad [\text{dBm}],
 \label{eq:pathloss}
@@ -200,7 +200,7 @@ The switching cost couples consecutive slots, so a per-slot maximization of~\eqr
 
 \section{Experimental Setup}
 \label{sec:setup}
-\todo{Trajectories: straight crossing between two APs and Gauss--Markov walks in the random topologies of the companion paper. Speed 0.5--2~m/s; $\Delta_{\text{hys}} \in \{0, 1, 3, 6, 10\}$~dB; $n_{\text{TTT}} \in \{0, 40, 160\}$ slots; $\alpha \in \{0.1, 0.5, 1\}$; $R_{\text{roam}} \in \{-65, -70, -75\}$~dBm; $n_{\text{HO}}$ for legacy roaming and fast basic service set (BSS) transition; $\sigma_X$ from the Rayleigh fading statistics; episode length of several seconds; load $\lambda$ above the Co-TDMA capacity.}
+\todo{Trajectories (see docs/paper2\_experiment\_plan.md): straight crossing between two APs ($\tau \to \infty$), Gauss--Markov dwelling at the boundary with $\bar{\mathbf{v}}_k = \mathbf{0}$, a stationary STA at the boundary, and Gauss--Markov walks in the random topologies of the companion paper. Correlation time $\tau \in \{1, 3, 10, \infty\}$~s with $T_{\text{mob}} = 100$~ms; speed 0.5--2~m/s; $\Delta_{\text{hys}} \in \{0, 1, 3, 6, 10\}$~dB; $n_{\text{TTT}} \in \{0, 40, 160\}$ slots; $\alpha \in \{0.1, 0.5, 1\}$; $R_{\text{roam}} \in \{-65, -70, -75\}$~dBm; $n_{\text{HO}}$ for legacy roaming and fast basic service set (BSS) transition; $\sigma_X$ from the Rayleigh fading statistics; episode length of several seconds; load $\lambda$ above the Co-TDMA capacity.}
 
 \section{Results}
 \label{sec:results}
