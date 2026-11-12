@@ -11,10 +11,14 @@ Plan: `docs/paper3_5g_multicell_plan.md`. Companion papers: `paper/` (IEEE 802.1
 
 | Section | State |
 |---|---|
-| Abstract, I. Introduction | Framing written; results, contributions and organization marked `\todo` |
-| II. Related Work | Outlined (citations to verify) |
-| III. System Model | Outlined; Fig. `fig:topology` placed |
-| IV–X | Outlined (`\todo`) |
+| Abstract | Written; quantitative results marked `\todo` |
+| I. Introduction | Written; companion-paper citation marked `\todo` |
+| II. Related Work | Written; 13 verified references |
+| III. System Model | Written: layout and cluster, UMi channel (TR 38.901), subbands, CQI table (TS 38.214), attenuated Shannon thresholds (TR 36.942), traffic, PF objective, observations; Fig. `fig:topology` |
+| IV. Problem Formulation | Written: objective, Dec-POMDP, offered load η, headroom H |
+| V. Method | Written: per-subband exact oracle with Algorithm 1, references, learners, OLLA, gap decomposition |
+| VI. Experimental Setup | Written: experiments E0–E5, Table I; PPO hyperparameters to be copied once the companion paper is citable |
+| VII–IX. Results, Discussion, Conclusion | Outlined (`\todo`), waiting for the experiments |
 
 ## Files
 
@@ -29,7 +33,9 @@ The folder is self-contained so that it can be uploaded to Overleaf as is.
 ## Rules
 
 - References: only entries verified against a primary record enter `references.bib` (same practice as `paper/`).
-- Channel and CQI parameters (TR 38.901, TS 38.214) are verified against the specifications before they enter the text.
+- Channel and CQI parameters are verified against the specifications before they enter the text. Verified so far:
+  ETSI TR 138 901 V17.0.0 (Tables 7.4.1-1, 7.4.2-1, 7.8-1), ETSI TS 138 214 V16.2.0 (Table 5.2.2.1-2),
+  ETSI TR 136 942 V15.0.0 (Annex A, Table A.1).
 
 ## Build
 

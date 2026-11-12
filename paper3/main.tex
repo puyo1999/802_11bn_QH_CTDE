@@ -1,6 +1,7 @@
 % IEEE Access draft (third paper). Compile with the official IEEE Access LaTeX template
 % (ieeeaccess.cls, spotcolor.sty, IEEEtran.bst, logo files) copied into this directory; see paper3/README.md.
-% Status: skeleton. Plan: docs/paper3_5g_multicell_plan.md. Every section is outlined with \todo{...}.
+% Status: Sections I-VI written from docs/paper3_5g_multicell_plan.md; results, discussion, conclusion and the
+% quantitative part of the abstract are \todo until the experiments run.
 \documentclass{ieeeaccess}
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
@@ -30,7 +31,7 @@
 \corresp{Corresponding author: Taeyoon Kim (e-mail: 2000kty@dankook.ac.kr).}
 
 \begin{abstract}
-Coordinated scheduling across cells in fifth-generation new radio (5G NR) decides in every slot which cell serves which user equipment (UE) on each subband and which cells stay silent. Learned schedulers based on multi-agent reinforcement learning (MARL) with centralized training and decentralized execution (CTDE) fit the open radio access network (O-RAN) architecture, in which a near-real-time radio access network intelligent controller (near-RT RIC) trains centrally and each base station executes locally. Their gains are, however, measured against heuristics whose distance from the optimum is unknown. This paper computes an exact per-slot oracle for coordinated scheduling, decomposes the loss of learned schedulers relative to it, and identifies the operating conditions under which coordination beyond a time-division reference yields a gain. \todo{Main quantitative results: headroom versus offered load relative to the capacity of cluster time division, share of the variance explained by the fluid model, link-adaptation, information, and optimization gaps with outer-loop link adaptation, and their dependence on channel quality indicator delay and UE speed.}
+Coordinated scheduling across cells in fifth-generation new radio (5G NR) decides in every slot which cell serves which user equipment (UE) on each subband and which cells stay silent. Learned schedulers based on multi-agent reinforcement learning (MARL) with centralized training and decentralized execution (CTDE) fit the open radio access network (O-RAN) architecture, in which a near-real-time radio access network intelligent controller (near-RT RIC) trains centrally and each base station executes locally. Their gains are, however, measured against heuristics whose distance from the optimum is unknown. This paper computes an exact per-slot oracle for coordinated scheduling in a cluster of cells, decomposes the loss of learned schedulers relative to it into link-adaptation, information, and optimization gaps, and identifies the operating conditions under which coordination beyond cluster time division yields a gain. The evaluation follows the urban micro scenario of the Third Generation Partnership Project (3GPP) channel model and the channel quality indicator (CQI) table of 5G NR, and it varies the offered load, the CQI delay, the UE speed, the scheduling objective, and the cluster size. \todo{Main quantitative results: headroom versus offered load relative to the capacity of cluster time division, link-adaptation, information, and optimization gaps with outer-loop link adaptation, and their dependence on CQI delay and UE speed.}
 \end{abstract}
 
 \begin{keywords}
@@ -43,26 +44,39 @@ Coordinated scheduling across cells in fifth-generation new radio (5G NR) decide
 
 \section{Introduction}
 \label{sec:introduction}
-\PARstart{D}{ense} deployments of fifth-generation new radio (5G NR) base stations operate with full frequency reuse, so that the throughput of a cell depends on the scheduling decisions of its neighbors. Coordinated scheduling lets a cluster of cells decide jointly which user equipment (UE) each cell serves on each subband and which cells stay silent. The open radio access network (O-RAN) architecture places such decisions in a near-real-time radio access network intelligent controller (near-RT RIC), which makes multi-agent reinforcement learning (MARL) with centralized training and decentralized execution (CTDE)~\cite{lowe2017maddpg,foerster2018coma,yu2022mappo} a natural fit: the controller trains a centralized critic, and each base station executes a local actor.
+\PARstart{D}{ense} deployments of fifth-generation new radio (5G NR) base stations operate with full frequency reuse, so that the throughput of a cell depends on the scheduling decisions of its neighbors. Coordinated scheduling lets a cluster of cells decide jointly which user equipment (UE) each cell serves on each subband and which cells stay silent~\cite{gesbert2010multicell,irmer2011comp,lee2012comp}. The open radio access network (O-RAN) architecture places such decisions in a near-real-time radio access network intelligent controller (near-RT RIC)~\cite{polese2023oran,bonati2021oran}, which makes multi-agent reinforcement learning (MARL) with centralized training and decentralized execution (CTDE)~\cite{lowe2017maddpg,foerster2018coma,yu2022mappo} a natural fit: the controller trains a centralized critic, and each base station executes a local actor.
 
-\todo{Gap in evaluation practice: learned coordinated schedulers are compared with uncoordinated proportional fair (PF) scheduling or static reuse, neither of which is an upper bound. Summary of the companion IEEE 802.11bn study and the open question whether its findings are specific to Wi-Fi.}
+Learned interference management in cellular networks is commonly evaluated against uncoordinated scheduling, static frequency reuse, or model-based heuristics~\cite{nasir2019power,naderializadeh2021resource}. None of these references is an upper bound, so a reported gain does not reveal how much of the achievable gain the learner realizes, and a reported shortfall does not reveal whether it stems from missing information about the other cells, from rate selection, or from policy optimization. Static references also differ in strength across operating points: fractional frequency reuse (FFR)~\cite{novlan2011ffr} protects cell-edge UEs at the cost of spectrum, and full reuse with proportional fair (PF) scheduling~\cite{viswanath2002pf} maximizes spectrum use at the cost of interference.
 
-\todo{Contributions: (i) exact per-subband oracle for coordinated scheduling under full buffer, (ii) headroom law with respect to cluster time division and a fluid model, (iii) loss decomposition with outer-loop link adaptation (OLLA) as the standard link adaptation, (iv) dependence on channel quality indicator (CQI) delay, UE speed, PF objective, and cluster size, (v) reproducible simulator.}
+A companion study of multi-access point coordination in IEEE 802.11bn \todo{cite companion paper once available} addressed this question with an exact per-slot oracle. It found that the coordination headroom over coordinated time division opens only when the offered load exceeds the capacity of time division, that rate selection dominates the loss of learned schedulers while information exchanged between access points contributes little, and that a coordination gain of a learner is established only against the better of two simple references. Cellular scheduling differs from Wi-Fi in four respects that bear on these findings: the band is divided into subbands that are scheduled jointly, the standard objective is PF rather than throughput, rate selection relies on channel quality indicator (CQI) reports that arrive with a delay, and outer-loop link adaptation (OLLA) is the established remedy for rate selection under feedback errors. This paper asks whether the findings carry over to coordinated scheduling in 5G NR.
 
-\todo{Organization paragraph: the only place in Section~\ref{sec:introduction} that names later sections.}
+The contributions are as follows.
+\begin{itemize}
+\item An exact per-subband oracle for coordinated scheduling in a cluster of 5G NR cells, which enumerates every joint choice of target UE or silence with the highest decodable CQI per link and is exact under full buffer because the scheduling utility separates across subbands.
+\item A definition of the offered load relative to the capacity of cluster time division multiple access (cluster TDMA) and an evaluation of the coordination headroom over random UE drops in the urban micro scenario of the Third Generation Partnership Project (3GPP) channel model~\cite{3gpp38901}.
+\item A decomposition of the loss of CTDE schedulers based on proximal policy optimization (PPO)~\cite{schulman2017ppo,yu2022mappo} into link-adaptation, information, and optimization gaps, with learned, OLLA-based, and ideal rate selection, and under both the throughput and the PF objective.
+\item An evaluation of the gaps as functions of the CQI delay, the UE speed, and the cluster size, and a simulator in which every result is reproducible from configuration files.
+\end{itemize}
+
+The remainder of the paper is organized as follows. Section~\ref{sec:related} reviews related work. Section~\ref{sec:system} defines the system model, and Section~\ref{sec:problem} formulates the scheduling problem. Section~\ref{sec:method} presents the exact oracle, the reference schedulers, the learners, and the gap decomposition. Section~\ref{sec:setup} details the experimental setup, Section~\ref{sec:results} reports the results, Section~\ref{sec:discussion} discusses them, and Section~\ref{sec:conclusion} concludes the paper.
 
 \section{Related Work}
 \label{sec:related}
 \subsection{Coordinated scheduling and interference coordination}
-\todo{Coordinated multipoint (CoMP) coordinated scheduling and beamforming, enhanced inter-cell interference coordination (eICIC), fractional frequency reuse. Every citation verified against a primary record before it enters references.bib.}
+Coordination among cells ranges from full joint processing, in which several cells transmit data to the same UE, to coordinated scheduling and beamforming, in which each UE is served by one cell and the cells coordinate their scheduling and precoding decisions~\cite{gesbert2010multicell}. Irmer et~al.~\cite{irmer2011comp} report the concepts and field trials of coordinated multipoint (CoMP) transmission, and Lee et~al.~\cite{lee2012comp} describe its deployment scenarios and operational challenges in Long Term Evolution Advanced (LTE-Advanced), including the dependence of coordinated scheduling on the latency and capacity of the backhaul. Static schemes avoid per-slot coordination: FFR assigns cell-edge UEs to subbands that neighboring cells do not reuse, and Novlan et~al.~\cite{novlan2011ffr} evaluate strict and soft FFR analytically. In heterogeneous networks, enhanced inter-cell interference coordination (eICIC) mutes macro cells in almost blank subframes so that small cells serve their UEs with less interference~\cite{lopezperez2011eicic}. The muting of a cell in a slot is also the elementary decision of the coordinated scheduler considered here.
 
 \subsection{Learning-based scheduling in cellular networks}
-\todo{MARL for inter-cell interference coordination and power control; reinforcement learning xApps in O-RAN; optimality references used in these studies.}
+Nasir and Guo~\cite{nasir2019power} train distributed deep Q-networks for dynamic power allocation, with each transmitter acting on local observations and limited information from its neighbors. Naderializadeh et~al.~\cite{naderializadeh2021resource} apply MARL to joint user scheduling and power control in multi-cell networks and compare the learned policy with information-theoretic and heuristic references. O-RAN exposes such decisions to data-driven control through the near-RT RIC and its applications~\cite{polese2023oran,bonati2021oran}. CTDE algorithms such as multi-agent deep deterministic policy gradient~\cite{lowe2017maddpg}, counterfactual multi-agent policy gradients~\cite{foerster2018coma}, and multi-agent PPO (MAPPO)~\cite{yu2022mappo} match this split between a central trainer and distributed executors.
+
+\subsection{Optimality references}
+The references in the cited learning studies are heuristics or bounds that hold under assumptions different from the learned scheduler, e.g., full channel knowledge without a per-slot rate constraint. This paper uses an exact per-slot oracle under the same discrete rate set, the same objective, and the same interference model as the learners, and it decomposes the loss of the learners relative to that oracle. The per-slot problem of a cluster of a few cells is tractable by enumeration because the number of joint decisions grows as the product of the per-cell choice counts.
 
 \section{System Model}
 \label{sec:system}
 \subsection{Layout and coordination cluster}
-\todo{Hexagonal layout of seven cells with wraparound and inter-site distance (ISD) of 200~m; coordination cluster $\mathcal{C}$ of size $C \in \{3, 7\}$; cells outside $\mathcal{C}$ transmit with uncoordinated PF scheduling and act as background interference; $U$ UEs per cell dropped uniformly with a minimum distance of 10~m.}
+The network consists of $N = 7$ hexagonal cells indexed by $c \in \mathcal{N} = \{1, \dots, N\}$, with one omnidirectional base station at the center of each cell and an inter-site distance (ISD) of 200~m, the ISD of the urban micro scenario of~\cite{3gpp38901}. Distances follow the geographical wraparound of the seven-cell layout, so that every cell sees a full ring of interferers. Cell $c$ serves the set $\mathcal{U}_c$ of $U$ UEs, which are dropped uniformly in the cell area with a minimum two-dimensional distance of 10~m from the base station. The base station antenna height is $h_{\text{BS}} = 10$~m, and the UE antenna height is $h_{\text{UT}} = 1.5$~m.
+
+The coordination cluster $\mathcal{C} \subseteq \mathcal{N}$ contains $C = |\mathcal{C}|$ mutually adjacent cells, with $C \in \{3, 7\}$. The cells in $\mathcal{C}$ coordinate their scheduling decisions in every slot. The cells outside $\mathcal{C}$ transmit on every subband in every slot and act as background interference. Fig.~\ref{fig:topology} shows the layout, the two cluster sizes, and one drop of UEs.
 
 \begin{figure*}
 \centering
@@ -71,44 +85,189 @@ Coordinated scheduling across cells in fifth-generation new radio (5G NR) decide
 \label{fig:topology}
 \end{figure*}
 
+Location-based reuse-3 is not compatible with a seven-cell wraparound, because the wraparound period of seven cells is not a multiple of three and cells of the same reuse group become neighbors across the wrap boundary, as Fig.~\ref{fig:topology}(b) shows. The orthogonal reference of this paper is therefore time division within the cluster, which does not depend on the layout.
+
 \subsection{Channel}
-\todo{Simplified 3GPP TR 38.901 urban micro (UMi) path loss with line-of-sight probability, log-normal shadowing, subband Rayleigh fading with Gauss--Markov time correlation $\rho = J_0(2\pi f_D T_{\text{slot}})$. Parameter values verified against TR 38.901.}
+The path loss $\text{PL}_{c,u}$ between base station $c$ and UE $u$ follows the urban micro street canyon model of~\cite[Table~7.4.1-1]{3gpp38901} at the carrier frequency $f_c = 3.5$~GHz. In line of sight (LOS),
+\begin{equation}
+\text{PL}_{\text{LOS}} =
+\begin{cases}
+32.4 + 21 \log_{10} d_{\text{3D}} + 20 \log_{10} f_c, & d_{\text{2D}} \le d'_{\text{BP}}, \\
+32.4 + 40 \log_{10} d_{\text{3D}} + 20 \log_{10} f_c \\
+\quad - 9.5 \log_{10}\bigl(d'^{2}_{\text{BP}} + (h_{\text{BS}} - h_{\text{UT}})^2\bigr), & d_{\text{2D}} > d'_{\text{BP}},
+\end{cases}
+\label{eq:pl_los}
+\end{equation}
+where $d_{\text{2D}}$ and $d_{\text{3D}}$ are the horizontal and the three-dimensional distance in meters, $f_c$ is in gigahertz, and $d'_{\text{BP}} = 4 (h_{\text{BS}} - 1)(h_{\text{UT}} - 1) f_c / c_0 = 210$~m is the breakpoint distance with the effective environment height of 1~m and the speed of light $c_0$. In non-line of sight (NLOS),
+\begin{equation}
+\text{PL}_{\text{NLOS}} = \max\bigl(\text{PL}_{\text{LOS}},\ 35.3 \log_{10} d_{\text{3D}} + 22.4 + 21.3 \log_{10} f_c - 0.3 (h_{\text{UT}} - 1.5)\bigr).
+\label{eq:pl_nlos}
+\end{equation}
+A link is in LOS with probability $1$ for $d_{\text{2D}} \le 18$~m and $18/d_{\text{2D}} + \exp(-d_{\text{2D}}/36)(1 - 18/d_{\text{2D}})$ otherwise~\cite[Table~7.4.2-1]{3gpp38901}. The LOS state and a log-normal shadowing term $X_{c,u}$ with standard deviation 4~dB in LOS and 7.82~dB in NLOS are drawn once per drop. The large-scale power gain is $G_{c,u} = 10^{-(\text{PL}_{c,u} + X_{c,u})/10}$.
 
-\subsection{Resources, actions, and link outcome}
-\todo{Slot duration $T_{\text{slot}}$, $B$ subbands, per-subband target UE or silence of every cell, CQI table of TS 38.214 with signal-to-interference-plus-noise ratio (SINR) thresholds, step block error model.}
+The small-scale fading of the link from base station $c$ to UE $u$ on subband $b$ is a complex Gaussian gain with unit mean power that evolves as
+\begin{equation}
+h_{c,u,b}(t) = \rho\, h_{c,u,b}(t-1) + \sqrt{1 - \rho^2}\, n_{c,u,b}(t), \qquad \rho = J_0(2 \pi f_D T_{\text{slot}}),
+\label{eq:fading}
+\end{equation}
+where $n_{c,u,b}(t)$ is an independent circularly symmetric complex Gaussian variable with unit variance, $J_0(\cdot)$ is the Bessel function of the first kind of order zero, $f_D = v f_c / c_0$ is the maximum Doppler frequency of a UE moving at speed $v$, and $T_{\text{slot}}$ is the slot duration. The fading of different links and subbands is independent.
 
-\subsection{Traffic and objective}
-\todo{Full buffer and finite buffer; slot throughput and PF objective with exponentially averaged rates.}
+\subsection{Resources, decisions, and link outcome}
+The system bandwidth $W = 20$~MHz is divided into $B$ subbands of bandwidth $W/B$, indexed by $b \in \mathcal{B} = \{1, \dots, B\}$. Time is divided into slots of duration $T_{\text{slot}} = 1$~ms. Every base station transmits with the total power $P_{\text{tx}} = 44$~dBm, divided equally among the subbands on which it transmits~\cite[Table~7.8-1]{3gpp38901}. The noise power per subband is $P_{\text{N}} = -174 + 10 \log_{10}(W/B) + 9$~dBm, with a UE noise figure of 9~dB~\cite[Table~7.8-1]{3gpp38901}.
+
+In slot $t$, cell $c \in \mathcal{C}$ selects on every subband $b$ a target $a_{c,b}(t) \in \mathcal{U}_c \cup \{\varnothing\}$, where $\varnothing$ denotes silence, and a CQI index $q_{c,b}(t) \in \{1, \dots, 15\}$. The set of transmitting cells on subband $b$ is
+\begin{equation}
+\mathcal{A}_b(t) = \{ c \in \mathcal{C} : a_{c,b}(t) \ne \varnothing \} \cup (\mathcal{N} \setminus \mathcal{C}).
+\label{eq:active}
+\end{equation}
+The signal-to-interference-plus-noise ratio (SINR) of the link from cell $c$ to UE $u = a_{c,b}(t)$ on subband $b$ is
+\begin{equation}
+\gamma_{c,b}(t) = \frac{P_b\, G_{c,u}\, |h_{c,u,b}(t)|^2}{\sum_{j \in \mathcal{A}_b(t) \setminus \{c\}} P_b\, G_{j,u}\, |h_{j,u,b}(t)|^2 + P_{\text{N}}},
+\label{eq:sinr}
+\end{equation}
+where $P_b = P_{\text{tx}}/B$ is the transmit power per subband and all powers are in linear scale.
+
+The CQI indices and their spectral efficiencies $e_q$ follow the four-bit CQI table of 5G NR, from $e_1 = 0.1523$ to $e_{15} = 5.5547$~bit/s/Hz~\cite[Table~5.2.2.1-2]{3gpp38214}. The SINR threshold of CQI $q$ is obtained by inverting the attenuated Shannon bound $e = \alpha \log_2(1 + \gamma)$ with the attenuation $\alpha = 0.6$ of the downlink baseline in~\cite[Annex~A]{3gpp36942},
+\begin{equation}
+\theta_q = 2^{e_q/\alpha} - 1,
+\label{eq:threshold}
+\end{equation}
+which yields thresholds from $-7.2$~dB for $q = 1$ to $27.9$~dB for $q = 15$. A transmission with CQI $q$ succeeds if $\gamma_{c,b}(t) \ge \theta_q$ and delivers
+\begin{equation}
+r_{c,b}(t) = \mathbb{1}\bigl[\gamma_{c,b}(t) \ge \theta_{q_{c,b}(t)}\bigr]\, e_{q_{c,b}(t)}\, \frac{W}{B}\, T_{\text{slot}}
+\label{eq:rate}
+\end{equation}
+bits to UE $a_{c,b}(t)$; it fails otherwise. In the finite-buffer model, the delivery is further limited by the backlog of the UE.
+
+\subsection{Traffic}
+Under full buffer, every UE has data in every slot. Under finite buffer, the backlog $Q_u(t)$ of UE $u$ receives $A_u(t)$ bits per slot, where $A_u(t)/(e_{15} W T_{\text{slot}})$ is Poisson distributed with mean $\lambda$, and it evolves as
+\begin{equation}
+Q_u(t+1) = Q_u(t) + A_u(t) - \sum_{b \in \mathcal{B}} D_{u,b}(t),
+\label{eq:queue}
+\end{equation}
+where $D_{u,b}(t) \le r_{c,b}(t)$ is the number of bits delivered to $u$ on subband $b$ and the deliveries of a slot do not exceed $Q_u(t) + A_u(t)$.
+
+\subsection{Scheduling objective}
+The slot throughput is $R(t) = \sum_{b \in \mathcal{B}} \sum_{c \in \mathcal{C}} r_{c,b}(t)$. The PF utility weights the delivery to UE $u$ by $w_u(t) = 1/\bar{R}_u(t)$, where the average rate evolves as $\bar{R}_u(t+1) = (1 - \beta)\bar{R}_u(t) + \beta R_u(t)$ with $\beta = 0.01$ and $R_u(t)$ the bits delivered to $u$ in slot $t$. The slot utility is
+\begin{equation}
+V(t) = \sum_{b \in \mathcal{B}} \sum_{c \in \mathcal{C} : a_{c,b}(t) \ne \varnothing} w_{a_{c,b}(t)}(t)\, r_{c,b}(t),
+\label{eq:utility}
+\end{equation}
+with $w_u(t) = 1$ for the throughput objective and $w_u(t) = 1/\bar{R}_u(t)$ for the PF objective.
 
 \subsection{Observations}
-\todo{Delayed per-subband CQI, buffer length, PF average rate, mean interference from neighboring cells; information level $b \in \{0, \infty\}$.}
+UE $u$ reports, on every subband $b$, the CQI index $\hat{q}_{u,b}(t) = \max\{ q : \theta_q \le \tilde{\gamma}_{u,b}(t - d) \}$, where $\tilde{\gamma}_{u,b}$ is the SINR of the link from the serving cell of $u$ when all cells transmit and $d$ is the CQI delay in slots. At the start of slot $t$, the agent of cell $c$ and subband $b$ observes the local vector
+\begin{equation}
+o_{c,b}(t) = \bigl[\hat{\mathbf{q}}_{c,b}(t),\ \boldsymbol{\omega}_{c}(t),\ \boldsymbol{\kappa}_{c}(t),\ \bar{I}_{c},\ \mathbf{e}_b\bigr],
+\label{eq:obs}
+\end{equation}
+where $\hat{\mathbf{q}}_{c,b}(t)$ holds the reported CQI indices of the UEs of cell $c$ on subband $b$ normalized by 15, $\boldsymbol{\omega}_{c}(t)$ holds their PF weights normalized by their maximum, $\boldsymbol{\kappa}_{c}(t)$ holds their normalized backlogs under finite buffer and is omitted under full buffer, $\bar{I}_{c}$ is the mean received power from the other cells of $\mathcal{C}$ at the UEs of cell $c$ in decibels, normalized to $[0, 1]$, and $\mathbf{e}_b$ is the one-hot indicator of subband $b$. The joint observation is $\mathbf{o}(t) = [o_{c,b}(t)]_{c \in \mathcal{C},\, b \in \mathcal{B}}$.
 
 \section{Problem Formulation}
 \label{sec:problem}
-\todo{Per-slot objective, episode objective, decentralized partially observable Markov decision process~\cite{oliehoek2016dec}; offered load relative to the capacity of cluster time division, $\rho$.}
+The scheduling objective over an episode of $T$ slots is
+\begin{equation}
+J(\pi) = \mathbb{E}_{\pi}\Bigl[\sum_{t=0}^{T-1} V(t)\Bigr],
+\label{eq:objective}
+\end{equation}
+where $\pi$ maps observations to the targets and CQI indices of all cells in $\mathcal{C}$ on all subbands. Under CTDE, $\pi$ factorizes into local actors $\pi_{c,b}(a_{c,b}, q_{c,b} \mid o_{c,b})$, while a centralized critic $V_\phi(\mathbf{o})$ exists only during training. The problem is a decentralized partially observable Markov decision process~\cite{oliehoek2016dec}: no cell observes the decisions or the instantaneous channels of the other cells at execution time.
+
+Cluster TDMA activates one cell of $\mathcal{C}$ per subband and slot, so that the delivery of the cluster is at most $e_{15} W T_{\text{slot}}$ bits per slot. Each of the $C U$ UEs of the cluster offers $\lambda e_{15} W T_{\text{slot}}$ bits per slot on average, so the offered load relative to this capacity is
+\begin{equation}
+\eta = \lambda\, C\, U,
+\label{eq:offered_load}
+\end{equation}
+and the coordination headroom of a drop is $H = 1 - \Theta_{\text{TDMA}}/\Theta^{\star}$, where $\Theta_{\text{TDMA}}$ and $\Theta^{\star}$ are the episode throughputs of cluster TDMA and of the exact oracle.
 
 \section{Exact Oracle, References, and Learners}
 \label{sec:method}
 \subsection{Exact per-subband oracle}
-\todo{Separability across subbands under full buffer; enumeration of $(U+1)^C$ joint decisions per subband with the highest decodable modulation and coding scheme (MCS) per link; runtime; Algorithm in algorithm2e style.}
+For a fixed target vector $\mathbf{a}_b = (a_{c,b})_{c \in \mathcal{C}}$ on subband $b$, the transmitting set~\eqref{eq:active} and every SINR in~\eqref{eq:sinr} are determined, because the CQI choice does not change the interference. The utility-maximizing CQI of each link is therefore the highest index whose threshold the link SINR meets,
+\begin{equation}
+q^{\star}_{c,b}(\mathbf{a}_b) = \max\{ q : \theta_q \le \gamma_{c,b}(t) \},
+\label{eq:best_cqi}
+\end{equation}
+and the joint problem on subband $b$ reduces to a search over $\mathbf{a}_b$. Under full buffer and with the weights $w_u(t)$ fixed within the slot, the utility~\eqref{eq:utility} is a sum of per-subband terms that share no variable, so the oracle maximizes each subband separately:
+\begin{equation}
+\mathbf{a}^{\star}_b(t) = \arg\max_{\mathbf{a}_b \in \prod_{c \in \mathcal{C}} (\mathcal{U}_c \cup \{\varnothing\})} \sum_{c \in \mathcal{C} : a_{c,b} \ne \varnothing} w_{a_{c,b}}(t)\, r_{c,b}\bigl(\mathbf{a}_b, q^{\star}_{c,b}(\mathbf{a}_b)\bigr).
+\label{eq:oracle}
+\end{equation}
+The search covers $(U+1)^C$ target vectors per subband, i.e., 125 for $U = 4$ and $C = 3$ and 78\,125 for $U = 4$ and $C = 7$. Under finite buffer, the subbands share the backlog of each UE, and the oracle enumerates the joint decision for $B = 1$. The oracle observes the fading of the current slot and the current weights, so it is a genie reference that no causal scheduler matches, and it maximizes the utility of each slot without regard to later slots. Algorithm~\ref{alg:oracle} summarizes the procedure.
+
+\begin{algorithm}
+\caption{Exact per-subband oracle}
+\label{alg:oracle}
+\KwIn{gains $G_{c,u} |h_{c,u,b}(t)|^2$, weights $w_u(t)$, background cells $\mathcal{N} \setminus \mathcal{C}$}
+\KwOut{targets $\mathbf{a}^{\star}_b(t)$ and CQI indices $\mathbf{q}^{\star}_b(t)$ for all $b \in \mathcal{B}$}
+\ForEach{$b \in \mathcal{B}$}{
+  $V^{\star} \leftarrow -1$\;
+  \ForEach{$\mathbf{a}_b \in \prod_{c \in \mathcal{C}} (\mathcal{U}_c \cup \{\varnothing\})$}{
+    compute $\mathcal{A}_b$ by~\eqref{eq:active}\;
+    \ForEach{$c \in \mathcal{C}$ with $a_{c,b} \ne \varnothing$}{
+      compute $\gamma_{c,b}$ by~\eqref{eq:sinr} and $q^{\star}_{c,b}(\mathbf{a}_b)$ by~\eqref{eq:best_cqi}\;
+    }
+    $V \leftarrow$ objective of~\eqref{eq:oracle}\;
+    \If{$V > V^{\star}$}{
+      $V^{\star} \leftarrow V$; $\mathbf{a}^{\star}_b \leftarrow \mathbf{a}_b$; $\mathbf{q}^{\star}_b \leftarrow \mathbf{q}^{\star}_b(\mathbf{a}_b)$\;
+    }
+  }
+}
+\Return{$(\mathbf{a}^{\star}_b, \mathbf{q}^{\star}_b)_{b \in \mathcal{B}}$}\;
+\end{algorithm}
 
 \subsection{Reference schedulers}
-\todo{Uncoordinated reuse-1 PF, cluster time division, greedy muting, and the better of the three per drop.}
+Four references complement the oracle. Under uncoordinated full reuse, every cell of $\mathcal{C}$ transmits on every subband to the UE with the largest weighted rate at the highest CQI decodable when all cells transmit. Under cluster TDMA, one cell of $\mathcal{C}$ per subband and slot transmits, chosen in round-robin order over the cells with a non-empty backlog, and it serves the UE with the largest weighted rate at the highest CQI decodable under the background interference alone. Greedy muting starts from full reuse and, on each subband, repeatedly silences the cell whose silence raises the slot utility most, until no silence raises it. The better reference of a drop is the reference with the largest episode utility among the three, a post hoc choice that a scheduler with knowledge of the operating point attains.
 
-\subsection{Learned schedulers and gap decomposition}
-\todo{MAPPO~\cite{yu2022mappo} and Central PPO trained with PPO~\cite{schulman2017ppo} and generalized advantage estimation~\cite{schulman2016gae}; one agent per cell and subband with shared parameters; MCS control learned, OLLA, or ideal; link-adaptation, information, and optimization gaps.}
+\subsection{Learned schedulers}
+Each pair of a cell and a subband is an agent, and the agents share the parameters of their networks; the subband indicator $\mathbf{e}_b$ in~\eqref{eq:obs} distinguishes them. The 0-bit learner is MAPPO~\cite{yu2022mappo}: agent $(c, b)$ executes a local actor $\pi_{\theta}(a_{c,b}, q_{c,b} \mid o_{c,b})$, and a centralized critic $V_\phi(\mathbf{o})$ is used only for training. The full-information learner (Central PPO) executes, on each subband, a single actor on $\mathbf{o}$ that selects the targets and CQI indices of all cells of $\mathcal{C}$ autoregressively, so that the decision of cell $c$ conditions on the decisions of the preceding cells. Both learners include the silence action $\varnothing$ and are trained with PPO~\cite{schulman2017ppo} and generalized advantage estimation~\cite{schulman2016gae} on the normalized slot utility.
+
+The CQI selection of a learner takes one of three forms. Under learned control, the actor selects $q_{c,b}$. Under OLLA, the cell applies to the reported CQI an offset $\Delta_u$ in decibels, selects $q_{c,b} = \max\{ q : \theta_q \le \hat{\gamma}_{u,b} + \Delta_u \}$, where $\hat{\gamma}_{u,b}$ is the threshold of the reported CQI, and updates $\Delta_u \leftarrow \Delta_u - \delta$ after a failure and $\Delta_u \leftarrow \Delta_u + \delta\, \epsilon/(1 - \epsilon)$ after a success, with the step $\delta = 0.5$~dB and the target error rate $\epsilon = 0.1$. Under ideal control, $q_{c,b} = q^{\star}_{c,b}(\mathbf{a}_b)$ by~\eqref{eq:best_cqi} for the targets that the learner selects, so the learner decides only the targets.
+
+\subsection{Gap decomposition}
+Let $\Theta^{\star}$ denote the episode utility of the oracle and $\Theta_{x,\ell}$ that of a learner with information level $x \in \{0, \infty\}$ and CQI control $\ell \in \{\text{learned}, \text{OLLA}, \text{ideal}\}$. With $\rho_{x,\ell} = \Theta_{x,\ell}/\Theta^{\star}$, the loss of a learner decomposes into the link-adaptation gap $\Delta_{\text{LA}} = \rho_{x,\text{ideal}} - \rho_{x,\text{learned}}$, the information gap $\Delta_{\text{I}} = \rho_{\infty,\ell} - \rho_{0,\ell}$, and the residual optimization gap $\Delta_{\text{opt}} = 1 - \rho_{\infty,\text{ideal}}$. As in the companion study, the two learners differ both in the information available to the actor and in the joint selection of the decisions of all cells, so $\Delta_{\text{I}}$ measures the combined value of full information and joint action selection and bounds the value of information exchange alone from above. The OLLA gap $\rho_{x,\text{ideal}} - \rho_{x,\text{OLLA}}$ measures the loss that remains with the standard remedy for rate selection.
 
 \section{Experimental Setup}
 \label{sec:setup}
-\todo{Experiments E0--E5 of the plan: calibration, headroom sweep over drops, loss decomposition, CQI delay and UE speed, PF versus throughput objective, cluster size.}
+Table~\ref{tab:params} lists the parameters. Five experiments cover the research questions. E0 checks the simulator against the 3GPP model by the distribution of the wideband SINR of the serving cell under full reuse and measures the run time of the oracle. E1 sweeps the arrival rate $\lambda$ under finite buffer with $B = 1$ and $C = 3$ over 200 random drops and three seeds, so that the offered load~\eqref{eq:offered_load} ranges from below to above the capacity of cluster TDMA, and it evaluates the oracle and the references. E2 evaluates all schedulers under full buffer with $C = 3$, $U = 4$, and $B = 4$ on 20 drops at a speed of 3~km/h and a CQI delay of four slots. E3 repeats E2 for the CQI delays $d \in \{0, 4, 8\}$ slots and the speeds $v \in \{3, 30, 60\}$~km/h, which give $\rho \approx 0.999$, $0.909$, and $0.660$ in~\eqref{eq:fading}, on 10 drops. E4 compares the throughput and the PF objective on the drops of E2 and reports the fifth percentile of the UE rate. E5 evaluates the oracle, the better reference, and both learners with ideal CQI control for $C = 7$ and $U \in \{2, 4\}$ on 10 drops.
+
+\begin{table}
+\caption{SIMULATION PARAMETERS}
+\label{tab:params}
+\centering
+\begin{tabular}{ll}
+\toprule
+Parameter & Value \\
+\midrule
+Layout & 7 hexagonal cells, wraparound, ISD 200~m \\
+Cluster size $C$ & 3 or 7 \\
+UEs per cell $U$ & 2, 4, or 6 \\
+Carrier frequency, bandwidth & 3.5~GHz, 20~MHz \\
+Subbands $B$ & 1 or 4 \\
+Slot duration & 1~ms \\
+Transmit power, noise figure & 44~dBm, 9~dB \\
+Antenna heights & 10~m (base station), 1.5~m (UE) \\
+Path loss, LOS probability & urban micro street canyon~\cite{3gpp38901} \\
+Shadowing standard deviation & 4~dB (LOS), 7.82~dB (NLOS) \\
+CQI table & four-bit table of~\cite{3gpp38214} \\
+SINR thresholds & attenuated Shannon bound, $\alpha = 0.6$~\cite{3gpp36942} \\
+UE speed & 3, 30, or 60~km/h \\
+CQI delay $d$ & 0, 4, or 8 slots \\
+PF averaging factor $\beta$ & 0.01 \\
+OLLA step, target error rate & 0.5~dB, 0.1 \\
+Episode length & 200 slots \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Both learners use two-layer actors and critics with 128 hidden units and the PPO hyperparameters of the companion study \todo{state the values here once the companion paper is citable}, and they train for 1000 episodes on each drop. Learners are evaluated with sampled actions on the drop on which they are trained, with arrival and fading sequences that are identical across schedulers. Differences between schedulers are reported as means with 95\% confidence intervals over drops, and paired comparisons use $t$-statistics over the per-drop differences.
 
 \section{Results}
 \label{sec:results}
-\todo{Results.}
+\todo{Results of E0--E5: SINR distribution and oracle run time (E0); headroom versus $\eta$ and its fit (E1); gap decomposition table under the PF objective (E2); gaps versus CQI delay and UE speed (E3); throughput versus PF objective and fifth-percentile rate (E4); cluster size (E5).}
 
 \section{Discussion}
 \label{sec:discussion}
-\todo{Comparison with the IEEE 802.11bn findings; design guidance; limitations.}
+\todo{Comparison with the IEEE 802.11bn findings; design guidance for learned coordinated scheduling in the near-RT RIC; limitations: omnidirectional cells instead of three sectors, step error model, per-slot oracle, fixed association.}
 
 \section{Conclusion}
 \label{sec:conclusion}
