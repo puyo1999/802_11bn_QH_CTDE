@@ -1,0 +1,154 @@
+"""Cellular coordinated-scheduling simulator of paper3: channel, CQI, wraparound, oracle and references."""
+import itertools
+from dataclasses import replace
+
+import numpy as np
+import pytest
+
+from src.cellular import baselines, cqi, layout
+from src.cellular.channel import (GaussMarkovFading, breakpoint_distance, doppler_rho, umi_los_pathloss_db,
+                                  umi_los_probability, umi_nlos_pathloss_db)
+from src.cellular.oracle import oracle_decisions
+from src.cellular.sim import CellularConfig, CellularSim
+
+
+def make(drop_seed=0, **kw):
+    sim = CellularSim(replace(CellularConfig(), **kw), drop_seed=drop_seed)
+    sim.reset(seed=0)
+    return sim
+
+
+def test_umi_pathloss_matches_hand_values():
+    fc = 3.5
+    assert breakpoint_distance(fc, 10, 1.5) == pytest.approx(210.0)
+    d3d = np.hypot(100.0, 8.5)
+    assert umi_los_pathloss_db(100.0, d3d, fc) == pytest.approx(32.4 + 21 * np.log10(d3d) + 20 * np.log10(fc))
+    nlos = 35.3 * np.log10(d3d) + 22.4 + 21.3 * np.log10(fc)
+    assert umi_nlos_pathloss_db(100.0, d3d, fc) == pytest.approx(nlos)
+    far = np.hypot(300.0, 8.5)
+    assert umi_los_pathloss_db(300.0, far, fc) == pytest.approx(
+        32.4 + 40 * np.log10(far) + 20 * np.log10(fc) - 9.5 * np.log10(210.0 ** 2 + 8.5 ** 2))
+
+
+def test_umi_los_probability():
+    assert umi_los_probability(18.0) == 1.0
+    assert umi_los_probability(50.0) == pytest.approx(18 / 50 + np.exp(-50 / 36) * (1 - 18 / 50))
+
+
+def test_cqi_thresholds_and_selection():
+    assert cqi.THRESHOLDS_DB[0] == pytest.approx(-7.2, abs=0.05)
+    assert cqi.THRESHOLDS_DB[-1] == pytest.approx(27.9, abs=0.05)
+    assert np.all(np.diff(cqi.THRESHOLDS) > 0)
+    assert cqi.best_cqi(cqi.THRESHOLDS[4]) == 5
+    assert cqi.best_cqi(cqi.THRESHOLDS[4] * 0.999) == 4
+    assert cqi.best_cqi(1e-3) == 0 and cqi.efficiency(0) == 0.0
+
+
+def test_olla_converges_to_target_error_rate():
+    olla = cqi.OLLA(1, step_db=0.5, target=0.1)
+    rng = np.random.default_rng(0)
+    failures, n = 0, 20000
+    for _ in range(n):
+        true_db = 10 + rng.normal(0, 2)
+        q = olla.select(0, 10.0)
+        ok = q > 0 and 10 ** (true_db / 10) >= cqi.THRESHOLDS[q - 1]
+        failures += not ok
+        olla.update(0, ok)
+    assert failures / n == pytest.approx(0.1, abs=0.02)
+
+
+def test_gauss_markov_fading_has_unit_power_and_correlation():
+    rng = np.random.default_rng(0)
+    rho = doppler_rho(30, 3.5, 1e-3)
+    fad = GaussMarkovFading((20000,), rho, rng)
+    prev = fad.h.copy()
+    fad.step()
+    assert fad.power().mean() == pytest.approx(1.0, abs=0.03)
+    assert np.real(np.vdot(prev, fad.h)) / len(prev) == pytest.approx(rho, abs=0.03)
+
+
+def test_wraparound_distances_and_drops():
+    isd = 200.0
+    centers = layout.cell_centers(isd)
+    d = layout.wrapped_distance_2d(centers, centers, isd)
+    assert np.allclose(np.diag(d), 0)
+    off = d[~np.eye(7, dtype=bool)]
+    assert np.allclose(off, isd)  # under wraparound every cell is a neighbour of every other cell
+    ues = layout.drop_ues(np.random.default_rng(0), 50, isd)
+    for c in range(7):
+        rel = ues[c] - centers[c]
+        assert np.all(layout.in_hexagon(rel, isd)) and np.all(np.linalg.norm(rel, axis=1) >= 10)
+
+
+def test_ues_attach_to_strongest_cell():
+    sim = make(ues_per_cell=5)
+    assert np.array_equal(np.argmax(sim.gain_db, axis=0), sim.serving)
+    assert np.bincount(sim.serving).tolist() == [5] * 7
+
+
+def brute_force_utility(sim):
+    """Reference: evaluate every joint decision of all subbands with sim.sinr (no vectorization)."""
+    n = sim.n_ue_cell
+    options = [[-1] + [c * n + u for u in range(n)] for c in sim.cluster]
+    rx, w = sim.rx_power(), sim.weights()
+    total = 0.0
+    for b in range(sim.n_sub):
+        best = 0.0
+        for combo in itertools.product(*options):
+            t = np.full((len(sim.cluster), sim.n_sub), -1)
+            t[:, b] = combo
+            gamma = sim.sinr(t, rx)[:, b]
+            value = sum(w[u] * cqi.efficiency(cqi.best_cqi(g)) / sim.n_sub for u, g in zip(combo, gamma) if u >= 0)
+            best = max(best, value)
+        total += best
+    return total
+
+
+@pytest.mark.parametrize("objective", ["throughput", "pf"])
+def test_oracle_matches_brute_force_and_step(objective):
+    sim = make(ues_per_cell=2, n_subbands=2, objective=objective)
+    for _ in range(3):
+        targets, cqis, value = oracle_decisions(sim)
+        assert value == pytest.approx(brute_force_utility(sim))
+        out = sim.step(targets, cqis)
+        assert out["utility"] == pytest.approx(value)
+        assert out["success"][targets >= 0].all()
+
+
+def test_oracle_dominates_references_per_slot():
+    sim = make(ues_per_cell=3, n_subbands=2)
+    for turn in range(5):
+        _, _, best = oracle_decisions(sim)
+        for policy in (baselines.full_reuse(sim), baselines.cluster_tdma(sim, turn), baselines.greedy_muting(sim)):
+            targets, cqis = policy
+            # Utility of the reference with the same channel: replay on a copy of the state.
+            snapshot = (sim.fading.h.copy(), sim.avg_rate.copy(), sim.backlog.copy(), sim.t, list(sim.reports),
+                        sim.rng.bit_generator.state, sim.arrivals.copy())
+            value = sim.step(targets, cqis)["utility"]
+            (sim.fading.h, sim.avg_rate, sim.backlog, sim.t, reports, state, sim.arrivals) = snapshot
+            sim.reports.clear(); sim.reports.extend(reports); sim.rng.bit_generator.state = state
+            assert value <= best + 1e-9
+        sim.step(*oracle_decisions(sim)[:2])
+
+
+def test_cluster_tdma_uses_one_cell_per_subband():
+    sim = make(cluster_size=7, ues_per_cell=2, n_subbands=4)
+    targets, _ = baselines.cluster_tdma(sim, turn=3)
+    assert ((targets >= 0).sum(axis=0) == 1).all()
+
+
+def test_finite_buffer_conserves_bits():
+    sim = make(full_buffer=False, load=0.05, n_subbands=1, ues_per_cell=3)
+    arrived, delivered = sim.backlog_now().sum(), 0.0
+    for _ in range(50):
+        targets, cqis, _ = oracle_decisions(sim)
+        delivered += sim.step(targets, cqis)["throughput"]
+        arrived += sim.arrivals.sum()
+    assert np.all(sim.backlog >= -1e-12)
+    assert arrived - sim.arrivals.sum() == pytest.approx(delivered + sim.backlog.sum())
+    assert sim.backlog[~sim.in_cluster].sum() == 0  # background cells carry no traffic
+
+
+def test_oracle_refuses_finite_buffer_with_several_subbands():
+    with pytest.raises(ValueError):
+        oracle_decisions(make(full_buffer=False, load=0.1, n_subbands=2))
