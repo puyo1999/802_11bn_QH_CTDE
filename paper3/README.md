@@ -25,6 +25,12 @@ Plan: `docs/paper3_5g_multicell_plan.md`. Companion papers: `paper/` (IEEE 802.1
 | Path | Source |
 |---|---|
 | `figures/paper3_topology.{pdf,png}` | copy of `docs/figures/paper3_topology.*`, made by `docs/figures/make_paper3_topology.py` |
+| `figures/fig_sinr_cdf.{pdf,png}` | E0, recomputed from `src/cellular` (50 drops) by `figures/make_figures.py` |
+| `figures/fig_headroom.{pdf,png}` | E1 pilot, `experiments/cellular_results/e1_U4_D20_S1.csv` (20 drops, 1 seed), by `figures/make_figures.py` |
+| `figures/fig_la0.{pdf,png}` | LA0 pre-validation, `experiments/cellular_results/la0_D20_S1.csv` (20 drops, 1 seed), by `figures/make_figures.py` |
+
+The result figures come from pilot runs and are not yet placed in `main.tex`; they are regenerated with
+`python paper3/figures/make_figures.py` after the full runs.
 | `photo/kpy.eps`, `photo/kty.eps` | copy of `paper/photo/` |
 | `references.bib` | verified subset of `paper/references.bib` |
 
