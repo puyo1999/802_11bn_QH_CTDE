@@ -1,9 +1,13 @@
 """Cellular coordinated-scheduling simulator of paper3: channel, CQI, wraparound, oracle and references."""
 import itertools
+import os
+import sys
 from dataclasses import replace
 
 import numpy as np
 import pytest
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.cellular import baselines, cqi, layout
 from src.cellular.channel import (GaussMarkovFading, breakpoint_distance, doppler_rho, umi_los_pathloss_db,
