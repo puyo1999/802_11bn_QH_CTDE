@@ -7,10 +7,16 @@ paper3 experiments without learners (docs/paper3_5g_multicell_plan.md, Section 7
   e1  headroom sweep: finite buffer, one subband, cluster C = 3, throughput objective; for every drop and
       arrival rate the oracle and the references run on identical arrival and fading sequences, and the
       headroom H = 1 - TDMA / oracle is reported against the offered load eta = lambda C U.
+  la0 link-adaptation pre-validation (docs/paper3_dynamic_quantization.md, Section 7): full buffer, C = 3,
+      U = 4, B = 4, PF objective; the targets of full reuse, greedy muting and the oracle are kept, and only
+      the CQI selection changes (genie / local: delayed report + OLLA / intent: announced transmissions +
+      OLLA). "intent+commit" decides the targets one slot ahead, as the announcement requires. Utility is
+      reported relative to the oracle with genie CQI, per CQI delay d and UE speed.
 
     python experiments/cellular_gap.py e0
     python experiments/cellular_gap.py e1 --drops 20 --seeds 1          # pilot
     python experiments/cellular_gap.py e1 --drops 200 --seeds 3         # full run
+    python experiments/cellular_gap.py la0 --drops 20                    # link-adaptation pre-validation
 """
 from __future__ import annotations
 
@@ -20,7 +26,7 @@ import json
 import os
 import sys
 import time
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import asdict, replace
 
 import numpy as np
@@ -33,6 +39,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from src.cellular import baselines
+from src.cellular.linkadapt import LinkAdapter
 from src.cellular.oracle import oracle_decisions
 from src.cellular.sim import CellularConfig, CellularSim
 
@@ -184,16 +191,100 @@ def e1(args) -> None:
         fig.savefig(os.path.join(OUT, f"{tag}.{ext}"), dpi=300)
 
 
+# ---------------------------------------------------------------------------------------------------- LA0
+LA_SELECTORS = ["full_reuse", "greedy_muting", "oracle"]
+LA_VARIANTS = ["genie", "local", "intent", "intent+commit"]
+LA_DELAYS = [0, 4, 8]
+LA_SPEEDS = [3.0, 30.0, 60.0]
+
+
+def la_episode(cfg: CellularConfig, drop: int, seed: int, selector: str, variant: str) -> dict:
+    sim = CellularSim(cfg, drop_seed=drop)
+    sim.reset(seed=seed)
+    adapter = LinkAdapter(sim, variant.split("+")[0])
+    commit = variant.endswith("+commit")
+    pending = None
+    util = thp = 0.0
+    sent = failed = 0
+    while not sim.done:
+        fresh = decide(sim, selector, sim.t)[0]
+        targets = fresh if (not commit or pending is None) else pending
+        pending = fresh                                  # decided now, applied in the next slot
+        cqis = adapter.select(targets)
+        out = sim.step(targets, cqis)
+        adapter.update(targets, cqis, out["success"])
+        used = (targets >= 0) & (cqis > 0)
+        sent, failed = sent + int(used.sum()), failed + int((used & ~out["success"]).sum())
+        util, thp = util + out["utility"], thp + out["throughput"]
+    return {"utility": util, "throughput": thp, "bler": failed / max(sent, 1)}
+
+
+def la0_job(job: tuple) -> list[dict]:
+    drop, seed, delay, speed = job
+    cfg = CellularConfig(cluster_size=3, ues_per_cell=4, n_subbands=4, objective="pf",
+                         cqi_delay=delay, speed_kmh=speed)
+    rows = []
+    for selector in LA_SELECTORS:
+        for variant in LA_VARIANTS:
+            rows.append({"drop": drop, "seed": seed, "delay": delay, "speed": speed, "selector": selector,
+                         "variant": variant, **la_episode(cfg, drop, seed, selector, variant)})
+    return rows
+
+
+def la0(args) -> None:
+    jobs = [(d, s, delay, speed) for d in range(args.drops) for s in range(args.seeds)
+            for delay in LA_DELAYS for speed in LA_SPEEDS]
+    start = time.time()
+    rows = []
+    with ProcessPoolExecutor(max_workers=args.workers) as pool:
+        futures = [pool.submit(la0_job, job) for job in jobs]
+        for done, future in enumerate(as_completed(futures), 1):
+            rows += future.result()
+            print(f"[progress] {done}/{len(jobs)} jobs, {time.time() - start:.0f} s", flush=True)
+    print(f"{len(jobs)} jobs in {time.time() - start:.0f} s")
+    os.makedirs(OUT, exist_ok=True)
+    tag = f"la0_D{args.drops}_S{args.seeds}"
+    with open(os.path.join(OUT, f"{tag}.csv"), "w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+
+    ref = {(r["drop"], r["seed"], r["delay"], r["speed"]): r["utility"] for r in rows
+           if r["selector"] == "oracle" and r["variant"] == "genie"}
+    stats = {}
+    for r in rows:
+        key = (r["delay"], r["speed"], r["selector"], r["variant"])
+        stats.setdefault(key, {"ratio": [], "bler": []})
+        stats[key]["ratio"].append(r["utility"] / ref[(r["drop"], r["seed"], r["delay"], r["speed"])])
+        stats[key]["bler"].append(r["bler"])
+    summary = {}
+    for selector in LA_SELECTORS:
+        print(f"\n== targets: {selector} (PF utility / oracle with genie CQI, %; BLER in brackets)")
+        print(f"{'d':>3} {'km/h':>5} " + " ".join(f"{v:>16}" for v in LA_VARIANTS) + f" {'LA loss':>8} {'recovered':>9}")
+        for delay in LA_DELAYS:
+            for speed in LA_SPEEDS:
+                m = {v: float(np.mean(stats[(delay, speed, selector, v)]["ratio"])) for v in LA_VARIANTS}
+                b = {v: float(np.mean(stats[(delay, speed, selector, v)]["bler"])) for v in LA_VARIANTS}
+                loss = m["genie"] - m["local"]
+                rec = (m["intent"] - m["local"]) / loss if loss > 1e-9 else float("nan")
+                summary[f"{selector}|d={delay}|v={speed:g}"] = {"ratio": m, "bler": b, "la_loss": loss,
+                                                               "recovered_by_intent": rec}
+                print(f"{delay:>3} {speed:>5g} " + " ".join(f"{100*m[v]:>8.1f} [{100*b[v]:>4.1f}]" for v in LA_VARIANTS)
+                      + f" {100*loss:>7.1f}p {100*rec:>8.0f}%")
+    with open(os.path.join(OUT, f"{tag}_summary.json"), "w") as handle:
+        json.dump(summary, handle, indent=2)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("exp", choices=["e0", "e1"])
+    parser.add_argument("exp", choices=["e0", "e1", "la0"])
     parser.add_argument("--drops", type=int, default=50)
     parser.add_argument("--seeds", type=int, default=1)
     parser.add_argument("--ues", type=int, default=4)
     parser.add_argument("--timing-slots", type=int, default=20)
     parser.add_argument("--workers", type=int, default=os.cpu_count())
     args = parser.parse_args()
-    {"e0": e0, "e1": e1}[args.exp](args)
+    {"e0": e0, "e1": e1, "la0": la0}[args.exp](args)
 
 
 if __name__ == "__main__":

@@ -149,6 +149,33 @@ def test_finite_buffer_conserves_bits():
     assert sim.backlog[~sim.in_cluster].sum() == 0  # background cells carry no traffic
 
 
+def test_link_adaptation_modes():
+    from src.cellular.linkadapt import LinkAdapter, expected_sinr, genie_cqi
+    # Without fading and without delay the intent prediction equals the true SINR.
+    sim = make(ues_per_cell=2, n_subbands=2, cqi_delay=0)
+    sim.fading.rho = 1.0
+    sim.fading.h = np.ones_like(sim.fading.h)
+    targets, _ = baselines.greedy_muting(sim)
+    sim.step(targets, genie_cqi(sim, targets))                 # fills the report of the previous slot
+    targets, _ = baselines.greedy_muting(sim)
+    tx = targets >= 0
+    assert np.allclose(expected_sinr(sim, targets)[tx], sim.sinr(targets)[tx])
+    # The OLLA offsets of the local mode drive the error rate toward the target.
+    sim = make(ues_per_cell=2, n_subbands=4, cqi_delay=4, speed_kmh=30)
+    adapter = LinkAdapter(sim, "local")
+    sent = fails = 0
+    while not sim.done:
+        targets, _ = baselines.full_reuse(sim)
+        cqis = adapter.select(targets)
+        out = sim.step(targets, cqis)
+        adapter.update(targets, cqis, out["success"])
+        used = (targets >= 0) & (cqis > 0)
+        if sim.t > 100:
+            sent += used.sum()
+            fails += (used & ~out["success"]).sum()
+    assert fails / sent == pytest.approx(0.1, abs=0.06)
+
+
 def test_oracle_refuses_finite_buffer_with_several_subbands():
     with pytest.raises(ValueError):
         oracle_decisions(make(full_buffer=False, load=0.1, n_subbands=2))
