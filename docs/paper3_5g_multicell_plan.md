@@ -87,8 +87,8 @@ paper1은 IEEE 802.11bn MAPC에서 다음을 보였다.
 - 셀 $c$의 지역 관측: 자기 사용자의 CQI($d_{\text{CQI}}$ 슬롯 지연, 부대역별), 버퍼 길이, PF 평균 처리량,
   이웃 셀의 평균 간섭 세기.
 - 정보 수준 $b \in \{0, \infty\}$ (paper1과 같은 MAPPO / Central PPO 대비). 필요하면 VQ 비트 수 $b$ 스윕으로 확장.
-- 상황에 따라 비트 수를 바꾸는 동적 양자화는 `docs/paper3_dynamic_quantization.md`에 정리했다. 진행 여부는 E2–E3에서
-  정보 손실 $\Delta_{\text{I}}$가 조건(부하, CQI 지연, 속도)에 따라 얼마나 달라지는지 보고 정한다.
+- 링크 적응을 위한 셀 간 의도 메시지와 oracle 보정 동적 양자화는 `docs/paper3_dynamic_quantization.md`에 정리했다.
+  진행 여부는 그 문서 7절의 사전 검증(기준 정책의 CQI 선택만 genie / 지역 / 의도 반영으로 바꿔 비교)으로 정한다.
 
 ## 4. 정확 oracle
 
