@@ -48,7 +48,7 @@ Coordinated scheduling across cells in fifth-generation new radio (5G NR) decide
 
 Learned interference management in cellular networks is commonly evaluated against uncoordinated scheduling, static frequency reuse, or model-based heuristics~\cite{nasir2019power,naderializadeh2021resource}. None of these references is an upper bound, so a reported gain does not reveal how much of the achievable gain the learner realizes, and a reported shortfall does not reveal whether it stems from missing information about the other cells, from rate selection, or from policy optimization. Static references also differ in strength across operating points: fractional frequency reuse (FFR)~\cite{novlan2011ffr} protects cell-edge UEs at the cost of spectrum, and full reuse with proportional fair (PF) scheduling~\cite{viswanath2002pf} maximizes spectrum use at the cost of interference.
 
-A companion study of multi-access point coordination in IEEE 802.11bn \todo{cite companion paper once available} addressed this question with an exact per-slot oracle. It found that the coordination headroom over coordinated time division opens only when the offered load exceeds the capacity of time division, that rate selection dominates the loss of learned schedulers while information exchanged between access points contributes little, and that a coordination gain of a learner is established only against the better of two simple references. Cellular scheduling differs from Wi-Fi in four respects that bear on these findings: the band is divided into subbands that are scheduled jointly, the standard objective is PF rather than throughput, rate selection relies on channel quality indicator (CQI) reports that arrive with a delay, and outer-loop link adaptation (OLLA) is the established remedy for rate selection under feedback errors. This paper asks whether the findings carry over to coordinated scheduling in 5G NR.
+A companion study of multi-access point coordination in IEEE 802.11bn \todo{cite companion paper once available} addressed this question with an exact per-slot oracle. It found that the coordination headroom over coordinated time division opens only when the offered load exceeds the capacity of time division, that rate selection dominates the loss of learned schedulers while information exchanged between access points contributes little, and that a coordination gain of a learner is established only against the better of two simple references. These findings were obtained for one band per slot, a throughput objective, and channels that are either static or redrawn in every slot. Coordinated scheduling in 5G NR differs in five properties, each of which bears on one of the findings. First, the band is divided into subbands with frequency-selective fading that are scheduled jointly, which multiplies the options for spatial reuse and can open the headroom at a different load. Second, the standard objective is PF rather than throughput, which weights the cell-edge UEs that coordination protects and can change which simple reference is strongest. Third, rate selection relies on channel quality indicator (CQI) reports that arrive with a delay, and fourth, the channel ages during that delay at a rate set by the speed of the UE, so that the loss of rate selection depends on time variation that neither channel model of the companion study captures. Fifth, outer-loop link adaptation (OLLA) is the established remedy for rate selection under feedback errors, so a link-adaptation gap that persists under OLLA is not an artifact of a weak rate-selection rule. This paper tests the three findings under these five properties: if they hold, they describe coordinated scheduling beyond Wi-Fi, and where one fails, the experiment that isolates the responsible property explains the difference.
 
 The contributions are as follows.
 \begin{itemize}
@@ -110,7 +110,12 @@ The small-scale fading of the link from base station $c$ to UE $u$ on subband $b
 h_{c,u,b}(t) = \rho\, h_{c,u,b}(t-1) + \sqrt{1 - \rho^2}\, n_{c,u,b}(t), \qquad \rho = J_0(2 \pi f_D T_{\text{slot}}),
 \label{eq:fading}
 \end{equation}
-where $n_{c,u,b}(t)$ is an independent circularly symmetric complex Gaussian variable with unit variance, $J_0(\cdot)$ is the Bessel function of the first kind of order zero, $f_D = v f_c / c_0$ is the maximum Doppler frequency of a UE moving at speed $v$, and $T_{\text{slot}}$ is the slot duration. The fading of different links and subbands is independent.
+where $n_{c,u,b}(t)$ is an independent circularly symmetric complex Gaussian variable with unit variance, $J_0(\cdot)$ is the Bessel function of the first kind of order zero, $f_D = v f_c / c_0$ is the maximum Doppler frequency of a UE moving at speed $v$, and $T_{\text{slot}}$ is the slot duration. The fading of different links and subbands is independent. Iterating~\eqref{eq:fading} over $a$ slots gives
+\begin{equation}
+h_{c,u,b}(t) = \rho^{a}\, h_{c,u,b}(t-a) + \sqrt{1 - \rho^{2a}}\; n'_{c,u,b}(t),
+\label{eq:aging}
+\end{equation}
+with $n'_{c,u,b}(t)$ a unit-variance circularly symmetric complex Gaussian variable independent of $h_{c,u,b}(t-a)$. A channel observed $a$ slots earlier therefore retains the correlation $\rho^{a}$ with the current channel. For a report of age $a = 5$ slots, $\rho^{a}$ equals 0.995, 0.620, and 0.125 at 3, 30, and 60~km/h.
 
 \subsection{Resources, decisions, and link outcome}
 The system bandwidth $W = 20$~MHz is divided into $B$ subbands of bandwidth $W/B$, indexed by $b \in \mathcal{B} = \{1, \dots, B\}$. Time is divided into slots of duration $T_{\text{slot}} = 1$~ms. Every base station transmits with the total power $P_{\text{tx}} = 44$~dBm, divided equally among the subbands on which it transmits~\cite[Table~7.8-1]{3gpp38901}. The noise power per subband is $P_{\text{N}} = -174 + 10 \log_{10}(W/B) + 9$~dBm, with a UE noise figure of 9~dB~\cite[Table~7.8-1]{3gpp38901}.
@@ -140,7 +145,7 @@ r_{c,b}(t) = \mathbb{1}\bigl[\gamma_{c,b}(t) \ge \theta_{q_{c,b}(t)}\bigr]\, e_{
 bits to UE $a_{c,b}(t)$; it fails otherwise. In the finite-buffer model, the delivery is further limited by the backlog of the UE.
 
 \subsection{Traffic}
-Under full buffer, every UE has data in every slot. Under finite buffer, the backlog $Q_u(t)$ of UE $u$ receives $A_u(t)$ bits per slot, where $A_u(t)/(e_{15} W T_{\text{slot}})$ is Poisson distributed with mean $\lambda$, and it evolves as
+Under full buffer, every UE has data in every slot. Under finite buffer, packets of $L = e_{15} W T_{\text{slot}}/20$ bits arrive at UE $u$, and the number of packets per slot is Poisson distributed with mean $20\lambda$, so that UE $u$ receives $A_u(t)$ bits per slot with mean $\lambda e_{15} W T_{\text{slot}}$. Only the UEs of the cluster carry traffic. The backlog $Q_u(t)$ evolves as
 \begin{equation}
 Q_u(t+1) = Q_u(t) + A_u(t) - \sum_{b \in \mathcal{B}} D_{u,b}(t),
 \label{eq:queue}
@@ -156,7 +161,7 @@ V(t) = \sum_{b \in \mathcal{B}} \sum_{c \in \mathcal{C} : a_{c,b}(t) \ne \varnot
 with $w_u(t) = 1$ for the throughput objective and $w_u(t) = 1/\bar{R}_u(t)$ for the PF objective.
 
 \subsection{Observations}
-UE $u$ reports, on every subband $b$, the CQI index $\hat{q}_{u,b}(t) = \max\{ q : \theta_q \le \tilde{\gamma}_{u,b}(t - d) \}$, where $\tilde{\gamma}_{u,b}$ is the SINR of the link from the serving cell of $u$ when all cells transmit and $d$ is the CQI delay in slots. At the start of slot $t$, the agent of cell $c$ and subband $b$ observes the local vector
+UE $u$ measures, on every subband $b$, the SINR $\tilde{\gamma}_{u,b}$ of the link from its serving cell when all cells transmit and reports it with a delay of $d$ slots; the report available in slot $t$ was measured in slot $t - d - 1$ and has the age $a = d + 1$ slots. The reported CQI index is $\hat{q}_{u,b}(t) = \max\{ q : \theta_q \le \tilde{\gamma}_{u,b}(t - d - 1) \}$. At the start of slot $t$, the agent of cell $c$ and subband $b$ observes the local vector
 \begin{equation}
 o_{c,b}(t) = \bigl[\hat{\mathbf{q}}_{c,b}(t),\ \boldsymbol{\omega}_{c}(t),\ \boldsymbol{\kappa}_{c}(t),\ \bar{I}_{c},\ \mathbf{e}_b\bigr],
 \label{eq:obs}
@@ -216,19 +221,51 @@ The search covers $(U+1)^C$ target vectors per subband, i.e., 125 for $U = 4$ an
 \end{algorithm}
 
 \subsection{Reference schedulers}
-Four references complement the oracle. Under uncoordinated full reuse, every cell of $\mathcal{C}$ transmits on every subband to the UE with the largest weighted rate at the highest CQI decodable when all cells transmit. Under cluster TDMA, one cell of $\mathcal{C}$ per subband and slot transmits, chosen in round-robin order over the cells with a non-empty backlog, and it serves the UE with the largest weighted rate at the highest CQI decodable under the background interference alone. Greedy muting starts from full reuse and, on each subband, repeatedly silences the cell whose silence raises the slot utility most, until no silence raises it. The better reference of a drop is the reference with the largest episode utility among the three, a post hoc choice that a scheduler with knowledge of the operating point attains.
+Four references complement the oracle. Like the oracle, the references select targets and CQI indices from the channel of the current slot, so that their gap to the oracle measures coordination alone; the same rules applied to the channel estimated from the delayed reports serve as causal references for the comparison with learners. Under uncoordinated full reuse, every cell of $\mathcal{C}$ transmits on every subband to the UE with the largest weighted rate at the highest CQI decodable when all cells transmit. Under cluster TDMA, one cell of $\mathcal{C}$ per subband and slot transmits, chosen in round-robin order over the cells with a non-empty backlog, and it serves the UE with the largest weighted rate at the highest CQI decodable under the background interference alone. Greedy muting starts from full reuse and, on each subband, repeatedly silences the cell whose silence raises the slot utility most, until no silence raises it. The better reference of a drop is the reference with the largest episode utility among the three, a post hoc choice that a scheduler with knowledge of the operating point attains.
 
 \subsection{Learned schedulers}
 Each pair of a cell and a subband is an agent, and the agents share the parameters of their networks; the subband indicator $\mathbf{e}_b$ in~\eqref{eq:obs} distinguishes them. The 0-bit learner is MAPPO~\cite{yu2022mappo}: agent $(c, b)$ executes a local actor $\pi_{\theta}(a_{c,b}, q_{c,b} \mid o_{c,b})$, and a centralized critic $V_\phi(\mathbf{o})$ is used only for training. The full-information learner (Central PPO) executes, on each subband, a single actor on $\mathbf{o}$ that selects the targets and CQI indices of all cells of $\mathcal{C}$ autoregressively, so that the decision of cell $c$ conditions on the decisions of the preceding cells. Both learners include the silence action $\varnothing$ and are trained with PPO~\cite{schulman2017ppo} and generalized advantage estimation~\cite{schulman2016gae} on the normalized slot utility.
 
-The CQI selection of a learner takes one of three forms. Under learned control, the actor selects $q_{c,b}$. Under OLLA, the cell applies to the reported CQI an offset $\Delta_u$ in decibels, selects $q_{c,b} = \max\{ q : \theta_q \le \hat{\gamma}_{u,b} + \Delta_u \}$, where $\hat{\gamma}_{u,b}$ is the threshold of the reported CQI, and updates $\Delta_u \leftarrow \Delta_u - \delta$ after a failure and $\Delta_u \leftarrow \Delta_u + \delta\, \epsilon/(1 - \epsilon)$ after a success, with the step $\delta = 0.5$~dB and the target error rate $\epsilon = 0.1$. Under ideal control, $q_{c,b} = q^{\star}_{c,b}(\mathbf{a}_b)$ by~\eqref{eq:best_cqi} for the targets that the learner selects, so the learner decides only the targets.
+The CQI selection of a learner takes one of three forms. Under learned control, the actor selects $q_{c,b}$. Under OLLA, the cell keeps an offset $\Delta_u$ in decibels for every UE, selects
+\begin{equation}
+q_{c,b}(t) = \max\{ q : \theta_q^{\text{dB}} \le \tilde{\gamma}^{\text{dB}}_{u,b} + \Delta_u(t) \}
+\label{eq:olla_select}
+\end{equation}
+for $u = a_{c,b}(t)$, where $\tilde{\gamma}^{\text{dB}}_{u,b}$ is the reported SINR and $\theta_q^{\text{dB}}$ the threshold in decibels, and updates the offset after the acknowledgment of every transmission as
+\begin{equation}
+\Delta_u(t+1) =
+\begin{cases}
+\Delta_u(t) + \delta\, \epsilon/(1 - \epsilon), & \text{success}, \\
+\Delta_u(t) - \delta, & \text{failure},
+\end{cases}
+\label{eq:olla_update}
+\end{equation}
+with the step $\delta = 0.5$~dB and the target error rate $\epsilon = 0.1$. The expected change of the offset per transmission is $\delta\,[(1 - p)\,\epsilon/(1 - \epsilon) - p]$ for the error probability $p$, which vanishes exactly at $p = \epsilon$; the offset therefore settles where the error rate equals the target, whatever the bias of the reports. Under ideal control, $q_{c,b} = q^{\star}_{c,b}(\mathbf{a}_b)$ by~\eqref{eq:best_cqi} for the targets that the learner selects, so the learner decides only the targets.
 
 \subsection{Gap decomposition}
-Let $\Theta^{\star}$ denote the episode utility of the oracle and $\Theta_{x,\ell}$ that of a learner with information level $x \in \{0, \infty\}$ and CQI control $\ell \in \{\text{learned}, \text{OLLA}, \text{ideal}\}$. With $\rho_{x,\ell} = \Theta_{x,\ell}/\Theta^{\star}$, the loss of a learner decomposes into the link-adaptation gap $\Delta_{\text{LA}} = \rho_{x,\text{ideal}} - \rho_{x,\text{learned}}$, the information gap $\Delta_{\text{I}} = \rho_{\infty,\ell} - \rho_{0,\ell}$, and the residual optimization gap $\Delta_{\text{opt}} = 1 - \rho_{\infty,\text{ideal}}$. As in the companion study, the two learners differ both in the information available to the actor and in the joint selection of the decisions of all cells, so $\Delta_{\text{I}}$ measures the combined value of full information and joint action selection and bounds the value of information exchange alone from above. The OLLA gap $\rho_{x,\text{ideal}} - \rho_{x,\text{OLLA}}$ measures the loss that remains with the standard remedy for rate selection.
+Let $\Theta^{\star}$ denote the episode utility of the oracle and $\Theta_{x,\ell}$ that of a learner with information level $x \in \{0, \infty\}$ and CQI control $\ell \in \{\text{learned}, \text{OLLA}, \text{ideal}\}$. With $\varphi_{x,\ell} = \Theta_{x,\ell}/\Theta^{\star}$, the loss of a learner decomposes into the link-adaptation gap $\Delta_{\text{LA}} = \varphi_{x,\text{ideal}} - \varphi_{x,\text{learned}}$, the information gap $\Delta_{\text{I}} = \varphi_{\infty,\ell} - \varphi_{0,\ell}$, and the residual optimization gap $\Delta_{\text{opt}} = 1 - \varphi_{\infty,\text{ideal}}$. As in the companion study, the two learners differ both in the information available to the actor and in the joint selection of the decisions of all cells, so $\Delta_{\text{I}}$ measures the combined value of full information and joint action selection and bounds the value of information exchange alone from above. The OLLA gap $\varphi_{x,\text{ideal}} - \varphi_{x,\text{OLLA}}$ measures the loss that remains with the standard remedy for rate selection.
 
 \section{Experimental Setup}
 \label{sec:setup}
-Table~\ref{tab:params} lists the parameters. Five experiments cover the research questions. E0 checks the simulator against the 3GPP model by the distribution of the wideband SINR of the serving cell under full reuse and measures the run time of the oracle. E1 sweeps the arrival rate $\lambda$ under finite buffer with $B = 1$ and $C = 3$ over 200 random drops and three seeds, so that the offered load~\eqref{eq:offered_load} ranges from below to above the capacity of cluster TDMA, and it evaluates the oracle and the references. E2 evaluates all schedulers under full buffer with $C = 3$, $U = 4$, and $B = 4$ on 20 drops at a speed of 3~km/h and a CQI delay of four slots. E3 repeats E2 for the CQI delays $d \in \{0, 4, 8\}$ slots and the speeds $v \in \{3, 30, 60\}$~km/h, which give $\rho \approx 0.999$, $0.909$, and $0.660$ in~\eqref{eq:fading}, on 10 drops. E4 compares the throughput and the PF objective on the drops of E2 and reports the fifth percentile of the UE rate. E5 evaluates the oracle, the better reference, and both learners with ideal CQI control for $C = 7$ and $U \in \{2, 4\}$ on 10 drops.
+Table~\ref{tab:params} lists the parameters. Five experiments cover the research questions. E0 checks the simulator against the 3GPP model by the distribution of the wideband SINR of the serving cell under full reuse and measures the run time of the oracle. E1 sweeps the arrival rate $\lambda$ under finite buffer with $B = 1$ and $C = 3$ over 200 random drops and three seeds, so that the offered load~\eqref{eq:offered_load} ranges from below to above the capacity of cluster TDMA, and it evaluates the oracle and the references. Because the delivery of cluster TDMA depends on the rates of the links of a drop, E1 also measures the saturated capacity $\Theta^{\text{sat}}_{\text{TDMA}}$ of cluster TDMA on every drop as its throughput at the highest arrival rate, where every queue is backlogged, and reports the headroom against the load relative to this capacity,
+\begin{equation}
+\eta_{\text{TDMA}} = \lambda\, C\, U\, e_{15} W T_{\text{slot}} / \Theta^{\text{sat}}_{\text{TDMA}}.
+\label{eq:rho_tdma}
+\end{equation} E2 evaluates all schedulers under full buffer with $C = 3$, $U = 4$, and $B = 4$ on 20 drops at a speed of 3~km/h and a CQI delay of four slots. E3 repeats E2 for the CQI delays $d \in \{0, 4, 8\}$ slots and the speeds $v \in \{3, 30, 60\}$~km/h, which give $\rho \approx 0.999$, $0.909$, and $0.660$ in~\eqref{eq:fading}, on 10 drops. E4 compares the throughput and the PF objective on the drops of E2 and reports the fifth percentile of the UE rate. E5 evaluates the oracle, the better reference, and both learners with ideal CQI control for $C = 7$ and $U \in \{2, 4\}$ on 10 drops.
+
+A link-adaptation study (LA0) separates rate selection from scheduling without learners. Under the setting of E2, the targets of full reuse, greedy muting, and the oracle are combined with four CQI selections. Genie selection applies~\eqref{eq:best_cqi} to the SINR of the slot. Local selection applies OLLA by~\eqref{eq:olla_select} and~\eqref{eq:olla_update} to the report of age $a = d + 1$. Fresh selection applies OLLA to the all-transmit SINR of the current slot, i.e., to a report without aging. The difference between genie and fresh selection is the operating cost of OLLA, which comprises the target error rate and the all-transmit assumption of the report, and the difference between fresh and local selection is the cost of aging. Intent-aware selection assumes that every cell of $\mathcal{C}$ announces its targets for the slot over the backhaul, predicts the SINR of UE $u$ on subband $b$ as
+\begin{equation}
+\hat{\gamma}_{c,b}(t) = \frac{P_b\, G_{c,u}}{\sum_{j \in \mathcal{A}_b(t) \setminus \{c\}} P_b\, G_{j,u} + P_{\text{N}}}\, \kappa_{u,b}(t),
+\label{eq:intent_sinr}
+\end{equation}
+where $\kappa_{u,b}(t)$ is the ratio of the reported SINR to the all-transmit SINR without fading and corrects for the fading at the time of the report, and then applies OLLA. A committed variant of intent-aware selection decides the targets one slot ahead, as the announcement requires. LA0 covers $d \in \{0, 4, 8\}$ slots and $v \in \{3, 30, 60\}$~km/h on 20 drops.
+
+Every episode consists of 300 warm-up slots, i.e., three time constants $1/\beta$ of the PF averages, followed by a measurement window of 1000 slots; the PF averages start from the rate that each UE obtains when its cell shares all subbands equally among its UEs at the CQI of the all-transmit SINR without fading. All metrics are taken over the measurement window. Let $\bar{r}_u$ denote the mean rate of UE $u$ over the window. The PF utility of an episode is
+\begin{equation}
+U_{\text{PF}} = \sum_{u \in \mathcal{U}_{\mathcal{C}}} \log \bar{r}_u,
+\label{eq:pf_utility}
+\end{equation}
+where $\mathcal{U}_{\mathcal{C}}$ is the set of UEs of the cluster, and it is reported as the geometric-mean rate $\exp(U_{\text{PF}}/|\mathcal{U}_{\mathcal{C}}|)$ relative to that of the oracle with genie CQI on the same drop. The sum of the slot utilities~\eqref{eq:utility} is not used to compare schedulers, because its weights depend on the rate history that each scheduler produces. The throughput, the fifth percentile of $\bar{r}_u$, the delivery ratio under finite buffer, and the transmission error rate complete the metrics.
 
 \begin{table}
 \caption{SIMULATION PARAMETERS}
@@ -254,7 +291,7 @@ UE speed & 3, 30, or 60~km/h \\
 CQI delay $d$ & 0, 4, or 8 slots \\
 PF averaging factor $\beta$ & 0.01 \\
 OLLA step, target error rate & 0.5~dB, 0.1 \\
-Episode length & 200 slots \\
+Episode & 300 warm-up + 1000 measured slots \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -263,7 +300,71 @@ Both learners use two-layer actors and critics with 128 hidden units and the PPO
 
 \section{Results}
 \label{sec:results}
-\todo{Results of E0--E5: SINR distribution and oracle run time (E0); headroom versus $\eta$ and its fit (E1); gap decomposition table under the PF objective (E2); gaps versus CQI delay and UE speed (E3); throughput versus PF objective and fifth-percentile rate (E4); cluster size (E5).}
+\todo{E1 and LA0 below use 20 drops and one seed; the full E1 run uses 200 drops and three seeds. Regenerate the figures with paper3/figures/make\_figures.py.}
+
+\subsection{Calibration}
+Fig.~\ref{fig:sinr_cdf} shows the distribution of the wideband SINR of the serving cell when all seven cells transmit, computed from the large-scale gains of 1400 UEs in 50 drops. The 5th, 50th, and 95th percentiles are $-0.9$, $8.5$, and $28.3$~dB. Attachment to the cell with the largest large-scale gain is essential for this distribution: with attachment to the geographically nearest cell, the shadowing of the serving link lowers the 5th percentile to $-20.9$~dB. The exact oracle with $B = 4$ subbands takes 1.7, 2.5, and 3.3~ms per slot for $C = 3$ and $U \in \{2, 4, 6\}$, 20~ms for $C = 7$ and $U = 2$, and 584~ms for $C = 7$ and $U = 4$ on one process of a 1.9~GHz Intel Core i3-4030U processor. For episodes of 1300 slots, the oracle therefore takes 2--4~s for $C = 3$ and 26~s to 13~min for $C = 7$, which is practical for evaluation in all configurations of Table~\ref{tab:params}.
+
+\begin{figure}
+\centering
+\includegraphics[width=\columnwidth]{fig_sinr_cdf}
+\caption{Distribution of the wideband SINR of the serving cell when all cells transmit, from the large-scale gains of 1400 UEs in 50 drops.}
+\label{fig:sinr_cdf}
+\end{figure}
+
+\subsection{Coordination headroom}
+Fig.~\ref{fig:headroom} reports E1 in steady state on 20 drops. At saturation, the oracle delivers 2.16 times the throughput of cluster TDMA in the median drop, with a range of 1.80 to 2.64. The headroom, however, does not vanish below the capacity of cluster TDMA. Its median is 2.6\% at $\eta = 0.125$, 10.4\% at $\eta = 0.25$, 28.1\% at $\eta = 1$, and 53.6\% at $\eta = 5$. Against the load relative to the saturated capacity of cluster TDMA~\eqref{eq:rho_tdma}, the median headroom is 5.5\% for $\eta_{\text{TDMA}} < 0.5$ and 19.7\% for $0.5 \le \eta_{\text{TDMA}} < 0.9$, and it rises without a threshold, as Fig.~\ref{fig:headroom}(a) shows. In contrast to the companion study, coordination therefore pays off already below the saturated capacity of time division.
+
+The delivery ratio of the oracle shows that the saturated capacity overstates the load that a cluster serves: the oracle delivers 100.0\% of the offered traffic at $\eta = 0.125$ but 95.5\% at $\eta = 0.25$ and 91.8\% at $\eta = 0.5$, while cluster TDMA delivers 97.1\%, 84.9\%, and 72.6\%. The saturated capacity is reached by the UEs with the strongest links, whereas every UE offers the same load. A UE whose serving link is weak under the interference of the background cells needs more air time than one third of the slots, and spatial reuse gives it more slots, which is consistent with a headroom that opens before the cluster as a whole saturates. \todo{Compute per drop the largest load at which every UE is served, from the fluid model of the companion paper with per-UE demand, and replot the headroom against the load relative to that capacity.}
+
+Fig.~\ref{fig:headroom}(b) shows that the coordinated references stay close to the oracle at every load. Full reuse attains 96.0--99.8\% of the oracle and greedy muting 97.7--99.9\%. With genie information, the joint choice of silence and targets beyond greedy muting is therefore worth at most 2.3\% in a cluster of three cells with one subband, whereas the gap to cluster TDMA grows with the load.
+
+\begin{figure*}
+\centering
+\includegraphics[width=\textwidth]{fig_headroom}
+\caption{Coordination headroom in E1 (cluster of three cells, one subband, finite buffer, throughput objective, 20 drops, steady state). (a) Headroom over cluster TDMA versus the offered load relative to the saturated capacity of cluster TDMA on the same drop; dots are pairs of drop and arrival rate, and the line is the median over logarithmic bins. (b) Throughput of the references relative to the oracle and delivery ratio of the oracle versus the offered load $\eta$, mean over drops.}
+\label{fig:headroom}
+\end{figure*}
+
+\subsection{Link adaptation under CQI delay and UE speed}
+Table~\ref{tab:la0} and Fig.~\ref{fig:la0} report LA0 as the geometric-mean rate relative to the oracle with genie CQI; differences below are percentage points of this ratio. The throughput and the fifth percentile of the UE rate follow the same ordering; for the targets of the oracle at $d = 4$, local CQI selection attains 52.9\% of the throughput of the oracle at 30~km/h and 46.7\% at 60~km/h, and 42.7\% and 35.2\% of its fifth-percentile rate.
+
+The loss of local selection splits into two parts. The operating cost of OLLA, i.e., the difference between genie and fresh selection, is 9.2--9.4 points with the targets of full reuse, 12.7--13.1 points with greedy muting, and 15.0--17.7 points with the oracle, independent of the speed. It grows with the number of silenced cells, because the report assumes that all cells transmit and underestimates the SINR when neighbors are silent; OLLA corrects only the average of this error. The cost of aging, i.e., the difference between fresh and local selection, is 0.7--4.0 points at 3~km/h, 18.3--44.3 points at 30~km/h, and 31.7--47.9 points at 60~km/h across the three target selections and CQI delays. Already for $d = 0$, i.e., a report of age one slot, it is 18.3--22.7 points at 30~km/h, where the fading correlation between consecutive slots is 0.909. OLLA holds the error rate at 9.7--9.9\% in all cases; it keeps transmissions decodable by selecting lower CQIs, which costs rate.
+
+Intent-aware selection recovers little of the loss. With the targets of full reuse, every cell transmits, the announcements coincide with the all-transmit assumption of the report, and the recovery is zero. With greedy muting and the oracle, it recovers 1.1--4.0 points, the most at 3~km/h, where the operating cost of OLLA dominates. Committing the targets one slot ahead, which the announcement requires, lowers the geometric-mean rate to 10.3--26.0\% of the oracle at 60~km/h. In LA0, the targets of the uncommitted variants are chosen from the channel of the current slot, so these variants keep the gain of serving UEs at their fading peaks even when their CQI is local; the committed variant chooses targets from the channel of the previous slot and loses that gain. The comparison of committed and uncommitted variants therefore measures the value of current channel information for target selection as well as the cost of the commitment. \todo{Repeat LA0 with causal references, i.e., targets chosen from the estimated channel, to separate these two effects.}
+
+In this setting with omnidirectional cells and equal transmit power, the link-adaptation loss thus consists of a speed-independent operating cost of OLLA and a cost of aging that dominates from 30~km/h on; uncertainty about the set of interfering cells contributes at most 4 points.
+
+\begin{table}
+\caption{GEOMETRIC-MEAN RATE RELATIVE TO THE ORACLE WITH GENIE CQI FOR THE TARGETS OF THE ORACLE (\%, MEAN OVER 20 DROPS)}
+\label{tab:la0}
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+$d$ & $v$ (km/h) & Fresh & Local & Intent & Committed \
+\midrule
+0 & 3 & 85.0 & 84.4 & 88.3 & 87.4 \
+0 & 30 & 82.3 & 64.1 & 67.4 & 58.2 \
+0 & 60 & 82.4 & 50.7 & 52.7 & 26.0 \
+4 & 3 & 85.0 & 82.7 & 86.6 & 85.4 \
+4 & 30 & 82.3 & 49.7 & 51.6 & 39.7 \
+4 & 60 & 82.4 & 43.1 & 44.3 & 12.9 \
+8 & 3 & 85.0 & 81.5 & 85.4 & 84.1 \
+8 & 30 & 82.3 & 45.8 & 47.1 & 34.3 \
+8 & 60 & 82.4 & 43.0 & 44.1 & 12.7 \
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure*}
+\centering
+\includegraphics[width=\textwidth]{fig_la0}
+\caption{Link adaptation in LA0 (cluster of three cells, four subbands, full buffer, PF objective, 20 drops, steady state). (a) Geometric-mean rate relative to the oracle with genie CQI for the targets of the oracle and the CQI delay $d = 4$. (b) Loss of local CQI selection for the targets of the oracle, split into the operating cost of OLLA and the cost of aging per CQI delay; the marks show the loss that remains with intent-aware selection.}
+\label{fig:la0}
+\end{figure*}
+
+\subsection{Gap decomposition of learned schedulers}
+\todo{E2--E5 with MAPPO and Central PPO: gap decomposition table under the PF objective (E2), gaps versus CQI delay and UE speed (E3), throughput versus PF objective and fifth-percentile rate (E4), cluster size (E5).}
 
 \section{Discussion}
 \label{sec:discussion}
