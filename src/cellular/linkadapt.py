@@ -4,6 +4,8 @@ CQI selection for given targets (docs/paper3_dynamic_quantization.md, Sections 3
 
     genie   highest CQI decodable at the SINR of this slot (the oracle's rate rule)
     local   CQI from the delayed all-transmit report of the UE, corrected by an OLLA offset
+    fresh   like local, but with the all-transmit SINR of the current slot (no aging); separates the
+            operating cost of OLLA from the cost of an aged report
     intent  expected SINR from the large-scale gains of the cells that announced a transmission on the
             subband, times a fading correction estimated from the delayed report, corrected by an OLLA offset
 
@@ -16,7 +18,7 @@ import numpy as np
 
 from src.cellular import cqi
 
-MODES = ("genie", "local", "intent")
+MODES = ("genie", "local", "fresh", "intent")
 
 
 def genie_cqi(sim, targets: np.ndarray) -> np.ndarray:
@@ -30,10 +32,23 @@ def large_scale_all_transmit_sinr(sim) -> np.ndarray:
     return signal / (rx.sum(axis=0) - signal + sim.noise_mw)
 
 
+def fading_correction(sim) -> np.ndarray:
+    """(n_ues, n_sub) ratio of the delayed all-transmit report to the all-transmit SINR without fading."""
+    return sim.reported_sinr() / large_scale_all_transmit_sinr(sim)[:, None]
+
+
+def estimated_rx(sim) -> np.ndarray:
+    """(n_cells, n_ues, n_sub) channel a base station can estimate: large-scale received powers, with the serving
+    link scaled by the fading correction of the delayed report; the fading of interfering links is unknown."""
+    rx = np.repeat(sim.rx_mean[:, :, None], sim.n_sub, axis=2)
+    rx[sim.serving, np.arange(sim.n_ues)] *= fading_correction(sim)
+    return rx
+
+
 def expected_sinr(sim, targets: np.ndarray) -> np.ndarray:
     """(C, n_sub) SINR predicted from announced transmissions, large-scale gains and the delayed report."""
-    rx, report = sim.rx_mean, sim.reported_sinr()
-    kappa = report / large_scale_all_transmit_sinr(sim)[:, None]               # fading correction (n_ues, n_sub)
+    rx = sim.rx_mean
+    kappa = fading_correction(sim)
     bg = rx[sim.background].sum(axis=0) if sim.background else np.zeros(sim.n_ues)
     out = np.zeros(targets.shape)
     for b in range(sim.n_sub):
@@ -59,8 +74,9 @@ class LinkAdapter:
     def select(self, targets: np.ndarray) -> np.ndarray:
         if self.mode == "genie":
             return genie_cqi(self.sim, targets)
-        if self.mode == "local":
-            gamma = self.sim.reported_sinr()[np.maximum(targets, 0), np.arange(self.sim.n_sub)[None, :]]
+        if self.mode in ("local", "fresh"):
+            report = self.sim.reported_sinr() if self.mode == "local" else self.sim.all_transmit_sinr()
+            gamma = report[np.maximum(targets, 0), np.arange(self.sim.n_sub)[None, :]]
         else:
             gamma = expected_sinr(self.sim, targets)
         gamma_db = 10 * np.log10(np.maximum(gamma, 1e-30))

@@ -42,7 +42,8 @@ class CellularConfig:
     full_buffer: bool = True
     load: float = 0.0                # lambda: mean offered load per UE in units of e_15 * W * T_slot per slot
     packets_per_unit: int = 20       # packet size e_15 / packets_per_unit (finite buffer)
-    episode_len: int = 200
+    episode_len: int = 1300
+    warmup_slots: int = 300          # 3 time constants 1 / pf_beta of the PF averages; metrics skip these slots
 
     def __post_init__(self):
         if self.objective not in ("pf", "throughput"):
@@ -92,10 +93,22 @@ class CellularSim:
         self.rng = np.random.default_rng((seed, 2))
         self.fading = GaussMarkovFading((self.n_cells, self.n_ues, self.n_sub), self.rho, self.rng)
         self.backlog = np.zeros(self.n_ues)
-        self.avg_rate = np.ones(self.n_ues)
+        self.avg_rate = self.initial_avg_rate()
         self.reports = deque(maxlen=self.cfg.cqi_delay + 1)
         self.t = 0
         self._draw_arrivals()
+
+    def initial_avg_rate(self) -> np.ndarray:
+        """PF averages at the start: the rate of each UE when its cell shares all subbands equally among its U UEs
+        at the CQI of the all-transmit SINR without fading, so that the averages start near their steady state."""
+        signal = self.rx_mean[self.serving, np.arange(self.n_ues)]
+        sinr = signal / (self.rx_mean.sum(axis=0) - signal + self.noise_mw)
+        return np.maximum(cqi.efficiency(cqi.best_cqi(sinr)) / self.n_ue_cell, 1e-3)
+
+    @property
+    def measuring(self) -> bool:
+        """True for the slots after the warm-up, whose statistics enter the metrics."""
+        return self.t >= self.cfg.warmup_slots
 
     def _draw_arrivals(self) -> None:
         if self.cfg.full_buffer:

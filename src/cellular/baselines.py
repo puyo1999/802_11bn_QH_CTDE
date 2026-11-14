@@ -1,7 +1,9 @@
 """
 src/cellular/baselines.py
-Reference schedulers of paper3 (Section V-B). Like the references of paper1, they select the rate from the SINR
-of the current slot (genie rate selection), so that their gap to the oracle reflects coordination only.
+Reference schedulers of paper3 (Section V-B). By default, like the references of paper1, they select targets and
+rates from the channel of the current slot (genie information), so that their gap to the oracle reflects
+coordination only. Passing rx = linkadapt.estimated_rx(sim) runs the same rules on the channel a base station
+can estimate from delayed reports (causal references for the comparison with learners).
 
     full_reuse     every cluster cell transmits on every subband to its best weighted-rate UE, CQI decodable
                    when all cells transmit
@@ -34,8 +36,9 @@ def _pick(sim, ues: np.ndarray, sinr: np.ndarray, weights: np.ndarray, backlog: 
     return int(ues[k]), int(q[k])
 
 
-def full_reuse(sim) -> tuple[np.ndarray, np.ndarray]:
-    rx, weights, backlog = sim.rx_power(), sim.weights(), sim.backlog_now()
+def full_reuse(sim, rx: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
+    rx = sim.rx_power() if rx is None else rx
+    weights, backlog = sim.weights(), sim.backlog_now()
     sinr_all = sim.all_transmit_sinr(rx)
     targets = np.full((len(sim.cluster), sim.n_sub), -1, dtype=np.int64)
     cqis = np.zeros_like(targets)
@@ -46,8 +49,9 @@ def full_reuse(sim) -> tuple[np.ndarray, np.ndarray]:
     return targets, cqis
 
 
-def cluster_tdma(sim, turn: int) -> tuple[np.ndarray, np.ndarray]:
-    rx, weights, backlog = sim.rx_power(), sim.weights(), sim.backlog_now()
+def cluster_tdma(sim, turn: int, rx: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
+    rx = sim.rx_power() if rx is None else rx
+    weights, backlog = sim.weights(), sim.backlog_now()
     bg = sim.background_interference(rx)
     targets = np.full((len(sim.cluster), sim.n_sub), -1, dtype=np.int64)
     cqis = np.zeros_like(targets)
@@ -61,9 +65,10 @@ def cluster_tdma(sim, turn: int) -> tuple[np.ndarray, np.ndarray]:
     return targets, cqis
 
 
-def greedy_muting(sim) -> tuple[np.ndarray, np.ndarray]:
-    rx, weights, backlog = sim.rx_power(), sim.weights(), sim.backlog_now()
-    targets, _ = full_reuse(sim)
+def greedy_muting(sim, rx: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray]:
+    rx = sim.rx_power() if rx is None else rx
+    weights, backlog = sim.weights(), sim.backlog_now()
+    targets, _ = full_reuse(sim, rx)
     cqis = np.zeros_like(targets)
     for b in range(sim.n_sub):
         current = targets[:, b].copy()
