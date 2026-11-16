@@ -1,22 +1,26 @@
 """
 experiments/cellular_gap.py
-paper3 experiments without learners (docs/paper3_5g_multicell_plan.md, Section 7).
+paper3 experiments without learners (docs/paper3_5g_multicell_plan.md, docs/paper3_design_review.md).
+
+Every episode has sim.cfg.warmup_slots warm-up slots followed by the measurement window; all metrics are taken over
+the measurement window (steady state). Per episode: throughput per slot, delivery ratio (delivered / arrived,
+finite buffer), the PF utility U = sum over cluster UEs of log(mean rate), the 5th percentile of the per-UE mean
+rate, the mean slot utility, and the transmission error rate.
 
   e0  calibration: CDF of the wideband all-transmit SINR of the serving cell (large-scale gains only, all
       7 cells transmitting) over drops, and the run time of the exact oracle per slot for C in {3, 7}.
-  e1  headroom sweep: finite buffer, one subband, cluster C = 3, throughput objective; for every drop and
-      arrival rate the oracle and the references run on identical arrival and fading sequences, and the
-      headroom H = 1 - TDMA / oracle is reported against the offered load eta = lambda C U.
-  la0 link-adaptation pre-validation (docs/paper3_dynamic_quantization.md, Section 7): full buffer, C = 3,
-      U = 4, B = 4, PF objective; the targets of full reuse, greedy muting and the oracle are kept, and only
-      the CQI selection changes (genie / local: delayed report + OLLA / intent: announced transmissions +
-      OLLA). "intent+commit" decides the targets one slot ahead, as the announcement requires. Utility is
-      reported relative to the oracle with genie CQI, per CQI delay d and UE speed.
+  e1  headroom sweep: finite buffer, one subband, cluster C = 3, throughput objective; the oracle and the
+      references run on identical arrival and fading sequences. The headroom H = 1 - TDMA / oracle is reported
+      against eta = lambda C U and against rho_TDMA = offered load / saturated capacity of cluster TDMA, measured
+      per drop at the highest load.
+  la0 link-adaptation study: full buffer, C = 3, U = 4, B = 4, PF objective; the targets of full reuse, greedy
+      muting and the oracle are kept, and only the CQI selection changes (genie / local: delayed report + OLLA /
+      fresh: report of the current slot + OLLA / intent: announced transmissions + OLLA / intent+commit:
+      targets decided one slot ahead). Results relative to the oracle with genie CQI.
 
     python experiments/cellular_gap.py e0
-    python experiments/cellular_gap.py e1 --drops 20 --seeds 1          # pilot
-    python experiments/cellular_gap.py e1 --drops 200 --seeds 3         # full run
-    python experiments/cellular_gap.py la0 --drops 20                    # link-adaptation pre-validation
+    python experiments/cellular_gap.py e1 --drops 20 --seeds 1
+    python experiments/cellular_gap.py la0 --drops 20
 """
 from __future__ import annotations
 
@@ -47,7 +51,7 @@ OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cellular_results
 POLICIES = ["oracle", "full_reuse", "cluster_tdma", "greedy_muting"]
 ETAS = [0.125, 0.25, 0.5, 1.0, 2.0, 3.0, 5.0]
 INK, INK2, GRID = "#0b0b0b", "#52514e", "#e5e4e0"
-COLORS = {"full_reuse": "#2a78d6", "cluster_tdma": "#eb6834", "greedy_muting": "#1baf7a"}
+RATE_FLOOR = 1e-4   # mean-rate floor (units of W T_slot per slot) inside the log of the PF utility
 
 
 def decide(sim, policy: str, turn: int):
@@ -58,16 +62,63 @@ def decide(sim, policy: str, turn: int):
     return getattr(baselines, policy)(sim)
 
 
+class Meter:
+    """Statistics of the measurement window of one episode."""
+
+    def __init__(self, sim):
+        self.sim = sim
+        self.delivered = np.zeros(sim.n_ues)
+        self.arrived = self.utility = 0.0
+        self.slots = self.sent = self.failed = 0
+
+    def record(self, arrivals: np.ndarray, targets: np.ndarray, cqis: np.ndarray, out: dict) -> None:
+        self.delivered += out["delivered"]
+        self.arrived += float(arrivals.sum())
+        self.utility += out["utility"]
+        used = (targets >= 0) & (cqis > 0)
+        self.sent += int(used.sum())
+        self.failed += int((used & ~out["success"]).sum())
+        self.slots += 1
+
+    def result(self) -> dict:
+        rates = self.delivered[self.sim.in_cluster] / self.slots
+        return {"throughput": float(rates.sum()),
+                "delivery": float(self.delivered.sum() / self.arrived) if self.arrived > 0 else float("nan"),
+                "log_utility": float(np.log(np.maximum(rates, RATE_FLOOR)).sum()),
+                "p5_rate": float(np.percentile(rates, 5)), "slot_utility": self.utility / self.slots,
+                "bler": self.failed / max(self.sent, 1), "n_ues": int(len(rates))}
+
+
 def run_episode(cfg: CellularConfig, drop: int, seed: int, policy: str) -> dict:
     sim = CellularSim(cfg, drop_seed=drop)
     sim.reset(seed=seed)
-    offered = sim.backlog_now().sum()
-    thp = util = 0.0
+    meter = Meter(sim)
     while not sim.done:
-        out = sim.step(*decide(sim, policy, sim.t))
-        thp, util = thp + out["throughput"], util + out["utility"]
-        offered += sim.arrivals.sum() if not sim.done else 0.0
-    return {"throughput": thp, "utility": util, "offered": float(offered)}
+        measuring, arrivals = sim.measuring, sim.arrivals.copy()
+        targets, cqis = decide(sim, policy, sim.t)
+        out = sim.step(targets, cqis)
+        if measuring:
+            meter.record(arrivals, targets, cqis, out)
+    return meter.result()
+
+
+def run_jobs(fn, jobs: list, workers: int) -> list[dict]:
+    start, rows = time.time(), []
+    with ProcessPoolExecutor(max_workers=workers) as pool:
+        futures = [pool.submit(fn, job) for job in jobs]
+        for done, future in enumerate(as_completed(futures), 1):
+            rows += future.result()
+            print(f"[progress] {done}/{len(jobs)} jobs, {time.time() - start:.0f} s", flush=True)
+    print(f"{len(jobs)} jobs in {time.time() - start:.0f} s")
+    return rows
+
+
+def write_csv(rows: list[dict], tag: str) -> None:
+    os.makedirs(OUT, exist_ok=True)
+    with open(os.path.join(OUT, f"{tag}.csv"), "w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 # ---------------------------------------------------------------------------------------------------- E0
@@ -120,80 +171,51 @@ def e1_job(job: tuple) -> list[dict]:
 
 def e1(args) -> None:
     jobs = [(d, s, eta, args.ues) for d in range(args.drops) for s in range(args.seeds) for eta in ETAS]
-    start = time.time()
-    with ProcessPoolExecutor(max_workers=args.workers) as pool:
-        rows = [r for rs in pool.map(e1_job, jobs, chunksize=4) for r in rs]
-    print(f"{len(jobs)} jobs in {time.time() - start:.0f} s")
-    os.makedirs(OUT, exist_ok=True)
+    rows = run_jobs(e1_job, jobs, args.workers)
     tag = f"e1_U{args.ues}_D{args.drops}_S{args.seeds}"
-    with open(os.path.join(OUT, f"{tag}.csv"), "w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
-        writer.writeheader()
-        writer.writerows(rows)
+    write_csv(rows, tag)
 
-    ratio = {}   # (eta, policy) -> per (drop, seed) throughput / oracle
     by = {}
     for r in rows:
-        by.setdefault((r["drop"], r["seed"], r["eta"]), {})[r["policy"]] = r
-    for (drop, seed, eta), pol in by.items():
-        for p in POLICIES[1:]:
-            ratio.setdefault((eta, p), []).append(pol[p]["throughput"] / pol["oracle"]["throughput"])
-        ratio.setdefault((eta, "better"), []).append(max(pol[p]["throughput"] for p in POLICIES[1:])
-                                                   / pol["oracle"]["throughput"])
-        ratio.setdefault((eta, "delivered"), []).append(pol["oracle"]["throughput"] / pol["oracle"]["offered"])
-    summary = {}
-    print(f"{'eta':>6} {'H median':>9} {'H p10-p90':>14} {'reuse':>7} {'greedy':>7} {'better':>7} {'oracle/offered':>15}")
+        by.setdefault((r["drop"], r["seed"]), {}).setdefault(r["eta"], {})[r["policy"]] = r
+    cap = {k: {p: v[max(ETAS)][p]["throughput"] for p in POLICIES} for k, v in by.items()}
+    ratios = np.array([c["oracle"] / c["cluster_tdma"] for c in cap.values()])
+    summary = {"capacity_ratio_oracle_to_tdma": {"median": float(np.median(ratios)), "min": float(ratios.min()),
+                                                 "max": float(ratios.max())}, "by_eta": {}, "by_rho": {}}
+    pts = []
+    for key, per_eta in by.items():
+        for eta, pol in per_eta.items():
+            offered = pol["oracle"]["throughput"] / pol["oracle"]["delivery"]
+            rho = offered / cap[key]["cluster_tdma"]
+            h = 1 - pol["cluster_tdma"]["throughput"] / pol["oracle"]["throughput"]
+            pts.append((eta, rho, h, *[pol[p]["throughput"] / pol["oracle"]["throughput"] for p in POLICIES[1:]],
+                        pol["oracle"]["delivery"], pol["cluster_tdma"]["delivery"]))
+    pts = np.array(pts)
+    print(f"capacity oracle / cluster TDMA at eta = {max(ETAS)}: median {np.median(ratios):.2f} "
+          f"[{ratios.min():.2f}, {ratios.max():.2f}]")
+    print(f"{'eta':>6} {'H med':>7} {'reuse':>7} {'TDMA':>7} {'greedy':>7} {'deliv orc':>10} {'deliv TDMA':>11}")
     for eta in ETAS:
-        h = 1 - np.array(ratio[(eta, "cluster_tdma")])
-        summary[str(eta)] = {"H_median": float(np.median(h)), "H_p10": float(np.percentile(h, 10)),
-                             "H_p90": float(np.percentile(h, 90)),
-                             **{f"{p}_mean": float(np.mean(ratio[(eta, p)])) for p in
-                                ("full_reuse", "greedy_muting", "better", "delivered")}}
-        s = summary[str(eta)]
-        print(f"{eta:>6g} {100*s['H_median']:>8.1f}% {100*s['H_p10']:>6.1f}-{100*s['H_p90']:<6.1f}% "
-              f"{100*s['full_reuse_mean']:>6.1f}% {100*s['greedy_muting_mean']:>6.1f}% {100*s['better_mean']:>6.1f}% "
-              f"{100*s['delivered_mean']:>14.1f}%")
+        sel = pts[pts[:, 0] == eta]
+        s = {"H_median": float(np.median(sel[:, 2])), "full_reuse": float(sel[:, 3].mean()),
+             "cluster_tdma": float(sel[:, 4].mean()), "greedy_muting": float(sel[:, 5].mean()),
+             "delivery_oracle": float(sel[:, 6].mean()), "delivery_tdma": float(sel[:, 7].mean())}
+        summary["by_eta"][str(eta)] = s
+        print(f"{eta:>6g} {100*s['H_median']:>6.1f}% {100*s['full_reuse']:>6.1f}% {100*s['cluster_tdma']:>6.1f}% "
+              f"{100*s['greedy_muting']:>6.1f}% {100*s['delivery_oracle']:>9.1f}% {100*s['delivery_tdma']:>10.1f}%")
+    print(f"{'rho_TDMA':>12} {'n':>4} {'H median':>9} {'H max':>7}")
+    for lo, hi in ((0, 0.5), (0.5, 0.9), (0.9, 1.1), (1.1, 2), (2, 5), (5, 1e9)):
+        sel = pts[(pts[:, 1] >= lo) & (pts[:, 1] < hi)]
+        if len(sel):
+            summary["by_rho"][f"{lo}-{hi:g}"] = {"n": int(len(sel)), "H_median": float(np.median(sel[:, 2])),
+                                                "H_max": float(sel[:, 2].max())}
+            print(f"{lo:>5g}-{hi:<6g} {len(sel):>4} {100*np.median(sel[:, 2]):>8.1f}% {100*sel[:, 2].max():>6.1f}%")
     with open(os.path.join(OUT, f"{tag}_summary.json"), "w") as handle:
-        json.dump({"config": vars(args), "base": asdict(CellularConfig()), "etas": summary}, handle, indent=2)
-
-    fig, axes = plt.subplots(1, 2, figsize=(7.2, 2.8))
-    ax = axes[0]
-    for eta in ETAS:
-        h = 100 * (1 - np.array(ratio[(eta, "cluster_tdma")]))
-        ax.scatter(np.full(len(h), eta) * np.exp(np.random.default_rng(0).normal(0, 0.04, len(h))), h,
-                   s=7, color="#eb6834", alpha=0.5, linewidths=0)
-    ax.plot(ETAS, [100 * summary[str(e)]["H_median"] for e in ETAS], color=INK, linewidth=1.2, label="median")
-    ax.axvline(1.0, color=INK2, linestyle=":", linewidth=0.8)
-    ax.set_xscale("log")
-    ax.set_xticks(ETAS, [f"{e:g}" for e in ETAS])
-    ax.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
-    ax.set_xlabel("Offered load / cluster TDMA capacity η", color=INK2)
-    ax.set_ylabel("Headroom H (%)", color=INK2)
-    ax.set_title("(a) Headroom over cluster TDMA", loc="left", fontsize=9, color=INK)
-    ax.legend(fontsize=7, frameon=False)
-    ax = axes[1]
-    for p in POLICIES[1:]:
-        ax.plot(ETAS, [100 * np.mean(ratio[(e, p)]) for e in ETAS], marker="o", markersize=3,
-                color=COLORS[p], label=p.replace("_", " "))
-    ax.set_xscale("log")
-    ax.set_xticks(ETAS, [f"{e:g}" for e in ETAS])
-    ax.xaxis.set_minor_locator(matplotlib.ticker.NullLocator())
-    ax.set_xlabel("η", color=INK2)
-    ax.set_ylabel("Throughput / oracle (%)", color=INK2)
-    ax.set_title("(b) References relative to the oracle", loc="left", fontsize=9, color=INK)
-    ax.legend(fontsize=7, frameon=False)
-    for ax in axes:
-        ax.grid(color=GRID, linewidth=0.6)
-        for side in ("top", "right"):
-            ax.spines[side].set_visible(False)
-    fig.tight_layout()
-    for ext in ("png", "pdf"):
-        fig.savefig(os.path.join(OUT, f"{tag}.{ext}"), dpi=300)
+        json.dump({"config": vars(args), "base": asdict(CellularConfig()), **summary}, handle, indent=2)
 
 
 # ---------------------------------------------------------------------------------------------------- LA0
 LA_SELECTORS = ["full_reuse", "greedy_muting", "oracle"]
-LA_VARIANTS = ["genie", "local", "intent", "intent+commit"]
+LA_VARIANTS = ["genie", "local", "fresh", "intent", "intent+commit"]
 LA_DELAYS = [0, 4, 8]
 LA_SPEEDS = [3.0, 30.0, 60.0]
 
@@ -203,74 +225,73 @@ def la_episode(cfg: CellularConfig, drop: int, seed: int, selector: str, variant
     sim.reset(seed=seed)
     adapter = LinkAdapter(sim, variant.split("+")[0])
     commit = variant.endswith("+commit")
-    pending = None
-    util = thp = 0.0
-    sent = failed = 0
+    meter, pending = Meter(sim), None
     while not sim.done:
-        fresh = decide(sim, selector, sim.t)[0]
-        targets = fresh if (not commit or pending is None) else pending
-        pending = fresh                                  # decided now, applied in the next slot
+        measuring, arrivals = sim.measuring, sim.arrivals.copy()
+        fresh_targets = decide(sim, selector, sim.t)[0]
+        targets = fresh_targets if (not commit or pending is None) else pending
+        pending = fresh_targets                              # decided now, applied in the next slot
         cqis = adapter.select(targets)
         out = sim.step(targets, cqis)
         adapter.update(targets, cqis, out["success"])
-        used = (targets >= 0) & (cqis > 0)
-        sent, failed = sent + int(used.sum()), failed + int((used & ~out["success"]).sum())
-        util, thp = util + out["utility"], thp + out["throughput"]
-    return {"utility": util, "throughput": thp, "bler": failed / max(sent, 1)}
+        if measuring:
+            meter.record(arrivals, targets, cqis, out)
+    return meter.result()
+
+
+LA_JOBS = os.path.join(OUT, "la0_jobs")
 
 
 def la0_job(job: tuple) -> list[dict]:
+    """One drop and condition; the rows are saved to la0_jobs/ so that an interrupted run resumes there."""
     drop, seed, delay, speed = job
+    path = os.path.join(LA_JOBS, f"d{drop}_s{seed}_delay{delay}_v{speed:g}.json")
+    if os.path.exists(path):
+        with open(path) as handle:
+            return json.load(handle)
     cfg = CellularConfig(cluster_size=3, ues_per_cell=4, n_subbands=4, objective="pf",
                          cqi_delay=delay, speed_kmh=speed)
-    rows = []
-    for selector in LA_SELECTORS:
-        for variant in LA_VARIANTS:
-            rows.append({"drop": drop, "seed": seed, "delay": delay, "speed": speed, "selector": selector,
-                         "variant": variant, **la_episode(cfg, drop, seed, selector, variant)})
+    rows = [{"drop": drop, "seed": seed, "delay": delay, "speed": speed, "selector": selector, "variant": variant,
+             **la_episode(cfg, drop, seed, selector, variant)}
+            for selector in LA_SELECTORS for variant in LA_VARIANTS]
+    os.makedirs(LA_JOBS, exist_ok=True)
+    with open(path + ".tmp", "w") as handle:
+        json.dump(rows, handle)
+    os.replace(path + ".tmp", path)
     return rows
 
 
 def la0(args) -> None:
     jobs = [(d, s, delay, speed) for d in range(args.drops) for s in range(args.seeds)
             for delay in LA_DELAYS for speed in LA_SPEEDS]
-    start = time.time()
-    rows = []
-    with ProcessPoolExecutor(max_workers=args.workers) as pool:
-        futures = [pool.submit(la0_job, job) for job in jobs]
-        for done, future in enumerate(as_completed(futures), 1):
-            rows += future.result()
-            print(f"[progress] {done}/{len(jobs)} jobs, {time.time() - start:.0f} s", flush=True)
-    print(f"{len(jobs)} jobs in {time.time() - start:.0f} s")
-    os.makedirs(OUT, exist_ok=True)
+    rows = run_jobs(la0_job, jobs, args.workers)
     tag = f"la0_D{args.drops}_S{args.seeds}"
-    with open(os.path.join(OUT, f"{tag}.csv"), "w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
-        writer.writeheader()
-        writer.writerows(rows)
+    write_csv(rows, tag)
 
-    ref = {(r["drop"], r["seed"], r["delay"], r["speed"]): r["utility"] for r in rows
+    ref = {(r["drop"], r["seed"], r["delay"], r["speed"]): r for r in rows
            if r["selector"] == "oracle" and r["variant"] == "genie"}
-    stats = {}
+    rel = {}
     for r in rows:
+        base = ref[(r["drop"], r["seed"], r["delay"], r["speed"])]
         key = (r["delay"], r["speed"], r["selector"], r["variant"])
-        stats.setdefault(key, {"ratio": [], "bler": []})
-        stats[key]["ratio"].append(r["utility"] / ref[(r["drop"], r["seed"], r["delay"], r["speed"])])
-        stats[key]["bler"].append(r["bler"])
+        rel.setdefault(key, []).append((np.exp((r["log_utility"] - base["log_utility"]) / r["n_ues"]),
+                                        r["throughput"] / base["throughput"], r["p5_rate"] / base["p5_rate"],
+                                        r["bler"]))
     summary = {}
     for selector in LA_SELECTORS:
-        print(f"\n== targets: {selector} (PF utility / oracle with genie CQI, %; BLER in brackets)")
-        print(f"{'d':>3} {'km/h':>5} " + " ".join(f"{v:>16}" for v in LA_VARIANTS) + f" {'LA loss':>8} {'recovered':>9}")
+        print(f"\n== targets: {selector}: geometric-mean rate / oracle with genie CQI (%), [BLER %]")
+        print(f"{'d':>3} {'km/h':>5} " + " ".join(f"{v:>15}" for v in LA_VARIANTS)
+              + f" {'OLLA cost':>9} {'aging':>6} {'intent':>7}")
         for delay in LA_DELAYS:
             for speed in LA_SPEEDS:
-                m = {v: float(np.mean(stats[(delay, speed, selector, v)]["ratio"])) for v in LA_VARIANTS}
-                b = {v: float(np.mean(stats[(delay, speed, selector, v)]["bler"])) for v in LA_VARIANTS}
-                loss = m["genie"] - m["local"]
-                rec = (m["intent"] - m["local"]) / loss if loss > 1e-9 else float("nan")
-                summary[f"{selector}|d={delay}|v={speed:g}"] = {"ratio": m, "bler": b, "la_loss": loss,
-                                                               "recovered_by_intent": rec}
-                print(f"{delay:>3} {speed:>5g} " + " ".join(f"{100*m[v]:>8.1f} [{100*b[v]:>4.1f}]" for v in LA_VARIANTS)
-                      + f" {100*loss:>7.1f}p {100*rec:>8.0f}%")
+                m = {v: np.mean(rel[(delay, speed, selector, v)], axis=0) for v in LA_VARIANTS}
+                g = {v: 100 * m[v][0] for v in LA_VARIANTS}
+                summary[f"{selector}|d={delay}|v={speed:g}"] = {
+                    v: {"geo_rate": float(m[v][0]), "throughput": float(m[v][1]), "p5": float(m[v][2]),
+                        "bler": float(m[v][3])} for v in LA_VARIANTS}
+                print(f"{delay:>3} {speed:>5g} " + " ".join(f"{g[v]:>8.1f} [{100*m[v][3]:>4.1f}]" for v in LA_VARIANTS)
+                      + f" {g['genie'] - g['fresh']:>8.1f}p {g['fresh'] - g['local']:>5.1f}p "
+                        f"{g['intent'] - g['local']:>6.1f}p")
     with open(os.path.join(OUT, f"{tag}_summary.json"), "w") as handle:
         json.dump(summary, handle, indent=2)
 

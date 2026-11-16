@@ -180,6 +180,53 @@ def test_link_adaptation_modes():
     assert fails / sent == pytest.approx(0.1, abs=0.06)
 
 
+def test_warmup_erases_the_initial_pf_averages():
+    """The per-UE mean rates of the measurement window do not depend on how the PF averages start."""
+    def window_rates(scale):
+        sim = make(ues_per_cell=2, n_subbands=2, speed_kmh=30)
+        sim.avg_rate = sim.avg_rate * scale
+        delivered = np.zeros(sim.n_ues)
+        while not sim.done:
+            measuring = sim.measuring
+            out = sim.step(*oracle_decisions(sim)[:2])
+            if measuring:
+                delivered += out["delivered"]
+        return delivered[sim.in_cluster]
+    base, perturbed = window_rates(1.0), window_rates(5.0)
+    assert np.allclose(perturbed, base, rtol=0.05)
+
+
+@pytest.mark.parametrize("policy", ["oracle", "cluster_tdma"])
+def test_low_load_steady_state_delivers_the_offered_traffic(policy):
+    # eta = 0.25 is far below the saturated capacity of cluster TDMA (about 0.7 e_15 in the E1 pilot).
+    sim = make(n_subbands=1, ues_per_cell=2, objective="throughput", full_buffer=False, load=0.25 / 6,
+               episode_len=900)
+    arrived = delivered = 0.0
+    while not sim.done:
+        measuring, arrivals = sim.measuring, sim.arrivals.sum()
+        if policy == "oracle":
+            out = sim.step(*oracle_decisions(sim)[:2])
+        else:
+            out = sim.step(*baselines.cluster_tdma(sim, sim.t))
+        if measuring:
+            arrived, delivered = arrived + arrivals, delivered + out["throughput"]
+    assert delivered / arrived == pytest.approx(1.0, abs=0.05)
+
+
+def test_causal_references_use_the_estimated_channel():
+    from src.cellular.linkadapt import estimated_rx
+    sim = make(ues_per_cell=3, n_subbands=2, cqi_delay=0)
+    sim.fading.rho = 1.0
+    sim.fading.h = np.ones_like(sim.fading.h)
+    sim.step(*baselines.full_reuse(sim))                       # one report of an unfaded channel
+    est = estimated_rx(sim)
+    assert np.allclose(est, sim.rx_power())                   # no fading: the estimate is exact
+    for genie, causal in ((baselines.full_reuse(sim), baselines.full_reuse(sim, est)),
+                          (baselines.greedy_muting(sim), baselines.greedy_muting(sim, est)),
+                          (baselines.cluster_tdma(sim, 1), baselines.cluster_tdma(sim, 1, est))):
+        assert np.array_equal(genie[0], causal[0]) and np.array_equal(genie[1], causal[1])
+
+
 def test_oracle_refuses_finite_buffer_with_several_subbands():
     with pytest.raises(ValueError):
         oracle_decisions(make(full_buffer=False, load=0.1, n_subbands=2))

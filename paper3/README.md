@@ -17,8 +17,9 @@ Plan: `docs/paper3_5g_multicell_plan.md`. Companion papers: `paper/` (IEEE 802.1
 | III. System Model | Written: layout and cluster, UMi channel (TR 38.901), subbands, CQI table (TS 38.214), attenuated Shannon thresholds (TR 36.942), traffic, PF objective, observations; Fig. `fig:topology` |
 | IV. Problem Formulation | Written: objective, Dec-POMDP, offered load η, headroom H |
 | V. Method | Written: per-subband exact oracle with Algorithm 1, references, learners, OLLA, gap decomposition |
-| VI. Experimental Setup | Written: experiments E0–E5, Table I; PPO hyperparameters to be copied once the companion paper is citable |
-| VII–IX. Results, Discussion, Conclusion | Outlined (`\todo`), waiting for the experiments |
+| VI. Experimental Setup | Written: experiments E0–E5 and the link-adaptation study LA0, Table I; PPO hyperparameters to be copied once the companion paper is citable |
+| VII. Results | Written from steady-state runs (300 warm-up + 1000 measured slots, 20 drops, 1 seed): calibration (E0, Fig. `fig:sinr_cdf`), coordination headroom (E1, Fig. `fig:headroom`), link adaptation (LA0, Table `tab:la0`, Fig. `fig:la0`); full E1 run (200 drops, 3 seeds) and learner results (E2–E5) `\todo` |
+| VIII–IX. Discussion, Conclusion | Outlined (`\todo`), waiting for the learner experiments |
 
 ## Files
 
@@ -26,13 +27,12 @@ Plan: `docs/paper3_5g_multicell_plan.md`. Companion papers: `paper/` (IEEE 802.1
 |---|---|
 | `figures/paper3_topology.{pdf,png}` | copy of `docs/figures/paper3_topology.*`, made by `docs/figures/make_paper3_topology.py` |
 | `figures/fig_sinr_cdf.{pdf,png}` | E0, recomputed from `src/cellular` (50 drops) by `figures/make_figures.py` |
-| `figures/fig_headroom.{pdf,png}` | E1 pilot, `experiments/cellular_results/e1_U4_D20_S1.csv` (20 drops, 1 seed), by `figures/make_figures.py` |
-| `figures/fig_la0.{pdf,png}` | LA0 pre-validation, `experiments/cellular_results/la0_D20_S1.csv` (20 drops, 1 seed), by `figures/make_figures.py` |
+| `figures/fig_headroom.{pdf,png}` | E1 steady state, `experiments/cellular_results/e1_U4_D20_S1.csv` (20 drops, 1 seed), by `figures/make_figures.py` |
+| `figures/fig_la0.{pdf,png}` | LA0 steady state, `experiments/cellular_results/la0_D20_S1.csv` (20 drops, 1 seed; per-job files in `la0_jobs/`), by `figures/make_figures.py` |
 
-The result figures come from pilot runs and are not yet placed in `main.tex`; they are regenerated with
-`python paper3/figures/make_figures.py` after the full runs.
-| `photo/kpy.eps`, `photo/kty.eps` | copy of `paper/photo/` |
-| `references.bib` | verified subset of `paper/references.bib` |
+The result figures come from steady-state runs with 20 drops and one seed and are placed in Section VII of `main.tex`;
+they are regenerated with `python paper3/figures/make_figures.py` after the full runs. The design review that led to the
+steady-state measurement is `docs/paper3_design_review.md`.
 
 The folder is self-contained so that it can be uploaded to Overleaf as is.
 
