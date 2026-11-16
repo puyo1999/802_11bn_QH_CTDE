@@ -95,6 +95,7 @@ class CellularSim:
         self.backlog = np.zeros(self.n_ues)
         self.avg_rate = self.initial_avg_rate()
         self.reports = deque(maxlen=self.cfg.cqi_delay + 1)
+        self.signal_reports = deque(maxlen=self.cfg.cqi_delay + 1)
         self.t = 0
         self._draw_arrivals()
 
@@ -185,6 +186,7 @@ class CellularSim:
             self.backlog = self.backlog - delivered
         self.avg_rate = (1 - self.cfg.pf_beta) * self.avg_rate + self.cfg.pf_beta * delivered
         self.reports.append(self.all_transmit_sinr(rx))
+        self.signal_reports.append(self.fading.power()[self.serving, np.arange(self.n_ues)])
         self.fading.step()
         self.t += 1
         self._draw_arrivals()
@@ -196,6 +198,16 @@ class CellularSim:
         if not self.reports:
             return self.all_transmit_sinr()
         return self.reports[0]
+
+    def reported_signal_fading(self) -> np.ndarray:
+        """(n_ues, n_sub) fading power of the serving link alone, reported with the same delay as the SINR report.
+
+        Models a received-power report of the serving cell's reference signal (signal only, no interference), from
+        which a base station obtains the fading of the serving link by dividing by the known large-scale power.
+        """
+        if not self.signal_reports:
+            return self.fading.power()[self.serving, np.arange(self.n_ues)]
+        return self.signal_reports[0]
 
     @property
     def done(self) -> bool:

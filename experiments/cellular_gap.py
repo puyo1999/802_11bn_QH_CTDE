@@ -17,10 +17,15 @@ rate, the mean slot utility, and the transmission error rate.
       muting and the oracle are kept, and only the CQI selection changes (genie / local: delayed report + OLLA /
       fresh: report of the current slot + OLLA / intent: announced transmissions + OLLA / intent+commit:
       targets decided one slot ahead). Results relative to the oracle with genie CQI.
+  la1 recovery of the aging cost by established remedies (docs/paper3_aging_aware_la.md): same setting as la0,
+      targets of the oracle and of causal greedy muting (estimated channel); CQI by genie, fresh report + OLLA,
+      OLLA with targets 0.1-0.5 (tuned post hoc), and expected-throughput selection with the true, estimated or
+      estimated-and-calibrated power correlation (src/cellular/aging.py).
 
     python experiments/cellular_gap.py e0
     python experiments/cellular_gap.py e1 --drops 20 --seeds 1
     python experiments/cellular_gap.py la0 --drops 20
+    python experiments/cellular_gap.py la1 --drops 20
 """
 from __future__ import annotations
 
@@ -43,7 +48,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from src.cellular import baselines
-from src.cellular.linkadapt import LinkAdapter
+from src.cellular.aging import ExpectedThroughputCQI
+from src.cellular.linkadapt import LinkAdapter, estimated_rx
 from src.cellular.oracle import oracle_decisions
 from src.cellular.sim import CellularConfig, CellularSim
 
@@ -102,13 +108,24 @@ def run_episode(cfg: CellularConfig, drop: int, seed: int, policy: str) -> dict:
     return meter.result()
 
 
-def run_jobs(fn, jobs: list, workers: int) -> list[dict]:
+def run_jobs(fn, jobs: list, workers: int, hours: float | None = None) -> list[dict] | None:
+    """Runs the jobs in a process pool. With a time budget, no job starts after `hours`; the running ones finish,
+    the rest are cancelled, and None is returned (the per-job files let the next call resume)."""
     start, rows = time.time(), []
+    deadline = None if hours is None else start + 3600 * hours
+    paused = False
     with ProcessPoolExecutor(max_workers=workers) as pool:
         futures = [pool.submit(fn, job) for job in jobs]
         for done, future in enumerate(as_completed(futures), 1):
-            rows += future.result()
+            if not future.cancelled():
+                rows += future.result()
             print(f"[progress] {done}/{len(jobs)} jobs, {time.time() - start:.0f} s", flush=True)
+            if deadline is not None and not paused and time.time() > deadline:
+                paused = True
+                cancelled = sum(f.cancel() for f in futures)
+                print(f"[paused] time budget of {hours:g} h reached; {cancelled} jobs not started", flush=True)
+    if paused:
+        return None
     print(f"{len(jobs)} jobs in {time.time() - start:.0f} s")
     return rows
 
@@ -296,16 +313,130 @@ def la0(args) -> None:
         json.dump(summary, handle, indent=2)
 
 
+# ---------------------------------------------------------------------------------------------------- LA1
+# Recovery of the aging cost by established remedies (docs/paper3_aging_aware_la.md, Section 8.3, option A).
+LA1_SELECTORS = ["oracle", "causal_greedy"]
+LA1_OLLA_TARGETS = [0.1, 0.2, 0.3, 0.5]
+# Expected-throughput variants: (mode, estimator, source). A = multi-lag estimator, B = signal-only report.
+LA1_ET = {"et_estimated": ("estimated", "lag1", "sinr"), "et_calibrated": ("calibrated", "lag1", "sinr"),
+          "et_known": ("known", "lag1", "sinr"), "et_multilag": ("estimated", "multilag", "sinr"),
+          "et_signal": ("estimated", "lag1", "signal"), "et_signal_multilag": ("estimated", "multilag", "signal"),
+          "et_signal_known": ("known", "lag1", "signal"),
+          "et_signal_multilag_cal": ("calibrated", "multilag", "signal")}
+LA1_VARIANTS = ["genie", "fresh"] + [f"olla{t:g}" for t in LA1_OLLA_TARGETS] + list(LA1_ET)
+LA1_JOBS = os.path.join(OUT, "la1_jobs")
+
+
+def la1_targets(sim, selector: str):
+    if selector == "oracle":
+        return oracle_decisions(sim)[0]
+    return baselines.greedy_muting(sim, rx=estimated_rx(sim))[0]   # causal: estimated channel only
+
+
+def la1_adapter(sim, variant: str, seed: int):
+    if variant in ("genie", "fresh"):
+        return LinkAdapter(sim, variant)
+    if variant.startswith("olla"):
+        return LinkAdapter(sim, "local", target_bler=float(variant[4:]))
+    mode, estimator, source = LA1_ET[variant]
+    return ExpectedThroughputCQI(sim, mode, seed=seed, estimator=estimator, source=source)
+
+
+def la1_episode(cfg: CellularConfig, drop: int, seed: int, selector: str, variant: str) -> dict:
+    sim = CellularSim(cfg, drop_seed=drop)
+    sim.reset(seed=seed)
+    adapter, meter = la1_adapter(sim, variant, seed), Meter(sim)
+    while not sim.done:
+        measuring, arrivals = sim.measuring, sim.arrivals.copy()
+        targets = la1_targets(sim, selector)
+        cqis = adapter.select(targets)
+        out = sim.step(targets, cqis)
+        adapter.update(targets, cqis, out["success"])
+        if measuring:
+            meter.record(arrivals, targets, cqis, out)
+    return meter.result()
+
+
+def la1_job(job: tuple) -> list[dict]:
+    """One drop and condition. Rows are saved to la1_jobs/; a saved file is reused, and variants added since it was
+    written are computed and appended, so the run resumes and extends without recomputing."""
+    drop, seed, delay, speed = job
+    path = os.path.join(LA1_JOBS, f"d{drop}_s{seed}_delay{delay}_v{speed:g}.json")
+    rows = []
+    if os.path.exists(path):
+        with open(path) as handle:
+            rows = json.load(handle)
+    done = {(r["selector"], r["variant"]) for r in rows}
+    missing = [(sel, var) for sel in LA1_SELECTORS for var in LA1_VARIANTS if (sel, var) not in done]
+    if not missing:
+        return rows
+    cfg = CellularConfig(cluster_size=3, ues_per_cell=4, n_subbands=4, objective="pf",
+                         cqi_delay=delay, speed_kmh=speed)
+    rows += [{"drop": drop, "seed": seed, "delay": delay, "speed": speed, "selector": selector, "variant": variant,
+              **la1_episode(cfg, drop, seed, selector, variant)} for selector, variant in missing]
+    os.makedirs(LA1_JOBS, exist_ok=True)
+    with open(path + ".tmp", "w") as handle:
+        json.dump(rows, handle)
+    os.replace(path + ".tmp", path)
+    return rows
+
+
+def la1(args) -> None:
+    jobs = [(d, s, delay, speed) for d in range(args.drops) for s in range(args.seeds)
+            for delay in LA_DELAYS for speed in LA_SPEEDS]
+    rows = run_jobs(la1_job, jobs, args.workers, args.hours)
+    if rows is None:
+        return
+    tag = f"la1_D{args.drops}_S{args.seeds}"
+    write_csv(rows, tag)
+
+    ref = {(r["drop"], r["seed"], r["delay"], r["speed"]): r for r in rows
+           if r["selector"] == "oracle" and r["variant"] == "genie"}
+    rel = {}
+    for r in rows:
+        base = ref[(r["drop"], r["seed"], r["delay"], r["speed"])]
+        rel.setdefault((r["delay"], r["speed"], r["selector"], r["variant"]), []).append(
+            (np.exp((r["log_utility"] - base["log_utility"]) / r["n_ues"]), r["throughput"] / base["throughput"],
+             r["p5_rate"] / base["p5_rate"], r["bler"]))
+    summary = {}
+    shown = ["genie", "fresh", "olla0.1", "olla_tuned"] + list(LA1_ET)
+    remedies = ["olla_tuned"] + list(LA1_ET)
+    for selector in LA1_SELECTORS:
+        print(f"\n== targets: {selector}: geometric-mean rate / oracle with genie CQI (%), [BLER %]; then the share "
+              f"of the link-adaptation loss (genie - olla0.1) that each remedy recovers")
+        print(f"{'d':>3} {'km/h':>5} " + " ".join(f"{v[:14]:>14}" for v in shown) + "  "
+              + " ".join(f"{v[:11]:>11}" for v in remedies))
+        for delay in LA_DELAYS:
+            for speed in LA_SPEEDS:
+                m = {v: np.mean(rel[(delay, speed, selector, v)], axis=0) for v in LA1_VARIANTS}
+                best = max((f"olla{t:g}" for t in LA1_OLLA_TARGETS), key=lambda v: m[v][0])
+                m["olla_tuned"] = m[best]
+                g = {v: 100 * m[v][0] for v in m}
+                cost = g["fresh"] - g["olla0.1"]
+                la_loss = g["genie"] - g["olla0.1"]
+                rec = {v: (g[v] - g["olla0.1"]) / la_loss if la_loss > 1e-9 else float("nan") for v in remedies}
+                summary[f"{selector}|d={delay}|v={speed:g}"] = {
+                    "tuned_target": best, "aging_cost": cost, "la_loss": la_loss, "recovered_share_of_la_loss": rec,
+                    **{v: {"geo_rate": float(m[v][0]), "throughput": float(m[v][1]), "p5": float(m[v][2]),
+                           "bler": float(m[v][3])} for v in m}}
+                print(f"{delay:>3} {speed:>5g} " + " ".join(f"{g[v]:>7.1f} [{100*m[v][3]:>4.1f}]" for v in shown)
+                      + "  " + " ".join(f"{100*rec[v]:>10.0f}%" for v in remedies))
+    with open(os.path.join(OUT, f"{tag}_summary.json"), "w") as handle:
+        json.dump(summary, handle, indent=2)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("exp", choices=["e0", "e1", "la0"])
+    parser.add_argument("exp", choices=["e0", "e1", "la0", "la1"])
     parser.add_argument("--drops", type=int, default=50)
     parser.add_argument("--seeds", type=int, default=1)
     parser.add_argument("--ues", type=int, default=4)
     parser.add_argument("--timing-slots", type=int, default=20)
     parser.add_argument("--workers", type=int, default=os.cpu_count())
+    parser.add_argument("--hours", type=float, default=None,
+                        help="la1: stop starting jobs after this many hours; rerun the same command to resume")
     args = parser.parse_args()
-    {"e0": e0, "e1": e1, "la0": la0}[args.exp](args)
+    {"e0": e0, "e1": e1, "la0": la0, "la1": la1}[args.exp](args)
 
 
 if __name__ == "__main__":

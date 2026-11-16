@@ -227,6 +227,89 @@ def test_causal_references_use_the_estimated_channel():
         assert np.array_equal(genie[0], causal[0]) and np.array_equal(genie[1], causal[1])
 
 
+def test_aging_estimator_recovers_power_correlation():
+    from src.cellular.aging import AgingEstimator
+    rng = np.random.default_rng(1)
+    for rho in (0.999, 0.909, 0.66):
+        est = AgingEstimator(n_ues=1, beta=0.002)
+        h = (rng.standard_normal(32) + 1j * rng.standard_normal(32)) / np.sqrt(2)
+        for _ in range(6000):
+            est.update(np.abs(h)[None, :] ** 2)
+            h = rho * h + np.sqrt(1 - rho ** 2) * (rng.standard_normal(32) + 1j * rng.standard_normal(32)) / np.sqrt(2)
+        assert est.lag_one()[0] == pytest.approx(rho ** 2, abs=0.05)
+
+
+def test_expected_throughput_limits():
+    from src.cellular.aging import success_probabilities
+    rng = np.random.default_rng(2)
+    normals = (rng.standard_normal(20000) + 1j * rng.standard_normal(20000)) / np.sqrt(2)
+    gamma_ls = np.array([10.0, 100.0])
+    # c = 1: the past power is the current power, so the rule picks the highest decodable CQI.
+    p = success_probabilities(gamma_ls, np.array([0.7, 1.3]), np.ones(2), normals)
+    best = np.argmax(cqi.EFFICIENCY[None, :] * p, axis=1) + 1
+    assert best.tolist() == cqi.best_cqi(gamma_ls * np.array([0.7, 1.3])).tolist()
+    # c = 0: Rayleigh fading, P(decode q) = exp(-theta_q / gamma_ls).
+    p = success_probabilities(gamma_ls, np.array([5.0, 5.0]), np.zeros(2), normals)
+    exact = np.exp(-cqi.THRESHOLDS[None, :] / gamma_ls[:, None])
+    assert np.allclose(p, exact, atol=0.01)
+
+
+def test_calibration_loop_absorbs_a_bias():
+    """A 3 dB optimistic model on a static channel: the calibration offset settles near -3 dB."""
+    from src.cellular.aging import ExpectedThroughputCQI
+    sim = make(ues_per_cell=2, n_subbands=2, cqi_delay=0)
+    sim.fading.rho = 1.0
+    sim.fading.h = np.ones_like(sim.fading.h)
+    adapter = ExpectedThroughputCQI(sim, "calibrated", n_samples=256, step_db=0.2)
+    adapter.gamma_ls = adapter.gamma_ls * 10 ** 0.3                # model overestimates the SINR by 3 dB
+    adapter.correlation = lambda: np.full(sim.n_ues, 0.999)
+    for _ in range(600):
+        targets, _ = baselines.full_reuse(sim)
+        cqis = adapter.select(targets)
+        out = sim.step(targets, cqis)
+        adapter.update(targets, cqis, out["success"])
+    served = np.unique(baselines.full_reuse(sim)[0])
+    assert np.all(adapter.offset[served] < -1.5) and np.all(adapter.offset[served] > -4.5)
+
+
+def test_multilag_estimator_recovers_power_correlation_under_noise():
+    """With multiplicative measurement noise the lag-one estimate is biased low; the multi-lag fit is not."""
+    from src.cellular.aging import MultiLagEstimator
+    rng = np.random.default_rng(3)
+    for rho in (0.999, 0.909, 0.66):
+        est = MultiLagEstimator(n_ues=1, beta=0.002)
+        h = (rng.standard_normal(32) + 1j * rng.standard_normal(32)) / np.sqrt(2)
+        for _ in range(8000):
+            noisy = np.abs(h) ** 2 * rng.lognormal(0.0, 0.3, 32)        # report noise, independent per slot
+            est.update(noisy[None, :])
+            h = rho * h + np.sqrt(1 - rho ** 2) * (rng.standard_normal(32) + 1j * rng.standard_normal(32)) / np.sqrt(2)
+        assert est.lag_one()[0] == pytest.approx(rho ** 2, abs=0.06)
+
+
+def test_signal_report_is_the_serving_link_fading():
+    sim = make(ues_per_cell=2, n_subbands=2, cqi_delay=0)
+    before = sim.fading.power()[sim.serving, np.arange(sim.n_ues)].copy()
+    sim.step(*baselines.full_reuse(sim))
+    assert np.allclose(sim.reported_signal_fading(), before)
+
+
+def test_signal_model_probabilities_are_ordered():
+    from src.cellular.aging import ExpectedThroughputCQI
+    sim = make(ues_per_cell=2, n_subbands=2, cqi_delay=4, speed_kmh=30)
+    adapter = ExpectedThroughputCQI(sim, "estimated", estimator="multilag", source="signal", n_samples=256)
+    for _ in range(20):
+        targets, _ = baselines.full_reuse(sim)
+        cqis = adapter.select(targets)
+        out = sim.step(targets, cqis)
+        adapter.update(targets, cqis, out["success"])
+    ue = np.unique(targets[targets >= 0])
+    probs = adapter._signal_model(ue, np.ones(len(ue)), np.full(len(ue), 0.5),
+                                  (np.ones(256) + 0j), np.ones(len(ue)))
+    assert probs.shape == (len(ue), cqi.N_CQI)
+    assert np.all(np.diff(probs, axis=1) <= 1e-12)            # a higher CQI never decodes more often
+    assert np.all((cqis[targets >= 0] >= 1) & (cqis[targets >= 0] <= 15))
+
+
 def test_oracle_refuses_finite_buffer_with_several_subbands():
     with pytest.raises(ValueError):
         oracle_decisions(make(full_buffer=False, load=0.1, n_subbands=2))
