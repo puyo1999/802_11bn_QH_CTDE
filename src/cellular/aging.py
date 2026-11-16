@@ -25,6 +25,9 @@ Aging estimation (paper3 extension A and B):
                         (MultiLagEstimator), more robust to measurement noise
   source="sinr"         past fading from the all-transmit SINR report (kappa), which mixes the fading of the serving
                         link with that of the interferers; current SINR modeled as gamma_ls times the fading factor
+  fresh=True            the all-transmit SINR of the current slot instead of the aged report, with c = 1; with
+                        the same rule on aged reports it splits a remedy's gain into a reduction of the operating
+                        cost of link adaptation and a reduction of the cost of aging
   source="signal"       past fading of the serving link alone, from a received-power report of the serving cell
                         (sim.reported_signal_fading); current SINR modeled with the serving-link fading from the
                         conditional law and independent Rayleigh fading of every interferer
@@ -128,7 +131,7 @@ class ExpectedThroughputCQI:
     MODES = ("known", "estimated", "calibrated")
 
     def __init__(self, sim, mode: str, n_samples: int = 64, step_db: float = 0.5, seed: int = 0,
-                 estimator: str = "lag1", source: str = "sinr"):
+                 estimator: str = "lag1", source: str = "sinr", fresh: bool = False):
         if mode not in self.MODES:
             raise ValueError(f"mode must be one of {self.MODES}, got {mode}")
         if estimator not in ("lag1", "multilag") or source not in ("sinr", "signal"):
@@ -139,7 +142,10 @@ class ExpectedThroughputCQI:
         self.estimator = AgingEstimator(sim.n_ues) if estimator == "lag1" else MultiLagEstimator(sim.n_ues)
         self.offset = np.zeros(sim.n_ues)                 # calibration Delta_u in dB
         self.gamma_ls = large_scale_all_transmit_sinr(sim)
-        self.age = sim.cfg.cqi_delay + 1
+        self.fresh = fresh
+        self.age = 0 if fresh else sim.cfg.cqi_delay + 1
+        if fresh and (mode != "known" or source != "sinr"):
+            raise ValueError("fresh selection uses the known correlation c = 1 and the SINR report")
         self._last = None
 
     def correlation(self) -> np.ndarray:
@@ -149,7 +155,12 @@ class ExpectedThroughputCQI:
 
     def select(self, targets: np.ndarray) -> np.ndarray:
         sim = self.sim
-        kappa = fading_correction(sim) if self.source == "sinr" else sim.reported_signal_fading()
+        if self.fresh:
+            kappa = sim.all_transmit_sinr() / self.gamma_ls[:, None]
+        elif self.source == "sinr":
+            kappa = fading_correction(sim)
+        else:
+            kappa = sim.reported_signal_fading()
         self.estimator.update(kappa)
         tx = targets >= 0
         cqis = np.zeros(targets.shape, dtype=np.int64)

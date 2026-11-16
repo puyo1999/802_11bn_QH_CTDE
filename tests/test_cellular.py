@@ -310,6 +310,23 @@ def test_signal_model_probabilities_are_ordered():
     assert np.all((cqis[targets >= 0] >= 1) & (cqis[targets >= 0] <= 15))
 
 
+def test_fresh_expected_throughput_equals_genie_under_full_reuse():
+    """With the report of the current slot and every cell transmitting, the predicted SINR is the true one, so the
+    expected-throughput rule picks the genie CQI and never fails, even at high speed."""
+    from src.cellular.aging import ExpectedThroughputCQI
+    from src.cellular.linkadapt import genie_cqi
+    sim = make(ues_per_cell=2, n_subbands=4, cqi_delay=4, speed_kmh=60)
+    adapter = ExpectedThroughputCQI(sim, "known", fresh=True, n_samples=32)
+    for _ in range(40):
+        targets, _ = baselines.full_reuse(sim)
+        cqis = adapter.select(targets)
+        assert np.array_equal(cqis, genie_cqi(sim, targets))
+        out = sim.step(targets, cqis)
+        assert out["success"][targets >= 0].all()
+    with pytest.raises(ValueError):
+        ExpectedThroughputCQI(sim, "estimated", fresh=True)
+
+
 def test_oracle_refuses_finite_buffer_with_several_subbands():
     with pytest.raises(ValueError):
         oracle_decisions(make(full_buffer=False, load=0.1, n_subbands=2))

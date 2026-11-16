@@ -322,7 +322,8 @@ LA1_ET = {"et_estimated": ("estimated", "lag1", "sinr"), "et_calibrated": ("cali
           "et_known": ("known", "lag1", "sinr"), "et_multilag": ("estimated", "multilag", "sinr"),
           "et_signal": ("estimated", "lag1", "signal"), "et_signal_multilag": ("estimated", "multilag", "signal"),
           "et_signal_known": ("known", "lag1", "signal"),
-          "et_signal_multilag_cal": ("calibrated", "multilag", "signal")}
+          "et_signal_multilag_cal": ("calibrated", "multilag", "signal"),
+          "et_fresh": ("known", "lag1", "sinr", True)}   # report of the current slot: pairs with et_known
 LA1_VARIANTS = ["genie", "fresh"] + [f"olla{t:g}" for t in LA1_OLLA_TARGETS] + list(LA1_ET)
 LA1_JOBS = os.path.join(OUT, "la1_jobs")
 
@@ -338,8 +339,8 @@ def la1_adapter(sim, variant: str, seed: int):
         return LinkAdapter(sim, variant)
     if variant.startswith("olla"):
         return LinkAdapter(sim, "local", target_bler=float(variant[4:]))
-    mode, estimator, source = LA1_ET[variant]
-    return ExpectedThroughputCQI(sim, mode, seed=seed, estimator=estimator, source=source)
+    mode, estimator, source, *fresh = LA1_ET[variant]
+    return ExpectedThroughputCQI(sim, mode, seed=seed, estimator=estimator, source=source, fresh=bool(fresh))
 
 
 def la1_episode(cfg: CellularConfig, drop: int, seed: int, selector: str, variant: str) -> dict:
@@ -400,7 +401,7 @@ def la1(args) -> None:
              r["p5_rate"] / base["p5_rate"], r["bler"]))
     summary = {}
     shown = ["genie", "fresh", "olla0.1", "olla_tuned"] + list(LA1_ET)
-    remedies = ["olla_tuned"] + list(LA1_ET)
+    remedies = ["olla_tuned"] + [v for v in LA1_ET if v != "et_fresh"]
     for selector in LA1_SELECTORS:
         print(f"\n== targets: {selector}: geometric-mean rate / oracle with genie CQI (%), [BLER %]; then the share "
               f"of the link-adaptation loss (genie - olla0.1) that each remedy recovers")
@@ -415,12 +416,20 @@ def la1(args) -> None:
                 cost = g["fresh"] - g["olla0.1"]
                 la_loss = g["genie"] - g["olla0.1"]
                 rec = {v: (g[v] - g["olla0.1"]) / la_loss if la_loss > 1e-9 else float("nan") for v in remedies}
+                # Split of the gain of expected-throughput selection (et_known) over OLLA into the reduction of the
+                # operating cost (fresh reports) and of the aging cost (aged minus fresh, each rule against itself).
+                split = {"operating_reduction": g["et_fresh"] - g["fresh"],
+                         "aging_cost_olla": cost, "aging_cost_et": g["et_fresh"] - g["et_known"],
+                         "aging_reduction": cost - (g["et_fresh"] - g["et_known"])}
                 summary[f"{selector}|d={delay}|v={speed:g}"] = {
                     "tuned_target": best, "aging_cost": cost, "la_loss": la_loss, "recovered_share_of_la_loss": rec,
+                    "et_gain_split": split,
                     **{v: {"geo_rate": float(m[v][0]), "throughput": float(m[v][1]), "p5": float(m[v][2]),
                            "bler": float(m[v][3])} for v in m}}
                 print(f"{delay:>3} {speed:>5g} " + " ".join(f"{g[v]:>7.1f} [{100*m[v][3]:>4.1f}]" for v in shown)
-                      + "  " + " ".join(f"{100*rec[v]:>10.0f}%" for v in remedies))
+                      + "  " + " ".join(f"{100*rec[v]:>10.0f}%" for v in remedies)
+                      + f"  | ET gain split: operating {split['operating_reduction']:+.1f}p, "
+                        f"aging {split['aging_reduction']:+.1f}p (aging cost OLLA {cost:.1f}p, ET {split['aging_cost_et']:.1f}p)")
     with open(os.path.join(OUT, f"{tag}_summary.json"), "w") as handle:
         json.dump(summary, handle, indent=2)
 
