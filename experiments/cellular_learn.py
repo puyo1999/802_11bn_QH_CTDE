@@ -104,8 +104,9 @@ def pilot(args) -> None:
     refs = {p: evaluate_reference(cfg, args.drop, p, "ideal") for p in ("oracle", "full_reuse", "greedy_muting")}
     jobs = [(args.drop, args.delay, args.speed, key, "ideal", args.episodes, args.train_len, 0)
             for key in args.learners]
-    results = run_jobs(lambda j: [learn_job(j)], jobs, args.workers) if args.workers > 1 else \
-        [learn_job(j) for j in jobs]
+    if args.workers > 1:
+        run_jobs(learn_rows, jobs, args.workers)
+    results = [learn_job(j) for j in jobs]          # read back from learn_jobs/ in job order
     base = refs["oracle"]
 
     def rel(r):
