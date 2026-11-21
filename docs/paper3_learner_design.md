@@ -108,3 +108,26 @@ Findings:
 
 Decision proposed for the paper: γ = 0 for all learners (stated and justified by the per-slot oracle), 300–500
 training episodes of 400 slots, and the causal references in the E2 table next to the current-channel ones.
+
+## 7. Reduced E2 with SharedMAPPO (5 drops, d = 4, v = 3 km/h, γ = 0, 300 episodes of 400 slots)
+
+Mean over drops of the geometric-mean rate relative to the oracle with genie CQI (%), from
+`experiments/cellular_results/e2_D5_delay4_v3_E300_g0.json`:
+
+| CQI | Oracle | Full reuse | Greedy | Causal full reuse | Causal greedy | MAPPO sampled | MAPPO argmax |
+|---|---|---|---|---|---|---|---|
+| Genie / ideal | 100.0 | 98.6 | 99.3 | 97.1 | 96.9 | 93.9 | 96.4 |
+| OLLA | 83.0 | 86.6 | 84.9 | 84.9 | 83.2 | 81.9 | 84.4 |
+| Learned | — | — | — | — | — | 39.4 | 42.4 |
+
+- Ideal CQI: MAPPO (argmax) is 0.5–0.7 points below the causal references, which see the same delayed
+  reports, and 2.2–2.9 points below the references on the current channel. Of its 3.6-point loss to the oracle,
+  about 3 points are the information of the delayed observation (the loss of the causal references) and about
+  0.6 points are the learner. Sampling the actions costs a further 2.5 points.
+- OLLA: MAPPO (84.4) lies between causal full reuse (84.9) and causal greedy (83.2); the 12-point drop from
+  ideal CQI equals that of the references (causal full reuse 97.1 → 84.9), i.e., the operating cost of OLLA.
+- Learned CQI: 42.4%, a link-adaptation gap of 54 points against ideal CQI. The curves flatten (slot
+  throughput of the last two tenths within 0.1–0.2), so more episodes would not close it; this repeats the
+  companion finding that rate selection dominates the loss of learners.
+- Evaluation with argmax is 2.5 points above sampled actions for ideal and OLLA CQI; the paper text says the
+  learners are evaluated with sampled actions, which should be revised to deterministic execution.
