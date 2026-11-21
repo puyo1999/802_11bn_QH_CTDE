@@ -26,13 +26,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from cellular_gap import Meter, decide, run_jobs                     # noqa: E402
-from src.agents.mappo import CentralPPO, SharedMAPPO, train_mappo   # noqa: E402
+from src.agents.mappo import CentralPPO, SharedCentralPPO, SharedMAPPO, train_mappo   # noqa: E402
 from src.cellular.linkadapt import LinkAdapter                       # noqa: E402
 from src.cellular.marl_env import CellularMARLEnv                    # noqa: E402
 from src.cellular.sim import CellularConfig, CellularSim             # noqa: E402
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cellular_results", "learn_jobs")
-LEARNERS = {"mappo": SharedMAPPO, "central": CentralPPO}
+LEARNERS = {"mappo": SharedMAPPO, "central": CentralPPO, "central_shared": SharedCentralPPO}
 EVAL_SEED = 0          # the evaluation seed of LA0/LA1, so that references and learners see the same sequences
 
 

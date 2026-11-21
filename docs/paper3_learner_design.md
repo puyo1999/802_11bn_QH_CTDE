@@ -78,6 +78,8 @@ Geometric-mean rate relative to the oracle with genie CQI on the evaluation epis
 | SharedMAPPO, γ = 0, 300 episodes | 94.8 | 97.0 | 12 min |
 | SharedMAPPO, γ = 0, 1000 episodes | 96.3 | 96.9 | 36 min |
 | CentralPPO, γ = 0, 300 episodes | 69.9 | 69.5 | 55 min |
+| CentralPPO, γ = 0, 1000 episodes | 79.1 | 79.0 | 196 min |
+| SharedCentralPPO, γ = 0, 300 episodes | 93.0 | 96.6 | 65 min |
 
 Findings:
 - With the discount 0.99 of the companion study, neither learner learns: both stay at the level of a random
@@ -97,6 +99,12 @@ Findings:
   observation of 156 inputs, which learns far more slowly than the shared actor that sees 13 inputs. Before E2
   it needs work: more episodes, or a shared per-agent encoder in place of the flat joint observation. This is
   the next step on the learner side.
+- SharedCentralPPO (`src/agents/mappo.py`) keeps the autoregressive joint policy and the joint embedding of
+  CentralPPO but uses one head for all agents that also receives the agent's own observation. With γ = 0 it
+  reaches 93.0% (argmax 96.6%) in 300 episodes, against 69.9% for CentralPPO after 300 and 79.1% after 1000
+  episodes; its curve still rises at 300 episodes (slot throughput 7.38 → 7.55 between the 6th and 10th tenth),
+  so it needs more episodes than SharedMAPPO. SharedCentralPPO replaces CentralPPO as the full-information
+  learner of paper3.
 
 Decision proposed for the paper: γ = 0 for all learners (stated and justified by the per-slot oracle), 300–500
 training episodes of 400 slots, and the causal references in the E2 table next to the current-channel ones.
