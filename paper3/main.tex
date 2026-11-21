@@ -68,6 +68,9 @@ Coordination among cells ranges from full joint processing, in which several cel
 \subsection{Learning-based scheduling in cellular networks}
 Nasir and Guo~\cite{nasir2019power} train distributed deep Q-networks for dynamic power allocation, with each transmitter acting on local observations and limited information from its neighbors. Naderializadeh et~al.~\cite{naderializadeh2021resource} apply MARL to joint user scheduling and power control in multi-cell networks and compare the learned policy with information-theoretic and heuristic references. O-RAN exposes such decisions to data-driven control through the near-RT RIC and its applications~\cite{polese2023oran,bonati2021oran}. CTDE algorithms such as multi-agent deep deterministic policy gradient~\cite{lowe2017maddpg}, counterfactual multi-agent policy gradients~\cite{foerster2018coma}, and multi-agent PPO (MAPPO)~\cite{yu2022mappo} match this split between a central trainer and distributed executors.
 
+\subsection{Link adaptation with outdated feedback}
+OLLA corrects the average bias of the CQI reports by the acknowledgments, but it does not use their age. Kang et~al.~\cite{kang2014outdated} analyze the outage of rate adaptation with outdated feedback under Gauss--Markov fading, where the current channel given the outdated one follows a noncentral chi-squared law, and select the rate from this conditional distribution. Pellaco et~al.~\cite{pellaco2020outdated} combine such a model with data-driven estimation of its parameters, and Saxena et~al.~\cite{saxena2022ltsla} refine a probabilistic model of the success of each rate from the acknowledgments without tuning. Park et~al.~\cite{park2015target} show that the target error rate that maximizes the throughput rises with the uncertainty of the channel, and Wiesmayr et~al.~\cite{wiesmayr2025salad} adapt the target online. This paper uses representative implementations of these remedies to measure how much of the link-adaptation loss of coordinated scheduling they recover.
+
 \subsection{Optimality references}
 The references in the cited learning studies are heuristics or bounds that hold under assumptions different from the learned scheduler, e.g., full channel knowledge without a per-slot rate constraint. This paper uses an exact per-slot oracle under the same discrete rate set, the same objective, and the same interference model as the learners, and it decomposes the loss of the learners relative to that oracle. The per-slot problem of a cluster of a few cells is tractable by enumeration because the number of joint decisions grows as the product of the per-cell choice counts.
 
@@ -260,6 +263,20 @@ A link-adaptation study (LA0) separates rate selection from scheduling without l
 \end{equation}
 where $\kappa_{u,b}(t)$ is the ratio of the reported SINR to the all-transmit SINR without fading and corrects for the fading at the time of the report, and then applies OLLA. A committed variant of intent-aware selection decides the targets one slot ahead, as the announcement requires. LA0 covers $d \in \{0, 4, 8\}$ slots and $v \in \{3, 30, 60\}$~km/h on 20 drops.
 
+A second link-adaptation study (LA1) measures how much of the link-adaptation loss established remedies recover, under the setting and the conditions of LA0. The targets are those of the oracle and of a causal greedy muting, which selects the targets from the channel that a base station can estimate: the large-scale gains, with the serving link scaled by $\kappa_{u,b}$ of the delayed report. The remedies use only the reports and the acknowledgments. Tuned OLLA applies~\eqref{eq:olla_select} and~\eqref{eq:olla_update} with the target error rate $\epsilon \in \{0.1, 0.2, 0.3, 0.5\}$ that maximizes the utility in each condition~\cite{park2015target,wiesmayr2025salad}; the choice is made on the evaluation drops and therefore favors this remedy. Expected-throughput (ET) selection~\cite{kang2014outdated,pellaco2020outdated} treats $\tilde{\kappa}_{u,b}$ of the report of age $a$ as the past fading power and, by~\eqref{eq:aging}, models the current one as
+\begin{equation}
+\kappa = \bigl| \sqrt{c\, \tilde{\kappa}_{u,b}}\, e^{j\psi} + \sqrt{1 - c}\, n \bigr|^2, \quad n \sim \mathcal{CN}(0, 1),
+\label{eq:et_law}
+\end{equation}
+with the power correlation $c = \rho^{2a}$ and an arbitrary phase $\psi$. It selects
+\begin{equation}
+q_{c,b} = \arg\max_{q}\; e_q\, \hat{P}_q, \quad \hat{P}_q = \Pr\bigl\{ \bar{\gamma}_u\, 10^{\Delta_u/10}\, \kappa \ge \theta_q \bigr\},
+\label{eq:et_select}
+\end{equation}
+where $\bar{\gamma}_u$ is the all-transmit SINR without fading and $\hat{P}_q$ is computed from 64 samples of~\eqref{eq:et_law}. The variants differ in the knowledge of $c$, in the use of the acknowledgments, and in the report. With known correlation, $c = \rho^{2a}$; this variant bounds the value of aging estimation. The lag-one estimate takes $c = \hat{r}_1^{\,a}$ from the exponentially averaged correlation $\hat{r}_1$ of consecutive values of $\tilde{\kappa}$ over the subbands of a UE, and the multi-lag estimate fits $\log \hat{r}_k = k \log \rho^2$ by least squares over the lags $k \in \{1, 2, 4, 8\}$. The calibrated variant adds to the lag-one estimate the update $\Delta_u \leftarrow \Delta_u + \mu\,(\mathbb{1}\{\text{success}\} - \hat{P}_q)$ with $\mu = 0.5$~dB, which matches the predicted success probability to the observed one~\cite{saxena2022ltsla}; in the other variants, $\Delta_u = 0$. A signal-only variant with the lag-one estimate replaces $\tilde{\kappa}$ by the fading power of the serving link alone, as from a reference signal received power report, and models the interference of every other cell with independent Rayleigh fading.
+
+The share of the link-adaptation loss that a remedy $x$ recovers is $(\Theta_x - \Theta_{\text{OLLA}})/(\Theta_{\text{genie}} - \Theta_{\text{OLLA}})$, with OLLA at $\epsilon = 0.1$ and genie CQI for the same target selection, so that its denominator contains both the operating cost of OLLA and the cost of aging. To attribute the gain of ET selection, ET selection with known correlation is also applied to the all-transmit SINR of the current slot with $c = 1$ (fresh ET). The gain of ET selection over OLLA then splits without weights into the reduction of the operating cost, i.e., fresh ET minus fresh OLLA, and the reduction of the cost of aging, i.e., the cost of aging of OLLA minus that of ET selection, each measured against the fresh variant of the same rule.
+
 Every episode consists of 300 warm-up slots, i.e., three time constants $1/\beta$ of the PF averages, followed by a measurement window of 1000 slots; the PF averages start from the rate that each UE obtains when its cell shares all subbands equally among its UEs at the CQI of the all-transmit SINR without fading. All metrics are taken over the measurement window. Let $\bar{r}_u$ denote the mean rate of UE $u$ over the window. The PF utility of an episode is
 \begin{equation}
 U_{\text{PF}} = \sum_{u \in \mathcal{U}_{\mathcal{C}}} \log \bar{r}_u,
@@ -300,7 +317,7 @@ Both learners use two-layer actors and critics with 128 hidden units and the PPO
 
 \section{Results}
 \label{sec:results}
-\todo{E1 and LA0 below use 20 drops and one seed; the full E1 run uses 200 drops and three seeds. Regenerate the figures with paper3/figures/make\_figures.py.}
+\todo{E1, LA0, and LA1 below use 20 drops and one seed; the full E1 run uses 200 drops and three seeds. Regenerate the figures with paper3/figures/make\_figures.py.}
 
 \subsection{Calibration}
 Fig.~\ref{fig:sinr_cdf} shows the distribution of the wideband SINR of the serving cell when all seven cells transmit, computed from the large-scale gains of 1400 UEs in 50 drops. The 5th, 50th, and 95th percentiles are $-0.9$, $8.5$, and $28.3$~dB. Attachment to the cell with the largest large-scale gain is essential for this distribution: with attachment to the geographically nearest cell, the shadowing of the serving link lowers the 5th percentile to $-20.9$~dB. The exact oracle with $B = 4$ subbands takes 1.7, 2.5, and 3.3~ms per slot for $C = 3$ and $U \in \{2, 4, 6\}$, 20~ms for $C = 7$ and $U = 2$, and 584~ms for $C = 7$ and $U = 4$ on one process of a 1.9~GHz Intel Core i3-4030U processor. For episodes of 1300 slots, the oracle therefore takes 2--4~s for $C = 3$ and 26~s to 13~min for $C = 7$, which is practical for evaluation in all configurations of Table~\ref{tab:params}.
@@ -341,17 +358,17 @@ In this setting with omnidirectional cells and equal transmit power, the link-ad
 \centering
 \begin{tabular}{rrrrrr}
 \toprule
-$d$ & $v$ (km/h) & Fresh & Local & Intent & Committed \
+$d$ & $v$ (km/h) & Fresh & Local & Intent & Committed \\
 \midrule
-0 & 3 & 85.0 & 84.4 & 88.3 & 87.4 \
-0 & 30 & 82.3 & 64.1 & 67.4 & 58.2 \
-0 & 60 & 82.4 & 50.7 & 52.7 & 26.0 \
-4 & 3 & 85.0 & 82.7 & 86.6 & 85.4 \
-4 & 30 & 82.3 & 49.7 & 51.6 & 39.7 \
-4 & 60 & 82.4 & 43.1 & 44.3 & 12.9 \
-8 & 3 & 85.0 & 81.5 & 85.4 & 84.1 \
-8 & 30 & 82.3 & 45.8 & 47.1 & 34.3 \
-8 & 60 & 82.4 & 43.0 & 44.1 & 12.7 \
+0 & 3 & 85.0 & 84.4 & 88.3 & 87.4 \\
+0 & 30 & 82.3 & 64.1 & 67.4 & 58.2 \\
+0 & 60 & 82.4 & 50.7 & 52.7 & 26.0 \\
+4 & 3 & 85.0 & 82.7 & 86.6 & 85.4 \\
+4 & 30 & 82.3 & 49.7 & 51.6 & 39.7 \\
+4 & 60 & 82.4 & 43.1 & 44.3 & 12.9 \\
+8 & 3 & 85.0 & 81.5 & 85.4 & 84.1 \\
+8 & 30 & 82.3 & 45.8 & 47.1 & 34.3 \\
+8 & 60 & 82.4 & 43.0 & 44.1 & 12.7 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -361,6 +378,45 @@ $d$ & $v$ (km/h) & Fresh & Local & Intent & Committed \
 \includegraphics[width=\textwidth]{fig_la0}
 \caption{Link adaptation in LA0 (cluster of three cells, four subbands, full buffer, PF objective, 20 drops, steady state). (a) Geometric-mean rate relative to the oracle with genie CQI for the targets of the oracle and the CQI delay $d = 4$. (b) Loss of local CQI selection for the targets of the oracle, split into the operating cost of OLLA and the cost of aging per CQI delay; the marks show the loss that remains with intent-aware selection.}
 \label{fig:la0}
+\end{figure*}
+
+\subsection{Remedies for aged reports}
+Table~\ref{tab:la1} and Fig.~\ref{fig:la1} report LA1 for the causal targets, which a deployed scheduler can use. The link-adaptation loss of OLLA, i.e., genie minus OLLA at $\epsilon = 0.1$, is 12.4--16.0 points at 3~km/h, 32.7 points for $d = 0$ at 30~km/h, and 50.1--56.0 points in the five conditions with $d \ge 4$ at 30 or 60~km/h or with $v = 60$~km/h.
+
+In these five conditions, tuned OLLA recovers 30--40\% of the loss with target error rates of 30--50\%, and ET selection recovers 36--48\% with the lag-one estimate and up to 50\% in its best variant. For $d = 4$ at 60~km/h, the geometric-mean rate rises from 6.4\% of the oracle with OLLA to 28.8\% with tuned OLLA and to 33.0--34.4\% with ET selection, against 62.3\% with genie CQI for the same targets. Fig.~\ref{fig:la1}(b) shows where the gain of ET selection comes from. In the five conditions, it reduces the operating cost by 4.6--5.8 points and the cost of aging by 12.3--22.1 points, from 39.8--46.7 points with OLLA to 24.3--27.5 points. ET selection thus removes about one third to one half of the cost of aging, but a cost of aging of about 25 points remains even with the known correlation; it is the information that the aged report no longer carries, and no selection rule on the report recovers it.
+
+The estimation of the aging is not the limiting factor. ET selection with the lag-one estimate attains within 1.3 points of the variant with known correlation in every condition, and the multi-lag estimate differs from the lag-one estimate by at most 0.9 points. The model of the report matters more. At 3~km/h, the signal-only variant falls to 61.1--62.6\%, 19.2--22.5 points below OLLA, because it treats the fading of the interfering links as unknown although the SINR report contains it; for $d \ge 4$ at 30 and 60~km/h, where this information has aged, it is 0.9--1.7 points above the SINR variant with the same estimate. At 3~km/h, the SINR variant with known correlation gains 3.0 points over OLLA for $d = 0$ but loses 1.6 points for $d = 8$, at an error rate of 10.1\%: the conditional law~\eqref{eq:et_law} describes the aging of one link, whereas the SINR report also ages through the fading of the interferers, so the predicted success probability is too high. A reliability check over 10 drops with the causal targets confirms this: for $d = 0$ and $d = 8$ at 3~km/h, the SINR variant with known correlation predicts a mean success probability of 0.989 and 0.969 for the CQIs that it selects, whereas 0.962 and 0.898 of the transmissions succeed, and for $d = 4$ at 30~km/h it predicts 0.745 against 0.635. The signal-only variant errs in the opposite direction at 3~km/h, with 0.825 and 0.816 predicted against 0.938 and 0.921 observed, and at 60~km/h both variants are within 0.03 of the observed rate, because the aged report then carries little information on either the serving or the interfering links. The calibration loop corrects the bias of the SINR variant and gains 0.3--3.1 points over OLLA at 3~km/h, the most of all variants there.
+
+With the targets of the oracle, which are chosen from the channel of the current slot, the calibrated variant reaches 65.4--65.9\% of the oracle for $d \ge 4$ at 30 and 60~km/h, against 47.9--52.9\% with known correlation, at error rates of 26\%. The oracle schedules UEs at their current fading peaks, so the SINR in the slot exceeds the prediction from the report, and the calibration loop learns this bias. The gain therefore reflects the information of the oracle on the current channel rather than a property of the remedy, and a causal scheduler cannot obtain it. Under causal targets, the established remedies thus recover at most half of the link-adaptation loss, and the cost of aging that remains for $d \ge 4$ at 30 and 60~km/h is about 2.7 times the operating cost of OLLA.
+
+\begin{table*}
+\caption{GEOMETRIC-MEAN RATE RELATIVE TO THE ORACLE WITH GENIE CQI FOR THE CAUSAL TARGETS (\%, MEAN OVER 20 DROPS)}
+\label{tab:la1}
+\centering
+\begin{tabular}{rrrrrrrrrrr}
+\toprule
+ & & & \multicolumn{2}{c}{OLLA} & \multicolumn{5}{c}{ET selection} & \\
+\cmidrule(lr){4-5} \cmidrule(lr){6-10}
+$d$ & $v$ (km/h) & Genie & $\epsilon = 0.1$ & Tuned & Lag-one & Multi-lag & Known $c$ & Signal-only & Calibrated & Error, tuned (\%) \\
+\midrule
+0 & 3 & 97.5 & 85.1 & 85.1 & 87.7 & 88.0 & 88.1 & 62.6 & 88.2 & 10 \\
+0 & 30 & 89.3 & 56.5 & 59.1 & 60.2 & 60.2 & 59.2 & 56.3 & 60.9 & 20 \\
+0 & 60 & 75.2 & 25.1 & 40.2 & 43.1 & 43.1 & 43.2 & 43.7 & 44.0 & 30 \\
+4 & 3 & 96.8 & 82.3 & 82.3 & 81.7 & 82.2 & 82.1 & 61.8 & 83.4 & 10 \\
+4 & 30 & 73.1 & 19.7 & 37.2 & 40.1 & 41.0 & 41.4 & 41.8 & 42.5 & 30 \\
+4 & 60 & 62.3 & 6.4 & 28.8 & 33.0 & 33.1 & 33.2 & 34.0 & 34.4 & 49 \\
+8 & 3 & 96.3 & 80.3 & 80.3 & 78.4 & 78.9 & 78.7 & 61.1 & 80.6 & 10 \\
+8 & 30 & 66.3 & 10.3 & 31.1 & 35.3 & 35.7 & 36.3 & 36.8 & 37.4 & 49 \\
+8 & 60 & 61.7 & 6.3 & 28.2 & 32.7 & 32.7 & 32.7 & 33.6 & 34.0 & 49 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{figure*}
+\centering
+\includegraphics[width=\textwidth]{fig_la1}
+\caption{Remedies for aged reports in LA1 with the causal targets (cluster of three cells, four subbands, full buffer, PF objective, 20 drops, CQI delay $d = 4$). (a) Share of the link-adaptation loss of OLLA at $\epsilon = 0.1$ that each remedy recovers; the signal-only variant at 3~km/h lies below the axis at the labeled value. (b) Loss relative to genie CQI of OLLA at $\epsilon = 0.1$ (left bars) and of ET selection with known correlation (right bars), split into the operating cost, i.e., genie minus fresh selection, and the cost of aging, i.e., fresh minus aged selection.}
+\label{fig:la1}
 \end{figure*}
 
 \subsection{Gap decomposition of learned schedulers}

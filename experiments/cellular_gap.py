@@ -434,9 +434,53 @@ def la1(args) -> None:
         json.dump(summary, handle, indent=2)
 
 
+LA1C_CONDITIONS = [(0, 3), (8, 3), (4, 30), (4, 60)]
+LA1C_VARIANTS = ["et_known", "et_signal_known", "et_fresh"]
+
+
+def la1c_job(job: tuple) -> list[dict]:
+    """Reliability of the success probability that expected-throughput selection predicts: mean predicted
+    probability of the chosen CQI against the observed success rate, over the measurement window."""
+    drop, delay, speed, variant = job
+    cfg = CellularConfig(cluster_size=3, ues_per_cell=4, n_subbands=4, objective="pf",
+                         cqi_delay=delay, speed_kmh=speed)
+    sim = CellularSim(cfg, drop_seed=drop)
+    sim.reset(seed=0)
+    adapter, predicted, observed = la1_adapter(sim, variant, 0), [], []
+    while not sim.done:
+        measuring = sim.measuring
+        targets = la1_targets(sim, "causal_greedy")
+        cqis = adapter.select(targets)
+        out = sim.step(targets, cqis)
+        adapter.update(targets, cqis, out["success"])
+        sent = (targets >= 0) & (cqis > 0)
+        if measuring:
+            predicted += adapter._last[sent].tolist()
+            observed += out["success"][sent].astype(float).tolist()
+    return [{"drop": drop, "delay": delay, "speed": speed, "variant": variant,
+             "predicted": float(np.mean(predicted)), "observed": float(np.mean(observed)), "n": len(observed)}]
+
+
+def la1c(args) -> None:
+    jobs = [(d, delay, speed, v) for d in range(args.drops) for delay, speed in LA1C_CONDITIONS for v in LA1C_VARIANTS]
+    rows = run_jobs(la1c_job, jobs, args.workers)
+    tag = f"la1c_D{args.drops}"
+    write_csv(rows, tag)
+    summary = {}
+    print("\n== causal greedy targets: predicted success probability of the chosen CQI vs observed success rate")
+    for delay, speed in LA1C_CONDITIONS:
+        for v in LA1C_VARIANTS:
+            sel = [r for r in rows if r["delay"] == delay and r["speed"] == speed and r["variant"] == v]
+            p, o = float(np.mean([r["predicted"] for r in sel])), float(np.mean([r["observed"] for r in sel]))
+            summary[f"d={delay}|v={speed:g}|{v}"] = {"predicted": p, "observed": o}
+            print(f"d={delay} v={speed:>2g} {v:16s} predicted {p:.3f}  observed {o:.3f}")
+    with open(os.path.join(OUT, f"{tag}_summary.json"), "w") as handle:
+        json.dump(summary, handle, indent=2)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("exp", choices=["e0", "e1", "la0", "la1"])
+    parser.add_argument("exp", choices=["e0", "e1", "la0", "la1", "la1c"])
     parser.add_argument("--drops", type=int, default=50)
     parser.add_argument("--seeds", type=int, default=1)
     parser.add_argument("--ues", type=int, default=4)
@@ -445,7 +489,7 @@ def main() -> None:
     parser.add_argument("--hours", type=float, default=None,
                         help="la1: stop starting jobs after this many hours; rerun the same command to resume")
     args = parser.parse_args()
-    {"e0": e0, "e1": e1, "la0": la0, "la1": la1}[args.exp](args)
+    {"e0": e0, "e1": e1, "la0": la0, "la1": la1, "la1c": la1c}[args.exp](args)
 
 
 if __name__ == "__main__":

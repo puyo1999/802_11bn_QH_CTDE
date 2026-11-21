@@ -1,0 +1,50 @@
+{
+  "d=0|v=3|et_known": {
+    "predicted": 0.98875091125873,
+    "observed": 0.9621625438784875
+  },
+  "d=0|v=3|et_signal_known": {
+    "predicted": 0.8253099178447295,
+    "observed": 0.9381068398077957
+  },
+  "d=0|v=3|et_fresh": {
+    "predicted": 0.9999545919861207,
+    "observed": 0.9999545919861207
+  },
+  "d=8|v=3|et_known": {
+    "predicted": 0.9686241251061452,
+    "observed": 0.8983853040329762
+  },
+  "d=8|v=3|et_signal_known": {
+    "predicted": 0.8158567915374026,
+    "observed": 0.921016112302895
+  },
+  "d=8|v=3|et_fresh": {
+    "predicted": 0.9997037918196636,
+    "observed": 0.9997316910105869
+  },
+  "d=4|v=30|et_known": {
+    "predicted": 0.7445738600294377,
+    "observed": 0.6347240130681469
+  },
+  "d=4|v=30|et_signal_known": {
+    "predicted": 0.6445337771245238,
+    "observed": 0.6763478864708838
+  },
+  "d=4|v=30|et_fresh": {
+    "predicted": 0.9697527686869998,
+    "observed": 0.972531768940021
+  },
+  "d=4|v=60|et_known": {
+    "predicted": 0.6258809829587844,
+    "observed": 0.6551692757862531
+  },
+  "d=4|v=60|et_signal_known": {
+    "predicted": 0.5947815821276888,
+    "observed": 0.5959555954797102
+  },
+  "d=4|v=60|et_fresh": {
+    "predicted": 0.9433946130888234,
+    "observed": 0.9493394388259615
+  }
+}

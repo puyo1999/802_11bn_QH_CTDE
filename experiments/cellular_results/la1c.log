@@ -1,0 +1,135 @@
+[progress] 1/120 jobs, 34 s
+[progress] 2/120 jobs, 34 s
+[progress] 3/120 jobs, 34 s
+[progress] 4/120 jobs, 34 s
+[progress] 5/120 jobs, 60 s
+[progress] 6/120 jobs, 60 s
+[progress] 7/120 jobs, 61 s
+[progress] 8/120 jobs, 61 s
+[progress] 9/120 jobs, 84 s
+[progress] 10/120 jobs, 85 s
+[progress] 11/120 jobs, 85 s
+[progress] 12/120 jobs, 86 s
+[progress] 13/120 jobs, 112 s
+[progress] 14/120 jobs, 113 s
+[progress] 15/120 jobs, 113 s
+[progress] 16/120 jobs, 113 s
+[progress] 17/120 jobs, 140 s
+[progress] 18/120 jobs, 140 s
+[progress] 19/120 jobs, 141 s
+[progress] 20/120 jobs, 142 s
+[progress] 21/120 jobs, 167 s
+[progress] 22/120 jobs, 167 s
+[progress] 23/120 jobs, 167 s
+[progress] 24/120 jobs, 169 s
+[progress] 25/120 jobs, 197 s
+[progress] 26/120 jobs, 197 s
+[progress] 27/120 jobs, 197 s
+[progress] 28/120 jobs, 198 s
+[progress] 29/120 jobs, 222 s
+[progress] 30/120 jobs, 222 s
+[progress] 31/120 jobs, 222 s
+[progress] 32/120 jobs, 224 s
+[progress] 33/120 jobs, 248 s
+[progress] 34/120 jobs, 248 s
+[progress] 35/120 jobs, 248 s
+[progress] 36/120 jobs, 249 s
+[progress] 37/120 jobs, 275 s
+[progress] 38/120 jobs, 276 s
+[progress] 39/120 jobs, 276 s
+[progress] 40/120 jobs, 276 s
+[progress] 41/120 jobs, 303 s
+[progress] 42/120 jobs, 304 s
+[progress] 43/120 jobs, 304 s
+[progress] 44/120 jobs, 305 s
+[progress] 45/120 jobs, 325 s
+[progress] 46/120 jobs, 325 s
+[progress] 47/120 jobs, 326 s
+[progress] 48/120 jobs, 327 s
+[progress] 49/120 jobs, 356 s
+[progress] 50/120 jobs, 357 s
+[progress] 51/120 jobs, 357 s
+[progress] 52/120 jobs, 359 s
+[progress] 53/120 jobs, 382 s
+[progress] 54/120 jobs, 383 s
+[progress] 55/120 jobs, 383 s
+[progress] 56/120 jobs, 385 s
+[progress] 57/120 jobs, 411 s
+[progress] 58/120 jobs, 411 s
+[progress] 59/120 jobs, 412 s
+[progress] 60/120 jobs, 414 s
+[progress] 61/120 jobs, 435 s
+[progress] 62/120 jobs, 436 s
+[progress] 63/120 jobs, 436 s
+[progress] 64/120 jobs, 438 s
+[progress] 65/120 jobs, 461 s
+[progress] 66/120 jobs, 462 s
+[progress] 67/120 jobs, 462 s
+[progress] 68/120 jobs, 466 s
+[progress] 69/120 jobs, 490 s
+[progress] 70/120 jobs, 491 s
+[progress] 71/120 jobs, 491 s
+[progress] 72/120 jobs, 493 s
+[progress] 73/120 jobs, 514 s
+[progress] 74/120 jobs, 514 s
+[progress] 75/120 jobs, 515 s
+[progress] 76/120 jobs, 519 s
+[progress] 77/120 jobs, 538 s
+[progress] 78/120 jobs, 539 s
+[progress] 79/120 jobs, 539 s
+[progress] 80/120 jobs, 543 s
+[progress] 81/120 jobs, 567 s
+[progress] 82/120 jobs, 567 s
+[progress] 83/120 jobs, 567 s
+[progress] 84/120 jobs, 571 s
+[progress] 85/120 jobs, 593 s
+[progress] 86/120 jobs, 593 s
+[progress] 87/120 jobs, 594 s
+[progress] 88/120 jobs, 599 s
+[progress] 89/120 jobs, 622 s
+[progress] 90/120 jobs, 623 s
+[progress] 91/120 jobs, 623 s
+[progress] 92/120 jobs, 627 s
+[progress] 93/120 jobs, 652 s
+[progress] 94/120 jobs, 652 s
+[progress] 95/120 jobs, 652 s
+[progress] 96/120 jobs, 657 s
+[progress] 97/120 jobs, 682 s
+[progress] 98/120 jobs, 682 s
+[progress] 99/120 jobs, 682 s
+[progress] 100/120 jobs, 686 s
+[progress] 101/120 jobs, 700 s
+[progress] 102/120 jobs, 701 s
+[progress] 103/120 jobs, 701 s
+[progress] 104/120 jobs, 704 s
+[progress] 105/120 jobs, 717 s
+[progress] 106/120 jobs, 717 s
+[progress] 107/120 jobs, 717 s
+[progress] 108/120 jobs, 721 s
+[progress] 109/120 jobs, 736 s
+[progress] 110/120 jobs, 736 s
+[progress] 111/120 jobs, 737 s
+[progress] 112/120 jobs, 741 s
+[progress] 113/120 jobs, 756 s
+[progress] 114/120 jobs, 757 s
+[progress] 115/120 jobs, 757 s
+[progress] 116/120 jobs, 761 s
+[progress] 117/120 jobs, 776 s
+[progress] 118/120 jobs, 777 s
+[progress] 119/120 jobs, 777 s
+[progress] 120/120 jobs, 780 s
+120 jobs in 780 s
+
+== causal greedy targets: predicted success probability of the chosen CQI vs observed success rate
+d=0 v= 3 et_known         predicted 0.989  observed 0.962
+d=0 v= 3 et_signal_known  predicted 0.825  observed 0.938
+d=0 v= 3 et_fresh         predicted 1.000  observed 1.000
+d=8 v= 3 et_known         predicted 0.969  observed 0.898
+d=8 v= 3 et_signal_known  predicted 0.816  observed 0.921
+d=8 v= 3 et_fresh         predicted 1.000  observed 1.000
+d=4 v=30 et_known         predicted 0.745  observed 0.635
+d=4 v=30 et_signal_known  predicted 0.645  observed 0.676
+d=4 v=30 et_fresh         predicted 0.970  observed 0.973
+d=4 v=60 et_known         predicted 0.626  observed 0.655
+d=4 v=60 et_signal_known  predicted 0.595  observed 0.596
+d=4 v=60 et_fresh         predicted 0.943  observed 0.949
