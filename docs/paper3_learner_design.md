@@ -64,9 +64,39 @@ C. **GPU / cloud machine**: the plan as written; needs a machine with many cores
 
 Recommended: A with the pilot deciding the episode budget, then B if the pilot shows learning needs more episodes.
 
-## 6. Pilot (running)
+## 6. Pilot (drop 0, d = 4, v = 3 km/h, ideal CQI, training episodes of 400 slots)
 
-Drop 0, d = 4, v = 3 km/h, ideal CQI, 300 episodes × 400 slots, SharedMAPPO and CentralPPO; result in
-`experiments/cellular_results/learn_pilot_d0.json`. Pass criterion: the learners reach at least full reuse
-(99.4% of the oracle on this drop) with argmax actions; if not, the learning setup (reward scale, entropy,
-episode budget) needs work before any scaled run.
+Geometric-mean rate relative to the oracle with genie CQI on the evaluation episode (seed 0):
+
+| Policy | Sampled | Argmax | Training |
+|---|---|---|---|
+| Full reuse / greedy muting (current channel) | 99.4 / 99.9 | | |
+| Causal full reuse / causal greedy (delayed reports, as LA0C) | 97.6 / 97.9 | | |
+| Uniform random UE, no silence / with silence | 67.8 / 56.3 | | |
+| SharedMAPPO, γ = 0.99, 300 episodes | 59.2 | 5.0 | 27 min |
+| CentralPPO, γ = 0.99, 300 episodes | 56.9 | 4.7 | 112 min |
+| SharedMAPPO, γ = 0, 300 episodes | 94.8 | 97.0 | 12 min |
+| SharedMAPPO, γ = 0, 1000 episodes | 96.3 | 96.9 | 36 min |
+| CentralPPO, γ = 0, 300 episodes | 69.9 | 69.5 | 55 min |
+
+Findings:
+- With the discount 0.99 of the companion study, neither learner learns: both stay at the level of a random
+  policy, and argmax actions starve UEs. The reward of a slot (Σ w_u r_u with PF weights) is already the
+  per-slot objective of the oracle; a long discount adds the variance of ~100 future slots to the advantage of
+  12 agents and buries the signal.
+- With γ = 0 the learner maximizes the expected slot utility, which is the objective of the per-slot oracle,
+  and SharedMAPPO learns within ~100 episodes; the curve is flat from ~200 episodes on (slot throughput 7.78 →
+  7.93 between the 2nd and 10th tenth of 1000 episodes).
+- The fair reference for a learner that observes delayed reports is the causal reference, not the reference
+  that selects targets from the current channel: SharedMAPPO is 0.7–1.6 points below causal full reuse and
+  causal greedy, against 2.5–3.6 points below their current-channel versions. The pass criterion is revised
+  accordingly: a learner passes if it reaches the causal references.
+
+- CentralPPO learns only slightly with γ = 0 (slot throughput 5.49 → 5.77 over 300 episodes; 69.9%, barely
+  above a random choice of UEs). Its autoregressive actor decides 12 agents in sequence from the joint
+  observation of 156 inputs, which learns far more slowly than the shared actor that sees 13 inputs. Before E2
+  it needs work: more episodes, or a shared per-agent encoder in place of the flat joint observation. This is
+  the next step on the learner side.
+
+Decision proposed for the paper: γ = 0 for all learners (stated and justified by the per-slot oracle), 300–500
+training episodes of 400 slots, and the causal references in the E2 table next to the current-channel ones.

@@ -67,9 +67,15 @@ def evaluate_reference(cfg: CellularConfig, drop: int, policy: str, cqi_mode: st
 
 
 def learn_job(job: tuple) -> dict:
-    """job = (drop, delay, speed, learner, cqi_mode, episodes, train_len, seed); saved to learn_jobs/."""
-    drop, delay, speed, key, cqi_mode, episodes, train_len, seed = job
+    """job = (drop, delay, speed, learner, cqi_mode, episodes, train_len, seed[, gamma]); saved to learn_jobs/.
+
+    gamma is the discount of PPO (default 0.99 of the companion study); gamma = 0 makes the learner maximize the
+    expected slot utility, i.e., the objective of the per-slot oracle."""
+    drop, delay, speed, key, cqi_mode, episodes, train_len, seed = job[:8]
+    gamma = job[8] if len(job) > 8 else 0.99
     name = f"d{drop}_delay{delay}_v{speed:g}_{key}_{cqi_mode}_E{episodes}_L{train_len}_s{seed}"
+    if gamma != 0.99:
+        name += f"_g{gamma:g}"
     path = os.path.join(OUT, name + ".json")
     if os.path.exists(path):
         with open(path) as handle:
@@ -79,7 +85,8 @@ def learn_job(job: tuple) -> dict:
                          speed_kmh=speed)
     train_cfg = replace(cfg, episode_len=train_len, warmup_slots=0)
     env = CellularMARLEnv(train_cfg, drop, cqi_mode)
-    learner = LEARNERS[key](env.obs_dim, env.n_aps, env.k_stas, env.valid_sta_counts, n_mcs=env.n_mcs, seed=seed)
+    learner = LEARNERS[key](env.obs_dim, env.n_aps, env.k_stas, env.valid_sta_counts, n_mcs=env.n_mcs, seed=seed,
+                          gamma=gamma)
     start = time.time()
     curve = train_mappo(env, learner, episodes, reward_scale=1.0, seed=seed + 1, reward_fn="env")
     train_s = time.time() - start
@@ -102,7 +109,7 @@ def pilot(args) -> None:
     cfg = CellularConfig(cluster_size=3, ues_per_cell=4, n_subbands=4, objective="pf", cqi_delay=args.delay,
                          speed_kmh=args.speed)
     refs = {p: evaluate_reference(cfg, args.drop, p, "ideal") for p in ("oracle", "full_reuse", "greedy_muting")}
-    jobs = [(args.drop, args.delay, args.speed, key, "ideal", args.episodes, args.train_len, 0)
+    jobs = [(args.drop, args.delay, args.speed, key, "ideal", args.episodes, args.train_len, 0, args.gamma)
             for key in args.learners]
     if args.workers > 1:
         run_jobs(learn_rows, jobs, args.workers)
@@ -120,12 +127,12 @@ def pilot(args) -> None:
     for job, res in zip(jobs, results):
         curve = np.array(res["curve"])
         k = max(len(curve) // 10, 1)
-        print(f"{job[3]:>16}: sampled {rel(res['sampled']):6.1f}, argmax {rel(res['argmax']):6.1f}  "
+        print(f"{job[3] + f' g={job[8]:g}':>16}: sampled {rel(res['sampled']):6.1f}, argmax {rel(res['argmax']):6.1f}  "
               f"(train {res['train_seconds'] / 60:.0f} min; slot throughput first/last 10%: "
               f"{curve[:k].mean() / args.train_len:.3f} / {curve[-k:].mean() / args.train_len:.3f})")
-        summary[job[3]] = {"sampled": rel(res["sampled"]), "argmax": rel(res["argmax"]),
+        summary[f"{job[3]}_g{job[8]:g}"] = {"sampled": rel(res["sampled"]), "argmax": rel(res["argmax"]),
                            "train_seconds": res["train_seconds"]}
-    with open(os.path.join(os.path.dirname(OUT), f"learn_pilot_d{args.drop}.json"), "w") as handle:
+    with open(os.path.join(os.path.dirname(OUT), f"learn_pilot_d{args.drop}_g{args.gamma:g}.json"), "w") as handle:
         json.dump(summary, handle, indent=2)
 
 
@@ -139,6 +146,7 @@ def main() -> None:
     parser.add_argument("--train-len", type=int, default=400)
     parser.add_argument("--learners", nargs="+", default=["mappo", "central"])
     parser.add_argument("--workers", type=int, default=1)
+    parser.add_argument("--gamma", type=float, default=0.99)
     args = parser.parse_args()
     {"pilot": pilot}[args.exp](args)
 
