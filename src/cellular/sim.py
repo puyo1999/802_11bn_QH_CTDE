@@ -95,6 +95,7 @@ class CellularSim:
         self.backlog = np.zeros(self.n_ues)
         self.avg_rate = self.initial_avg_rate()
         self.reports = deque(maxlen=self.cfg.cqi_delay + 1)
+        self.signal_reports = deque(maxlen=self.cfg.cqi_delay + 1)
         self.t = 0
         self._draw_arrivals()
 
@@ -149,16 +150,18 @@ class CellularSim:
         """(C, n_sub) SINR of each scheduled link; targets (C, n_sub) global UE index or -1 (silence)."""
         rx = self.rx_power() if rx is None else rx
         bg = self.background_interference(rx)
-        out = np.zeros(targets.shape)
-        for b in range(self.n_sub):
-            for i, c in enumerate(self.cluster):
-                u = targets[i, b]
-                if u < 0:
-                    continue
-                inter = bg[u, b] + sum(rx[self.cluster[j], u, b] for j in range(len(self.cluster))
-                                       if j != i and targets[j, b] >= 0)
-                out[i, b] = rx[c, u, b] / inter
-        return out
+        targets = np.asarray(targets)
+        n_c, n_b = targets.shape
+        active = targets >= 0
+        u = np.where(active, targets, 0)
+        sub = np.arange(n_b)
+        # power[i, j, b]: power of cluster cell j at the target UE of cell i on subband b
+        power = rx[np.asarray(self.cluster)[None, :, None], u[:, None, :], sub[None, None, :]]
+        others = active[None, :, :] & ~np.eye(n_c, dtype=bool)[:, :, None]
+        # the zeros of inactive cells leave the sequential sum, and hence the result, unchanged
+        inter = bg[u, sub[None, :]] + np.where(others, power, 0.0).sum(axis=1)
+        signal = power[np.arange(n_c), np.arange(n_c)]
+        return np.where(active, signal / inter, 0.0)
 
     # ------------------------------------------------------------------ step
     def step(self, targets: np.ndarray, cqi_idx: np.ndarray) -> dict:
@@ -185,6 +188,7 @@ class CellularSim:
             self.backlog = self.backlog - delivered
         self.avg_rate = (1 - self.cfg.pf_beta) * self.avg_rate + self.cfg.pf_beta * delivered
         self.reports.append(self.all_transmit_sinr(rx))
+        self.signal_reports.append(self.fading.power()[self.serving, np.arange(self.n_ues)])
         self.fading.step()
         self.t += 1
         self._draw_arrivals()
@@ -196,6 +200,16 @@ class CellularSim:
         if not self.reports:
             return self.all_transmit_sinr()
         return self.reports[0]
+
+    def reported_signal_fading(self) -> np.ndarray:
+        """(n_ues, n_sub) fading power of the serving link alone, reported with the same delay as the SINR report.
+
+        Models a received-power report of the serving cell's reference signal (signal only, no interference), from
+        which a base station obtains the fading of the serving link by dividing by the known large-scale power.
+        """
+        if not self.signal_reports:
+            return self.fading.power()[self.serving, np.arange(self.n_ues)]
+        return self.signal_reports[0]
 
     @property
     def done(self) -> bool:

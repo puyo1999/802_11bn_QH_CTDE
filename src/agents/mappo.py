@@ -166,6 +166,23 @@ class MAPPO(_PPOBase):
         return actions, self._evaluate(obs, actions)[0]
 
 
+class SharedMAPPO(MAPPO):
+    """0-bit with parameter sharing: one local actor applied to every agent in a single batched pass (paper3,
+    where each pair of a cell and a subband is an agent and the subband indicator in the observation tells the
+    agents apart). Same distributions and update as MAPPO; only the actor parameters are shared."""
+
+    def _build_actor(self, obs_dim: int, hidden_dim: int) -> None:
+        self.actor = Actor(obs_dim, hidden_dim, self.n_sta_actions, self.n_mcs).to(self.device)
+
+    def _actor_parameters(self):
+        return self.actor.parameters()
+
+    def _dists(self, obs: torch.Tensor):
+        sta_logits, mcs_logits = self.actor(obs)                               # (B, n_aps, .)
+        sta_logits = sta_logits.masked_fill(self.sta_mask, -1e9)
+        return torch.distributions.Categorical(logits=sta_logits), torch.distributions.Categorical(logits=mcs_logits)
+
+
 class CentralPPO(_PPOBase):
     """∞-bit: one autoregressive actor over the joint action, conditioned on all observations."""
 
@@ -271,3 +288,35 @@ def train_mappo(env, learner: _PPOBase, episodes: int, reward_scale: float = 1.0
             learner.update(batch)
             batch = []
     return history
+
+
+class SharedCentralPPO(CentralPPO):
+    """∞-bit with parameter sharing (paper3): the autoregressive actor of CentralPPO, but one head shared by all
+    agents, which receives the agent's own observation next to the embedding of the joint observation, the
+    choices of the earlier agents, and the agent index. CentralPPO must extract the observation of agent i from a
+    128-unit embedding of all 12 x 13 inputs with a separate head per agent, which learns slowly when the agents
+    are many; the shared head with the own observation learns the per-agent part once, as SharedMAPPO does."""
+
+    def _build_actor(self, obs_dim: int, hidden_dim: int) -> None:
+        prev_dim = self.n_aps * (self.n_sta_actions + self.n_mcs)
+        self.trunk = _mlp(obs_dim * self.n_aps, hidden_dim).to(self.device)
+        self.head = Actor(hidden_dim + obs_dim + prev_dim + self.n_aps, hidden_dim, self.n_sta_actions,
+                          self.n_mcs).to(self.device)
+        self._obs = None
+
+    def _actor_parameters(self):
+        return list(self.trunk.parameters()) + list(self.head.parameters())
+
+    def _step_dists(self, h: torch.Tensor, prev: torch.Tensor, i: int):
+        ap_id = torch.zeros(len(h), self.n_aps, device=self.device)
+        ap_id[:, i] = 1.0
+        sta_logits, mcs_logits = self.head(torch.cat([h, self._obs[:, i], prev, ap_id], dim=-1))
+        sta_logits = sta_logits.masked_fill(self.sta_mask[i], -1e9)
+        return torch.distributions.Categorical(logits=sta_logits), torch.distributions.Categorical(logits=mcs_logits)
+
+    def _rollout(self, obs: torch.Tensor, actions: torch.Tensor | None, deterministic: bool = False):
+        self._obs = obs
+        try:
+            return super()._rollout(obs, actions, deterministic)
+        finally:
+            self._obs = None

@@ -227,6 +227,160 @@ def test_causal_references_use_the_estimated_channel():
         assert np.array_equal(genie[0], causal[0]) and np.array_equal(genie[1], causal[1])
 
 
+def test_aging_estimator_recovers_power_correlation():
+    from src.cellular.aging import AgingEstimator
+    rng = np.random.default_rng(1)
+    for rho in (0.999, 0.909, 0.66):
+        est = AgingEstimator(n_ues=1, beta=0.002)
+        h = (rng.standard_normal(32) + 1j * rng.standard_normal(32)) / np.sqrt(2)
+        for _ in range(6000):
+            est.update(np.abs(h)[None, :] ** 2)
+            h = rho * h + np.sqrt(1 - rho ** 2) * (rng.standard_normal(32) + 1j * rng.standard_normal(32)) / np.sqrt(2)
+        assert est.lag_one()[0] == pytest.approx(rho ** 2, abs=0.05)
+
+
+def test_expected_throughput_limits():
+    from src.cellular.aging import success_probabilities
+    rng = np.random.default_rng(2)
+    normals = (rng.standard_normal(20000) + 1j * rng.standard_normal(20000)) / np.sqrt(2)
+    gamma_ls = np.array([10.0, 100.0])
+    # c = 1: the past power is the current power, so the rule picks the highest decodable CQI.
+    p = success_probabilities(gamma_ls, np.array([0.7, 1.3]), np.ones(2), normals)
+    best = np.argmax(cqi.EFFICIENCY[None, :] * p, axis=1) + 1
+    assert best.tolist() == cqi.best_cqi(gamma_ls * np.array([0.7, 1.3])).tolist()
+    # c = 0: Rayleigh fading, P(decode q) = exp(-theta_q / gamma_ls).
+    p = success_probabilities(gamma_ls, np.array([5.0, 5.0]), np.zeros(2), normals)
+    exact = np.exp(-cqi.THRESHOLDS[None, :] / gamma_ls[:, None])
+    assert np.allclose(p, exact, atol=0.01)
+
+
+def test_calibration_loop_absorbs_a_bias():
+    """A 3 dB optimistic model on a static channel: the calibration offset settles near -3 dB."""
+    from src.cellular.aging import ExpectedThroughputCQI
+    sim = make(ues_per_cell=2, n_subbands=2, cqi_delay=0)
+    sim.fading.rho = 1.0
+    sim.fading.h = np.ones_like(sim.fading.h)
+    adapter = ExpectedThroughputCQI(sim, "calibrated", n_samples=256, step_db=0.2)
+    adapter.gamma_ls = adapter.gamma_ls * 10 ** 0.3                # model overestimates the SINR by 3 dB
+    adapter.correlation = lambda: np.full(sim.n_ues, 0.999)
+    for _ in range(600):
+        targets, _ = baselines.full_reuse(sim)
+        cqis = adapter.select(targets)
+        out = sim.step(targets, cqis)
+        adapter.update(targets, cqis, out["success"])
+    served = np.unique(baselines.full_reuse(sim)[0])
+    assert np.all(adapter.offset[served] < -1.5) and np.all(adapter.offset[served] > -4.5)
+
+
+def test_multilag_estimator_recovers_power_correlation_under_noise():
+    """With multiplicative measurement noise the lag-one estimate is biased low; the multi-lag fit is not."""
+    from src.cellular.aging import MultiLagEstimator
+    rng = np.random.default_rng(3)
+    for rho in (0.999, 0.909, 0.66):
+        est = MultiLagEstimator(n_ues=1, beta=0.002)
+        h = (rng.standard_normal(32) + 1j * rng.standard_normal(32)) / np.sqrt(2)
+        for _ in range(8000):
+            noisy = np.abs(h) ** 2 * rng.lognormal(0.0, 0.3, 32)        # report noise, independent per slot
+            est.update(noisy[None, :])
+            h = rho * h + np.sqrt(1 - rho ** 2) * (rng.standard_normal(32) + 1j * rng.standard_normal(32)) / np.sqrt(2)
+        assert est.lag_one()[0] == pytest.approx(rho ** 2, abs=0.06)
+
+
+def test_signal_report_is_the_serving_link_fading():
+    sim = make(ues_per_cell=2, n_subbands=2, cqi_delay=0)
+    before = sim.fading.power()[sim.serving, np.arange(sim.n_ues)].copy()
+    sim.step(*baselines.full_reuse(sim))
+    assert np.allclose(sim.reported_signal_fading(), before)
+
+
+def test_signal_model_probabilities_are_ordered():
+    from src.cellular.aging import ExpectedThroughputCQI
+    sim = make(ues_per_cell=2, n_subbands=2, cqi_delay=4, speed_kmh=30)
+    adapter = ExpectedThroughputCQI(sim, "estimated", estimator="multilag", source="signal", n_samples=256)
+    for _ in range(20):
+        targets, _ = baselines.full_reuse(sim)
+        cqis = adapter.select(targets)
+        out = sim.step(targets, cqis)
+        adapter.update(targets, cqis, out["success"])
+    ue = np.unique(targets[targets >= 0])
+    probs = adapter._signal_model(ue, np.ones(len(ue)), np.full(len(ue), 0.5),
+                                  (np.ones(256) + 0j), np.ones(len(ue)))
+    assert probs.shape == (len(ue), cqi.N_CQI)
+    assert np.all(np.diff(probs, axis=1) <= 1e-12)            # a higher CQI never decodes more often
+    assert np.all((cqis[targets >= 0] >= 1) & (cqis[targets >= 0] <= 15))
+
+
+def test_fresh_expected_throughput_equals_genie_under_full_reuse():
+    """With the report of the current slot and every cell transmitting, the predicted SINR is the true one, so the
+    expected-throughput rule picks the genie CQI and never fails, even at high speed."""
+    from src.cellular.aging import ExpectedThroughputCQI
+    from src.cellular.linkadapt import genie_cqi
+    sim = make(ues_per_cell=2, n_subbands=4, cqi_delay=4, speed_kmh=60)
+    adapter = ExpectedThroughputCQI(sim, "known", fresh=True, n_samples=32)
+    for _ in range(40):
+        targets, _ = baselines.full_reuse(sim)
+        cqis = adapter.select(targets)
+        assert np.array_equal(cqis, genie_cqi(sim, targets))
+        out = sim.step(targets, cqis)
+        assert out["success"][targets >= 0].all()
+    with pytest.raises(ValueError):
+        ExpectedThroughputCQI(sim, "estimated", fresh=True)
+
+
 def test_oracle_refuses_finite_buffer_with_several_subbands():
     with pytest.raises(ValueError):
         oracle_decisions(make(full_buffer=False, load=0.1, n_subbands=2))
+
+
+def _loop_sinr(sim, targets, rx):
+    """Reference implementation of CellularSim.sinr as a loop over cells and subbands."""
+    bg = sim.background_interference(rx)
+    out = np.zeros(targets.shape)
+    for b in range(sim.n_sub):
+        for i, c in enumerate(sim.cluster):
+            u = targets[i, b]
+            if u < 0:
+                continue
+            inter = bg[u, b] + sum(rx[sim.cluster[j], u, b] for j in range(len(sim.cluster))
+                                   if j != i and targets[j, b] >= 0)
+            out[i, b] = rx[c, u, b] / inter
+    return out
+
+
+@pytest.mark.parametrize("cluster_size", [3, 7])
+def test_vectorized_sinr_equals_loop_bitwise(cluster_size):
+    sim = make(cluster_size=cluster_size, ues_per_cell=3, n_subbands=4, speed_kmh=30)
+    rng = np.random.default_rng(5)
+    for _ in range(50):
+        targets = np.full((len(sim.cluster), sim.n_sub), -1)
+        for i, c in enumerate(sim.cluster):
+            ues = np.nonzero(sim.serving == c)[0]
+            pick = rng.integers(-1, len(ues), sim.n_sub)
+            targets[i] = np.where(pick >= 0, ues[np.maximum(pick, 0)], -1)
+        rx = sim.rx_power()
+        assert np.array_equal(sim.sinr(targets, rx), _loop_sinr(sim, targets, rx))
+        sim.step(targets, np.zeros_like(targets))
+
+
+@pytest.mark.parametrize("mode", ["learned", "olla", "ideal"])
+def test_marl_env_actions_map_to_own_ues(mode):
+    from src.cellular.marl_env import CellularMARLEnv
+    cfg = CellularConfig(cluster_size=3, ues_per_cell=4, n_subbands=4, objective="pf", episode_len=30,
+                         warmup_slots=0)
+    env = CellularMARLEnv(cfg, drop=1, cqi_mode=mode)
+    obs, _ = env.reset(seed=0)
+    assert obs.shape == (env.n_aps, env.obs_dim) and np.all((obs >= 0) & (obs <= 1))
+    rng = np.random.default_rng(0)
+    done = False
+    while not done:
+        action = np.stack([rng.integers(0, env.U + 1, env.n_aps), rng.integers(0, env.n_mcs, env.n_aps)], 1).ravel()
+        obs, reward, done, _, info = env.step(action)
+        targets = info["targets"]
+        slot = action.reshape(env.C, env.B, 2)[..., 0]
+        assert np.array_equal(targets < 0, slot == env.U)                 # slot U is silence
+        for k, c in enumerate(env.sim.cluster):
+            assert np.all(env.sim.serving[targets[k][targets[k] >= 0]] == c)
+        if mode == "ideal":                              # ideal CQI never fails when it transmits (CQI > 0)
+            sent = (targets >= 0) & (info["cqis"] > 0)
+            assert info["out"]["success"][sent].all()
+        assert reward >= 0
