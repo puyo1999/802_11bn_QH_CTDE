@@ -150,16 +150,18 @@ class CellularSim:
         """(C, n_sub) SINR of each scheduled link; targets (C, n_sub) global UE index or -1 (silence)."""
         rx = self.rx_power() if rx is None else rx
         bg = self.background_interference(rx)
-        out = np.zeros(targets.shape)
-        for b in range(self.n_sub):
-            for i, c in enumerate(self.cluster):
-                u = targets[i, b]
-                if u < 0:
-                    continue
-                inter = bg[u, b] + sum(rx[self.cluster[j], u, b] for j in range(len(self.cluster))
-                                       if j != i and targets[j, b] >= 0)
-                out[i, b] = rx[c, u, b] / inter
-        return out
+        targets = np.asarray(targets)
+        n_c, n_b = targets.shape
+        active = targets >= 0
+        u = np.where(active, targets, 0)
+        sub = np.arange(n_b)
+        # power[i, j, b]: power of cluster cell j at the target UE of cell i on subband b
+        power = rx[np.asarray(self.cluster)[None, :, None], u[:, None, :], sub[None, None, :]]
+        others = active[None, :, :] & ~np.eye(n_c, dtype=bool)[:, :, None]
+        # the zeros of inactive cells leave the sequential sum, and hence the result, unchanged
+        inter = bg[u, sub[None, :]] + np.where(others, power, 0.0).sum(axis=1)
+        signal = power[np.arange(n_c), np.arange(n_c)]
+        return np.where(active, signal / inter, 0.0)
 
     # ------------------------------------------------------------------ step
     def step(self, targets: np.ndarray, cqi_idx: np.ndarray) -> dict:

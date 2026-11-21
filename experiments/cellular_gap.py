@@ -65,6 +65,9 @@ def decide(sim, policy: str, turn: int):
         return oracle_decisions(sim)[:2]
     if policy == "cluster_tdma":
         return baselines.cluster_tdma(sim, turn)
+    if policy.startswith("causal_"):     # targets from the channel a base station can estimate (delayed report)
+        name = {"causal_full_reuse": "full_reuse", "causal_greedy": "greedy_muting"}[policy]
+        return getattr(baselines, name)(sim, rx=estimated_rx(sim))
     return getattr(baselines, policy)(sim)
 
 
@@ -284,7 +287,12 @@ def la0(args) -> None:
     rows = run_jobs(la0_job, jobs, args.workers)
     tag = f"la0_D{args.drops}_S{args.seeds}"
     write_csv(rows, tag)
+    la_summary(rows, LA_SELECTORS, tag)
 
+
+def la_summary(rows: list[dict], selectors: list[str], tag: str) -> None:
+    """Geometric-mean rate relative to the oracle with genie CQI per target selection, CQI variant and condition;
+    with the operating cost of OLLA, the cost of aging, the recovery by intent, and the cost of commitment."""
     ref = {(r["drop"], r["seed"], r["delay"], r["speed"]): r for r in rows
            if r["selector"] == "oracle" and r["variant"] == "genie"}
     rel = {}
@@ -295,10 +303,10 @@ def la0(args) -> None:
                                         r["throughput"] / base["throughput"], r["p5_rate"] / base["p5_rate"],
                                         r["bler"]))
     summary = {}
-    for selector in LA_SELECTORS:
+    for selector in selectors:
         print(f"\n== targets: {selector}: geometric-mean rate / oracle with genie CQI (%), [BLER %]")
         print(f"{'d':>3} {'km/h':>5} " + " ".join(f"{v:>15}" for v in LA_VARIANTS)
-              + f" {'OLLA cost':>9} {'aging':>6} {'intent':>7}")
+              + f" {'OLLA cost':>9} {'aging':>6} {'intent':>7} {'commit':>7}")
         for delay in LA_DELAYS:
             for speed in LA_SPEEDS:
                 m = {v: np.mean(rel[(delay, speed, selector, v)], axis=0) for v in LA_VARIANTS}
@@ -308,9 +316,46 @@ def la0(args) -> None:
                         "bler": float(m[v][3])} for v in LA_VARIANTS}
                 print(f"{delay:>3} {speed:>5g} " + " ".join(f"{g[v]:>8.1f} [{100*m[v][3]:>4.1f}]" for v in LA_VARIANTS)
                       + f" {g['genie'] - g['fresh']:>8.1f}p {g['fresh'] - g['local']:>5.1f}p "
-                        f"{g['intent'] - g['local']:>6.1f}p")
+                        f"{g['intent'] - g['local']:>6.1f}p {g['intent'] - g['intent+commit']:>6.1f}p")
     with open(os.path.join(OUT, f"{tag}_summary.json"), "w") as handle:
         json.dump(summary, handle, indent=2)
+
+
+# ---------------------------------------------------------------------------------------------------- LA0C
+# LA0 with causal targets: the targets of full reuse and greedy muting are chosen from the estimated channel, so
+# that the committed variant of intent-aware selection no longer loses the current channel information of the
+# targets and measures the cost of the commitment alone.
+LA0C_SELECTORS = ["causal_full_reuse", "causal_greedy"]
+LA0C_JOBS = os.path.join(OUT, "la0c_jobs")
+
+
+def la0c_job(job: tuple) -> list[dict]:
+    drop, seed, delay, speed = job
+    path = os.path.join(LA0C_JOBS, f"d{drop}_s{seed}_delay{delay}_v{speed:g}.json")
+    if os.path.exists(path):
+        with open(path) as handle:
+            return json.load(handle)
+    cfg = CellularConfig(cluster_size=3, ues_per_cell=4, n_subbands=4, objective="pf",
+                         cqi_delay=delay, speed_kmh=speed)
+    pairs = [("oracle", "genie")] + [(sel, var) for sel in LA0C_SELECTORS for var in LA_VARIANTS]
+    rows = [{"drop": drop, "seed": seed, "delay": delay, "speed": speed, "selector": selector, "variant": variant,
+             **la_episode(cfg, drop, seed, selector, variant)} for selector, variant in pairs]
+    os.makedirs(LA0C_JOBS, exist_ok=True)
+    with open(path + ".tmp", "w") as handle:
+        json.dump(rows, handle)
+    os.replace(path + ".tmp", path)
+    return rows
+
+
+def la0c(args) -> None:
+    jobs = [(d, s, delay, speed) for d in range(args.drops) for s in range(args.seeds)
+            for delay in LA_DELAYS for speed in LA_SPEEDS]
+    rows = run_jobs(la0c_job, jobs, args.workers, args.hours)
+    if rows is None:
+        return
+    tag = f"la0c_D{args.drops}_S{args.seeds}"
+    write_csv(rows, tag)
+    la_summary(rows, LA0C_SELECTORS, tag)
 
 
 # ---------------------------------------------------------------------------------------------------- LA1
@@ -480,7 +525,7 @@ def la1c(args) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("exp", choices=["e0", "e1", "la0", "la1", "la1c"])
+    parser.add_argument("exp", choices=["e0", "e1", "la0", "la0c", "la1", "la1c"])
     parser.add_argument("--drops", type=int, default=50)
     parser.add_argument("--seeds", type=int, default=1)
     parser.add_argument("--ues", type=int, default=4)
@@ -489,7 +534,7 @@ def main() -> None:
     parser.add_argument("--hours", type=float, default=None,
                         help="la1: stop starting jobs after this many hours; rerun the same command to resume")
     args = parser.parse_args()
-    {"e0": e0, "e1": e1, "la0": la0, "la1": la1, "la1c": la1c}[args.exp](args)
+    {"e0": e0, "e1": e1, "la0": la0, "la0c": la0c, "la1": la1, "la1c": la1c}[args.exp](args)
 
 
 if __name__ == "__main__":

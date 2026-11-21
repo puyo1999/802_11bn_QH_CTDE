@@ -330,3 +330,57 @@ def test_fresh_expected_throughput_equals_genie_under_full_reuse():
 def test_oracle_refuses_finite_buffer_with_several_subbands():
     with pytest.raises(ValueError):
         oracle_decisions(make(full_buffer=False, load=0.1, n_subbands=2))
+
+
+def _loop_sinr(sim, targets, rx):
+    """Reference implementation of CellularSim.sinr as a loop over cells and subbands."""
+    bg = sim.background_interference(rx)
+    out = np.zeros(targets.shape)
+    for b in range(sim.n_sub):
+        for i, c in enumerate(sim.cluster):
+            u = targets[i, b]
+            if u < 0:
+                continue
+            inter = bg[u, b] + sum(rx[sim.cluster[j], u, b] for j in range(len(sim.cluster))
+                                   if j != i and targets[j, b] >= 0)
+            out[i, b] = rx[c, u, b] / inter
+    return out
+
+
+@pytest.mark.parametrize("cluster_size", [3, 7])
+def test_vectorized_sinr_equals_loop_bitwise(cluster_size):
+    sim = make(cluster_size=cluster_size, ues_per_cell=3, n_subbands=4, speed_kmh=30)
+    rng = np.random.default_rng(5)
+    for _ in range(50):
+        targets = np.full((len(sim.cluster), sim.n_sub), -1)
+        for i, c in enumerate(sim.cluster):
+            ues = np.nonzero(sim.serving == c)[0]
+            pick = rng.integers(-1, len(ues), sim.n_sub)
+            targets[i] = np.where(pick >= 0, ues[np.maximum(pick, 0)], -1)
+        rx = sim.rx_power()
+        assert np.array_equal(sim.sinr(targets, rx), _loop_sinr(sim, targets, rx))
+        sim.step(targets, np.zeros_like(targets))
+
+
+@pytest.mark.parametrize("mode", ["learned", "olla", "ideal"])
+def test_marl_env_actions_map_to_own_ues(mode):
+    from src.cellular.marl_env import CellularMARLEnv
+    cfg = CellularConfig(cluster_size=3, ues_per_cell=4, n_subbands=4, objective="pf", episode_len=30,
+                         warmup_slots=0)
+    env = CellularMARLEnv(cfg, drop=1, cqi_mode=mode)
+    obs, _ = env.reset(seed=0)
+    assert obs.shape == (env.n_aps, env.obs_dim) and np.all((obs >= 0) & (obs <= 1))
+    rng = np.random.default_rng(0)
+    done = False
+    while not done:
+        action = np.stack([rng.integers(0, env.U + 1, env.n_aps), rng.integers(0, env.n_mcs, env.n_aps)], 1).ravel()
+        obs, reward, done, _, info = env.step(action)
+        targets = info["targets"]
+        slot = action.reshape(env.C, env.B, 2)[..., 0]
+        assert np.array_equal(targets < 0, slot == env.U)                 # slot U is silence
+        for k, c in enumerate(env.sim.cluster):
+            assert np.all(env.sim.serving[targets[k][targets[k] >= 0]] == c)
+        if mode == "ideal":                              # ideal CQI never fails when it transmits (CQI > 0)
+            sent = (targets >= 0) & (info["cqis"] > 0)
+            assert info["out"]["success"][sent].all()
+        assert reward >= 0
