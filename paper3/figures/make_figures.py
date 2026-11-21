@@ -7,6 +7,9 @@ Figures of paper3 from the committed results in experiments/cellular_results (pi
     fig_headroom     E1: headroom over cluster TDMA versus eta and the references relative to the oracle
     fig_la0          LA0: PF utility relative to the oracle with genie CQI for the CQI selections, and the
                      link-adaptation loss with the share recovered by intent messages
+    fig_la1          LA1: share of the link-adaptation loss that established remedies recover with causal
+                     targets, and the split of the loss of OLLA and of expected-throughput selection into the
+                     operating cost and the cost of aging
 
 Every figure is written as PDF (for LaTeX) and PNG (for viewing).
 
@@ -15,6 +18,7 @@ Every figure is written as PDF (for LaTeX) and PNG (for viewing).
 from __future__ import annotations
 
 import csv
+import json
 import os
 import sys
 from collections import defaultdict
@@ -30,6 +34,7 @@ OUT = os.path.dirname(os.path.abspath(__file__))
 RESULTS = os.path.join(ROOT, "experiments/cellular_results")
 E1 = os.path.join(RESULTS, "e1_U4_D20_S1.csv")
 LA0 = os.path.join(RESULTS, "la0_D20_S1.csv")
+LA1 = os.path.join(RESULTS, "la1_D20_S1_summary.json")
 sys.path.insert(0, ROOT)
 
 INK, INK2, GRID = "#0b0b0b", "#52514e", "#e5e4e0"
@@ -184,7 +189,66 @@ def fig_la0(selector: str = "oracle", delay: int = 4) -> None:
     save(fig, "fig_la0")
 
 
+def fig_la1(selector: str = "causal_greedy", delay: int = 4) -> None:
+    """LA1 with causal targets: (a) share of the link-adaptation loss (genie - OLLA at 10%) that each remedy
+    recovers versus speed, (b) loss relative to genie CQI of OLLA and of expected-throughput selection with known
+    correlation, each split into the operating cost (genie - fresh) and the cost of aging (fresh - aged)."""
+    with open(LA1) as handle:
+        summary = json.load(handle)
+    speeds = [3.0, 30.0, 60.0]
+
+    def geo(v, variant, d=delay):
+        return 100 * summary[f"{selector}|d={d}|v={v:g}"][variant]["geo_rate"]
+
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 2.8))
+    ax = axes[0]
+    for variant, color, marker, label in (
+            ("olla_tuned", INK, "o", "OLLA, tuned target"),
+            ("et_estimated", BLUE, "s", "ET, lag-1 estimate"),
+            ("et_multilag", GREEN, "^", "ET, multi-lag estimate"),
+            ("et_known", GOLD, "D", "ET, known correlation"),
+            ("et_signal", ORANGE, "v", "ET, signal-only report"),
+            ("et_calibrated", "#8a5cd6", "x", "ET, calibrated")):
+        share = [100 * summary[f"{selector}|d={delay}|v={v:g}"]["recovered_share_of_la_loss"][variant]
+                 for v in speeds]
+        floor = -25.0
+        shown = [max(x, floor) for x in share]
+        ax.plot(range(len(speeds)), shown, marker=marker, markersize=3.5, color=color, label=label, linewidth=1)
+        for i, x in enumerate(share):
+            if x < floor:    # off the axis: drawn at the floor and labeled with its value
+                ax.annotate(f"{x:.0f}%", (i, floor), xytext=(6, 2), textcoords="offset points", fontsize=6,
+                            color=color)
+    ax.set_ylim(-28, 60)
+    ax.axhline(0, color=INK2, linewidth=0.6)
+    ax.set_xticks(range(len(speeds)), [f"{v:g}" for v in speeds])
+    ax.set_xlabel("UE speed (km/h)", color=INK2, fontsize=8)
+    ax.set_ylabel("Recovered share of LA loss (%)", color=INK2, fontsize=8)
+    ax.set_title(f"(a) Remedies, d = {delay}", loc="left", fontsize=9, color=INK)
+    ax.legend(fontsize=6, loc="lower right", framealpha=1, edgecolor="none")
+
+    ax = axes[1]
+    width = 0.38
+    for k, (rule, fresh, aged, label) in enumerate((("OLLA", "fresh", "olla0.1", "OLLA 10%"),
+                                                     ("ET", "et_fresh", "et_known", "ET, known corr."))):
+        pos = np.arange(len(speeds)) + (k - 0.5) * width
+        operating = np.array([geo(v, "genie") - geo(v, fresh) for v in speeds])
+        aging = np.array([geo(v, fresh) - geo(v, aged) for v in speeds])
+        ax.bar(pos, operating, width * 0.9, color=GOLD, alpha=0.55 + 0.45 * k,
+               label=f"{label}: operating" )
+        ax.bar(pos, aging, width * 0.9, bottom=operating, color=BLUE, alpha=0.45 + 0.45 * k,
+               label=f"{label}: aging")
+    ax.set_xticks(range(len(speeds)), [f"{v:g}" for v in speeds])
+    ax.set_xlabel("UE speed (km/h)  [left bar OLLA, right bar ET]", color=INK2, fontsize=8)
+    ax.set_ylabel("Loss in geometric-mean rate (points)", color=INK2, fontsize=8)
+    ax.set_title(f"(b) Loss split, d = {delay}", loc="left", fontsize=9, color=INK)
+    ax.legend(fontsize=6, frameon=False, loc="upper left")
+    for ax in axes:
+        style(ax)
+    save(fig, "fig_la1")
+
+
 if __name__ == "__main__":
     fig_sinr_cdf()
     fig_headroom()
     fig_la0()
+    fig_la1()

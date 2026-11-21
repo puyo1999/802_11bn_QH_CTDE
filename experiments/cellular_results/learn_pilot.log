@@ -1,0 +1,10 @@
+[progress] 1/2 jobs, 1717 s
+[progress] 2/2 jobs, 6812 s
+2 jobs in 6813 s
+
+== pilot drop 0, d=4, v=3 km/h, ideal CQI: geometric-mean rate / oracle (%)
+          oracle:  100.0
+      full_reuse:   99.4
+   greedy_muting:   99.9
+           mappo: sampled   59.2, argmax    5.0  (train 27 min; slot throughput first/last 10%: 4.661 / 5.473)
+         central: sampled   56.9, argmax    4.7  (train 112 min; slot throughput first/last 10%: 4.958 / 5.281)

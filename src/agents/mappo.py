@@ -166,6 +166,23 @@ class MAPPO(_PPOBase):
         return actions, self._evaluate(obs, actions)[0]
 
 
+class SharedMAPPO(MAPPO):
+    """0-bit with parameter sharing: one local actor applied to every agent in a single batched pass (paper3,
+    where each pair of a cell and a subband is an agent and the subband indicator in the observation tells the
+    agents apart). Same distributions and update as MAPPO; only the actor parameters are shared."""
+
+    def _build_actor(self, obs_dim: int, hidden_dim: int) -> None:
+        self.actor = Actor(obs_dim, hidden_dim, self.n_sta_actions, self.n_mcs).to(self.device)
+
+    def _actor_parameters(self):
+        return self.actor.parameters()
+
+    def _dists(self, obs: torch.Tensor):
+        sta_logits, mcs_logits = self.actor(obs)                               # (B, n_aps, .)
+        sta_logits = sta_logits.masked_fill(self.sta_mask, -1e9)
+        return torch.distributions.Categorical(logits=sta_logits), torch.distributions.Categorical(logits=mcs_logits)
+
+
 class CentralPPO(_PPOBase):
     """∞-bit: one autoregressive actor over the joint action, conditioned on all observations."""
 
