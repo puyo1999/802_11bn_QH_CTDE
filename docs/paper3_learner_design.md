@@ -80,6 +80,7 @@ Geometric-mean rate relative to the oracle with genie CQI on the evaluation epis
 | CentralPPO, γ = 0, 300 episodes | 69.9 | 69.5 | 55 min |
 | CentralPPO, γ = 0, 1000 episodes | 79.1 | 79.0 | 196 min |
 | SharedCentralPPO, γ = 0, 300 episodes | 93.0 | 96.6 | 65 min |
+| SharedCentralPPO, γ = 0, 1000 episodes | 96.3 | 97.1 | 209 min |
 
 Findings:
 - With the discount 0.99 of the companion study, neither learner learns: both stay at the level of a random
@@ -131,3 +132,9 @@ Mean over drops of the geometric-mean rate relative to the oracle with genie CQI
   companion finding that rate selection dominates the loss of learners.
 - Evaluation with argmax is 2.5 points above sampled actions for ideal and OLLA CQI; the paper text says the
   learners are evaluated with sampled actions, which should be revised to deterministic execution.
+
+## 8. SharedCentralPPO in E2 (running)
+
+On the pilot drop, SharedCentralPPO after 1000 episodes (97.1% argmax) equals SharedMAPPO after 1000 episodes
+(96.9%); its curve levels off after ~500 episodes. E2 runs it with 600 episodes on the 5 drops with ideal and
+OLLA CQI (`experiments/cellular_results/e2_central_shared.log`).
