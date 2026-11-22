@@ -133,8 +133,10 @@ Mean over drops of the geometric-mean rate relative to the oracle with genie CQI
 - Evaluation with argmax is 2.5 points above sampled actions for ideal and OLLA CQI; the paper text says the
   learners are evaluated with sampled actions, which should be revised to deterministic execution.
 
-## 8. SharedCentralPPO in E2 (running)
+## 8. SharedCentralPPO in E2 (5 drops, 600 episodes, γ = 0)
 
-On the pilot drop, SharedCentralPPO after 1000 episodes (97.1% argmax) equals SharedMAPPO after 1000 episodes
-(96.9%); its curve levels off after ~500 episodes. E2 runs it with 600 episodes on the 5 drops with ideal and
-OLLA CQI (`experiments/cellular_results/e2_central_shared.log`).
+From `experiments/cellular_results/e2_D5_delay4_v3_E600_g0.json` (argmax, mean ± 95% CI over drops):
+ideal CQI 96.8 ± 1.4, OLLA 84.8 ± 1.9 (sampled 95.0 and 83.2). Paired against MAPPO: +0.3 ± 0.6 (t = 1.6) and
++0.4 ± 1.1 (t = 0.9). Against causal full reuse with ideal CQI −0.3 ± 0.2 (t = −3.8), against causal greedy
+−0.1 ± 0.7. The information gap is below one point and not significant; Δ_opt = 3.2 points is the loss of
+the delayed observation. Training took 120–209 min per job (two jobs in parallel). Not run with learned CQI.
