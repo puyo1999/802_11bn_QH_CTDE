@@ -4,9 +4,9 @@
     "full_reuse": 99.39108619738319,
     "greedy_muting": 99.89671823478847
   },
-  "central_g0": {
-    "sampled": 79.10912975631274,
-    "argmax": 78.97403159372149,
-    "train_seconds": 11738.443294763565
+  "central_shared_g0": {
+    "sampled": 96.26962848030888,
+    "argmax": 97.10878633128335,
+    "train_seconds": 12549.533023357391
   }
 }

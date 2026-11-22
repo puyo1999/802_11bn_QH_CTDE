@@ -227,7 +227,7 @@ The search covers $(U+1)^C$ target vectors per subband, i.e., 125 for $U = 4$ an
 Four references complement the oracle. Like the oracle, the references select targets and CQI indices from the channel of the current slot, so that their gap to the oracle measures coordination alone; the same rules applied to the channel estimated from the delayed reports serve as causal references for the comparison with learners. Under uncoordinated full reuse, every cell of $\mathcal{C}$ transmits on every subband to the UE with the largest weighted rate at the highest CQI decodable when all cells transmit. Under cluster TDMA, one cell of $\mathcal{C}$ per subband and slot transmits, chosen in round-robin order over the cells with a non-empty backlog, and it serves the UE with the largest weighted rate at the highest CQI decodable under the background interference alone. Greedy muting starts from full reuse and, on each subband, repeatedly silences the cell whose silence raises the slot utility most, until no silence raises it. The better reference of a drop is the reference with the largest episode utility among the three, a post hoc choice that a scheduler with knowledge of the operating point attains.
 
 \subsection{Learned schedulers}
-Each pair of a cell and a subband is an agent, and the agents share the parameters of their networks; the subband indicator $\mathbf{e}_b$ in~\eqref{eq:obs} distinguishes them. The 0-bit learner is MAPPO~\cite{yu2022mappo}: agent $(c, b)$ executes a local actor $\pi_{\theta}(a_{c,b}, q_{c,b} \mid o_{c,b})$, and a centralized critic $V_\phi(\mathbf{o})$ is used only for training. The full-information learner (Central PPO) executes, on each subband, a single actor on $\mathbf{o}$ that selects the targets and CQI indices of all cells of $\mathcal{C}$ autoregressively, so that the decision of cell $c$ conditions on the decisions of the preceding cells. Both learners include the silence action $\varnothing$ and are trained with PPO~\cite{schulman2017ppo} and generalized advantage estimation~\cite{schulman2016gae} on the normalized slot utility.
+Each pair of a cell and a subband is an agent, and the agents share the parameters of their networks; the subband indicator $\mathbf{e}_b$ in~\eqref{eq:obs} distinguishes them. The 0-bit learner is MAPPO~\cite{yu2022mappo}: agent $(c, b)$ executes a local actor $\pi_{\theta}(a_{c,b}, q_{c,b} \mid o_{c,b})$, and a centralized critic $V_\phi(\mathbf{o})$ is used only for training. The full-information learner (Central PPO) executes a single actor on $\mathbf{o}$ that selects the targets and CQI indices of all agents of the cluster autoregressively, so that the decision of each agent conditions on the decisions of the preceding agents. Its actor applies one head to every agent, which receives the agent's own observation $\mathbf{o}_{c,b}$, an embedding of $\mathbf{o}$, the decisions of the preceding agents, and the agent index. A separate head per agent, which has to extract the observation of its agent from the embedding of $\mathbf{o}$, learned too slowly with $C B = 12$ agents: in a pilot on one drop of E2 with ideal CQI control, it attained 79.0\% of the geometric-mean rate of the oracle after 1000 training episodes, against 97.1\% with the shared head. Both learners include the silence action $\varnothing$ and are trained with PPO~\cite{schulman2017ppo} on the slot utility~\eqref{eq:utility} divided by the number of agents, with the discount factor zero. The oracle maximizes the utility of each slot, and the PF weights already carry the past service of every UE, so a learner that maximizes the expected slot utility pursues the objective of the oracle; the advantage is then the slot utility minus the critic's prediction of it. With the discount factor 0.99 of the companion study, the advantage includes the utility of about one hundred future slots, and in the pilot neither learner exceeded a random choice of UEs after 300 training episodes.
 
 The CQI selection of a learner takes one of three forms. Under learned control, the actor selects $q_{c,b}$. Under OLLA, the cell keeps an offset $\Delta_u$ in decibels for every UE, selects
 \begin{equation}
@@ -254,7 +254,7 @@ Table~\ref{tab:params} lists the parameters. Five experiments cover the research
 \begin{equation}
 \eta_{\text{TDMA}} = \lambda\, C\, U\, e_{15} W T_{\text{slot}} / \Theta^{\text{sat}}_{\text{TDMA}}.
 \label{eq:rho_tdma}
-\end{equation} E2 evaluates all schedulers under full buffer with $C = 3$, $U = 4$, and $B = 4$ on 20 drops at a speed of 3~km/h and a CQI delay of four slots. E3 repeats E2 for the CQI delays $d \in \{0, 4, 8\}$ slots and the speeds $v \in \{3, 30, 60\}$~km/h, which give $\rho \approx 0.999$, $0.909$, and $0.660$ in~\eqref{eq:fading}, on 10 drops. E4 compares the throughput and the PF objective on the drops of E2 and reports the fifth percentile of the UE rate. E5 evaluates the oracle, the better reference, and both learners with ideal CQI control for $C = 7$ and $U \in \{2, 4\}$ on 10 drops.
+\end{equation} E2 evaluates all schedulers under full buffer with $C = 3$, $U = 4$, and $B = 4$ on 20 drops at a speed of 3~km/h and a CQI delay of four slots, the learners on the first 5 of these drops. E3 repeats E2 for the CQI delays $d \in \{0, 4, 8\}$ slots and the speeds $v \in \{3, 30, 60\}$~km/h, which give $\rho \approx 0.999$, $0.909$, and $0.660$ in~\eqref{eq:fading}, on 10 drops. E4 compares the throughput and the PF objective on the drops of E2 and reports the fifth percentile of the UE rate. E5 evaluates the oracle, the better reference, and both learners with ideal CQI control for $C = 7$ and $U \in \{2, 4\}$ on 10 drops.
 
 A link-adaptation study (LA0) separates rate selection from scheduling without learners. Under the setting of E2, the targets of full reuse, greedy muting, and the oracle are combined with four CQI selections. Genie selection applies~\eqref{eq:best_cqi} to the SINR of the slot. Local selection applies OLLA by~\eqref{eq:olla_select} and~\eqref{eq:olla_update} to the report of age $a = d + 1$. Fresh selection applies OLLA to the all-transmit SINR of the current slot, i.e., to a report without aging. The difference between genie and fresh selection is the operating cost of OLLA, which comprises the target error rate and the all-transmit assumption of the report, and the difference between fresh and local selection is the cost of aging. Intent-aware selection assumes that every cell of $\mathcal{C}$ announces its targets for the slot over the backhaul, predicts the SINR of UE $u$ on subband $b$ as
 \begin{equation}
@@ -313,7 +313,7 @@ Episode & 300 warm-up + 1000 measured slots \\
 \end{tabular}
 \end{table}
 
-Both learners use two-layer actors and critics with 128 hidden units and the PPO hyperparameters of the companion study \todo{state the values here once the companion paper is citable}, and they train for 1000 episodes on each drop. Learners are evaluated with sampled actions on the drop on which they are trained, with arrival and fading sequences that are identical across schedulers. Differences between schedulers are reported as means with 95\% confidence intervals over drops, and paired comparisons use $t$-statistics over the per-drop differences.
+Both learners use two-layer actors and critics with 128 hidden units and the PPO hyperparameters of the companion study except the discount factor \todo{state the values here once the companion paper is citable}. A training episode has 400 slots and starts from PF averages near their steady state, with seeds other than that of the evaluation episode. MAPPO trains for 300 episodes and Central PPO for 600 episodes on each drop; in the pilot, the training curves level off after about 200 and 500 episodes. One training takes about 15~minutes for MAPPO and about 2~hours for Central PPO on one processor core, so the learners of E2 run on the first 5 of its 20 drops. Learners are evaluated on the drop on which they are trained, with arrival and fading sequences that are identical across schedulers, and with deterministic actions, i.e., the most likely action of every agent; sampled actions lower the geometric-mean rate by 2.5 points in E2. Differences between schedulers are reported as means with 95\% confidence intervals over drops, and paired comparisons use $t$-statistics over the per-drop differences.
 
 \section{Results}
 \label{sec:results}
@@ -420,7 +420,32 @@ $d$ & $v$ (km/h) & Genie & $\epsilon = 0.1$ & Tuned & Lag-one & Multi-lag & Know
 \end{figure*}
 
 \subsection{Gap decomposition of learned schedulers}
-\todo{E2--E5 with MAPPO and Central PPO: gap decomposition table under the PF objective (E2), gaps versus CQI delay and UE speed (E3), throughput versus PF objective and fifth-percentile rate (E4), cluster size (E5).}
+Table~\ref{tab:e2} reports E2 on 5 drops as the geometric-mean rate relative to the oracle with genie CQI, with 95\% confidence intervals over drops. The causal references select targets from the delayed reports, which is the information of the learners, and they lose 2.9 and 3.1 points to the oracle with genie CQI. With ideal CQI control, MAPPO attains 96.4\%, 0.6 points below causal full reuse ($\pm 0.6$, $t = -3.1$) and 0.4 points below causal greedy muting ($\pm 1.1$, $t = -1.1$). Of its loss of 3.6 points to the oracle, the delayed observation thus accounts for about 3 points and the learner for less than one. Against the references that select targets from the current channel, MAPPO is 2.2 points below full reuse ($\pm 0.7$, $t = -9.2$); this difference is the value of current channel information for target selection and not a shortfall of learning.
+
+With OLLA, MAPPO attains 84.4\%, 0.5 points below causal full reuse ($t = -2.4$) and 1.2 points above causal greedy muting ($t = 3.9$). The OLLA gap of MAPPO is 12.0 points ($\pm 0.8$), equal to the loss of causal full reuse from genie CQI to OLLA, 12.2 points ($\pm 0.7$), i.e., to the operating cost of OLLA that LA0 identified. With learned CQI control, MAPPO attains 42.4\% ($\pm 13.3$), a link-adaptation gap of 54.0 points ($\pm 12.3$). Its training curves change by less than 0.2 in slot throughput over the last fifth of the episodes in four of the five drops, so the gap is not a matter of the training budget. As in the companion study, rate selection dominates the loss of the learner, and OLLA reduces the link-adaptation gap from 54.0 to 12.0 points.
+
+\todo{Central PPO column of Table~\ref{tab:e2} and the information gap $\Delta_{\text{I}}$ (running). On the pilot drop, Central PPO with ideal CQI control attains 97.1\% after 1000 episodes and MAPPO 96.9\%.}
+
+\begin{table}
+\caption{GEOMETRIC-MEAN RATE RELATIVE TO THE ORACLE WITH GENIE CQI IN E2 (\%, MEAN AND 95\% CONFIDENCE INTERVAL OVER 5 DROPS; $d = 4$, $v = 3$~km/h)}
+\label{tab:e2}
+\centering
+\begin{tabular}{lccc}
+\toprule
+Scheduler & Genie or ideal & OLLA & Learned \
+\midrule
+Oracle & 100.0 & $83.0 \pm 4.6$ & -- \
+Full reuse & $98.6 \pm 1.3$ & $86.6 \pm 1.8$ & -- \
+Greedy muting & $99.3 \pm 0.9$ & $84.9 \pm 2.5$ & -- \
+Causal full reuse & $97.1 \pm 1.3$ & $84.9 \pm 1.7$ & -- \
+Causal greedy muting & $96.9 \pm 1.2$ & $83.2 \pm 2.3$ & -- \
+MAPPO & $96.4 \pm 1.7$ & $84.4 \pm 1.9$ & $42.4 \pm 13.3$ \
+Central PPO & \todo{} & \todo{} & -- \
+\bottomrule
+\end{tabular}
+\end{table}
+
+\todo{E3--E5: gaps versus CQI delay and UE speed (E3), throughput versus PF objective and fifth-percentile rate (E4), cluster size (E5).}
 
 \section{Discussion}
 \label{sec:discussion}

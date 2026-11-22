@@ -1,0 +1,6 @@
+
+== pilot drop 0, d=4, v=3 km/h, ideal CQI: geometric-mean rate / oracle (%)
+          oracle:  100.0
+      full_reuse:   99.4
+   greedy_muting:   99.9
+central_shared g=0: sampled   96.3, argmax   97.1  (train 209 min; slot throughput first/last 10%: 6.270 / 7.921)
