@@ -5,11 +5,12 @@ paper3 experiments without learners (docs/paper3_5g_multicell_plan.md, docs/pape
 Every episode has sim.cfg.warmup_slots warm-up slots followed by the measurement window; all metrics are taken over
 the measurement window (steady state). Per episode: throughput per slot, delivery ratio (delivered / arrived,
 finite buffer), the PF utility U = sum over cluster UEs of log(mean rate), the 5th percentile of the per-UE mean
-rate, the mean slot utility, and the transmission error rate.
+rate, the mean slot utility, the transmission error rate, and (finite buffer) the FIFO packet delays.
 
   e0  calibration: CDF of the wideband all-transmit SINR of the serving cell (large-scale gains only, all
       7 cells transmitting) over drops, and the run time of the exact oracle per slot for C in {3, 7}.
-  e1  headroom sweep: finite buffer, one subband, cluster C = 3, throughput objective; the oracle and the
+  e1  headroom sweep: finite buffer, one subband, cluster C = 3, throughput objective (--objective maxweight:
+      backlog-weighted rate, for the packet delays below the capacity region); the oracle and the
       references run on identical arrival and fading sequences. The headroom H = 1 - TDMA / oracle is reported
       against eta = lambda C U and against rho_TDMA = offered load / saturated capacity of cluster TDMA, measured
       per drop at the highest load.
@@ -56,6 +57,9 @@ from src.cellular.sim import CellularConfig, CellularSim
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cellular_results")
 POLICIES = ["oracle", "full_reuse", "cluster_tdma", "greedy_muting"]
 ETAS = [0.125, 0.25, 0.5, 1.0, 2.0, 3.0, 5.0]
+ETAS_MAXWEIGHT = [0.0625, 0.125, 0.1875, 0.25, 0.375, 0.5, 0.75, 5.0]
+STABLE_CENSORED = 0.01   # a policy is stable on a drop and load if < 1% of the packets are left at the end
+DELAY_MARGIN = 300       # slots between the last packet whose delay is measured and the end of the episode
 INK, INK2, GRID = "#0b0b0b", "#52514e", "#e5e4e0"
 RATE_FLOOR = 1e-4   # mean-rate floor (units of W T_slot per slot) inside the log of the PF utility
 
@@ -79,6 +83,50 @@ class Meter:
         self.delivered = np.zeros(sim.n_ues)
         self.arrived = self.utility = 0.0
         self.slots = self.sent = self.failed = 0
+        self.arrival_trace, self.delivery_trace = [], []     # every slot, warm-up included (finite buffer)
+
+    def trace(self, arrivals: np.ndarray, delivered: np.ndarray) -> None:
+        """Arrivals and deliveries of every slot; the packet delays need the backlog left by the warm-up."""
+        if not self.sim.cfg.full_buffer:
+            self.arrival_trace.append(arrivals)
+            self.delivery_trace.append(delivered)
+
+    def delays(self) -> dict:
+        """Packet delays under FIFO service of the backlog of each UE, for the packets that arrive in the
+        measurement window but at least DELAY_MARGIN slots before the end of the episode, so that a packet of a
+        stable queue completes before the end. A packet arriving in slot a and completed in slot c has the delay
+        c - a + 1 slots (a packet served in its arrival slot waits one slot). Packets not completed by the end are
+        censored at the end; their share marks a queue that is unstable within the episode, and the mean is
+        over the completed packets."""
+        if self.sim.cfg.full_buffer or not self.arrival_trace:
+            return {}
+        sim, packet = self.sim, self.sim.packet
+        start, n_slots = sim.cfg.warmup_slots, len(self.arrival_trace)
+        arrived = np.cumsum(np.rint(np.array(self.arrival_trace) / packet), axis=0)     # (T, n_ues) packets
+        served = np.cumsum(np.array(self.delivery_trace), axis=0) / packet
+        done, censored = [], []
+        for u in np.flatnonzero(sim.in_cluster):
+            k = np.arange(1, int(arrived[-1, u]) + 1)
+            a = np.searchsorted(arrived[:, u], k, side="left")
+            keep = (a >= start) & (a < n_slots - DELAY_MARGIN)
+            k, a = k[keep], a[keep]
+            c = np.searchsorted(served[:, u], k - 1e-6, side="left")
+            done.append(c[c < n_slots] - a[c < n_slots] + 1)
+            censored.append(n_slots - a[c >= n_slots])
+        done, censored = np.concatenate(done), np.concatenate(censored)
+        total = len(done) + len(censored)
+        if total == 0:
+            return {"delay_mean": float("nan"), "delay_median": float("nan"), "delay_p95": float("nan"),
+                    "delay_censored": 0.0, "packets": 0}
+        both = np.concatenate([done, censored])
+        return {"delay_mean": float(done.mean()) if len(done) else float("nan"),
+                # a UE in outage even without cluster interference (background cells, slow fading) waits for
+                # hundreds of slots under every policy and dominates the mean; the median is the main statistic
+                "delay_median": float(np.median(both)),
+                # censored packets enter at their lower bound, so the percentile is a lower bound when the
+                # censored share exceeds 5%
+                "delay_p95": float(np.percentile(both, 95)),
+                "delay_censored": len(censored) / total, "packets": int(total)}
 
     def record(self, arrivals: np.ndarray, targets: np.ndarray, cqis: np.ndarray, out: dict) -> None:
         self.delivered += out["delivered"]
@@ -95,7 +143,7 @@ class Meter:
                 "delivery": float(self.delivered.sum() / self.arrived) if self.arrived > 0 else float("nan"),
                 "log_utility": float(np.log(np.maximum(rates, RATE_FLOOR)).sum()),
                 "p5_rate": float(np.percentile(rates, 5)), "slot_utility": self.utility / self.slots,
-                "bler": self.failed / max(self.sent, 1), "n_ues": int(len(rates))}
+                "bler": self.failed / max(self.sent, 1), "n_ues": int(len(rates)), **self.delays()}
 
 
 def run_episode(cfg: CellularConfig, drop: int, seed: int, policy: str) -> dict:
@@ -106,6 +154,7 @@ def run_episode(cfg: CellularConfig, drop: int, seed: int, policy: str) -> dict:
         measuring, arrivals = sim.measuring, sim.arrivals.copy()
         targets, cqis = decide(sim, policy, sim.t)
         out = sim.step(targets, cqis)
+        meter.trace(arrivals, out["delivered"])
         if measuring:
             meter.record(arrivals, targets, cqis, out)
     return meter.result()
@@ -181,27 +230,54 @@ def e0(args) -> None:
 
 
 # ---------------------------------------------------------------------------------------------------- E1
+E1_JOBS = os.path.join(OUT, "e1_jobs")
+
+
 def e1_job(job: tuple) -> list[dict]:
-    drop, seed, eta, ues = job
-    cfg = CellularConfig(n_subbands=1, cluster_size=3, ues_per_cell=ues, objective="throughput",
+    """One drop, seed and load; rows are saved to e1_jobs/ and reused, so that an interrupted run resumes."""
+    drop, seed, eta, ues, objective = job
+    prefix = "" if objective == "throughput" else f"{objective}_"
+    path = os.path.join(E1_JOBS, f"{prefix}U{ues}_d{drop}_s{seed}_eta{eta:g}.json")
+    if os.path.exists(path):
+        with open(path) as handle:
+            return json.load(handle)
+    cfg = CellularConfig(n_subbands=1, cluster_size=3, ues_per_cell=ues, objective=objective,
                          full_buffer=False, load=eta / (3 * ues))
-    return [{"drop": drop, "seed": seed, "eta": eta, "policy": p, **run_episode(cfg, drop, seed, p)}
+    rows = [{"drop": drop, "seed": seed, "eta": eta, "policy": p, **run_episode(cfg, drop, seed, p)}
             for p in POLICIES]
+    os.makedirs(E1_JOBS, exist_ok=True)
+    with open(path + ".tmp", "w") as handle:
+        json.dump(rows, handle)
+    os.replace(path + ".tmp", path)
+    return rows
+
+
+def e1_grid(objective: str) -> list[float]:
+    """Loads of E1. The max-weight run resolves the stable region of the queues, which ends near eta = 0.5 on
+    many drops because every UE carries the same load; it keeps eta = 5 for the saturated capacity."""
+    return ETAS if objective == "throughput" else ETAS_MAXWEIGHT
 
 
 def e1(args) -> None:
-    jobs = [(d, s, eta, args.ues) for d in range(args.drops) for s in range(args.seeds) for eta in ETAS]
-    rows = run_jobs(e1_job, jobs, args.workers)
-    tag = f"e1_U{args.ues}_D{args.drops}_S{args.seeds}"
+    grid = e1_grid(args.objective)
+    jobs = [(d, s, eta, args.ues, args.objective) for d in range(args.drops) for s in range(args.seeds)
+            for eta in grid]
+    rows = run_jobs(e1_job, jobs, args.workers, args.hours)
+    if rows is None:
+        return
+    prefix = "e1" if args.objective == "throughput" else f"e1_{args.objective}"
+    tag = f"{prefix}_U{args.ues}_D{args.drops}_S{args.seeds}"
     write_csv(rows, tag)
 
     by = {}
     for r in rows:
         by.setdefault((r["drop"], r["seed"]), {}).setdefault(r["eta"], {})[r["policy"]] = r
-    cap = {k: {p: v[max(ETAS)][p]["throughput"] for p in POLICIES} for k, v in by.items()}
+    cap = {k: {p: v[max(grid)][p]["throughput"] for p in POLICIES} for k, v in by.items()}
     ratios = np.array([c["oracle"] / c["cluster_tdma"] for c in cap.values()])
-    summary = {"capacity_ratio_oracle_to_tdma": {"median": float(np.median(ratios)), "min": float(ratios.min()),
-                                                 "max": float(ratios.max())}, "by_eta": {}, "by_rho": {}}
+    summary = {"objective": args.objective, "etas": grid,
+               "capacity_ratio_oracle_to_tdma": {"median": float(np.median(ratios)), "min": float(ratios.min()),
+                                                 "max": float(ratios.max())},
+               "by_eta": {}, "by_rho": {}, "delay_by_eta": {}}
     pts = []
     for key, per_eta in by.items():
         for eta, pol in per_eta.items():
@@ -211,10 +287,10 @@ def e1(args) -> None:
             pts.append((eta, rho, h, *[pol[p]["throughput"] / pol["oracle"]["throughput"] for p in POLICIES[1:]],
                         pol["oracle"]["delivery"], pol["cluster_tdma"]["delivery"]))
     pts = np.array(pts)
-    print(f"capacity oracle / cluster TDMA at eta = {max(ETAS)}: median {np.median(ratios):.2f} "
-          f"[{ratios.min():.2f}, {ratios.max():.2f}]")
+    print(f"objective {args.objective}; capacity oracle / cluster TDMA at eta = {max(grid)}: "
+          f"median {np.median(ratios):.2f} [{ratios.min():.2f}, {ratios.max():.2f}]")
     print(f"{'eta':>6} {'H med':>7} {'reuse':>7} {'TDMA':>7} {'greedy':>7} {'deliv orc':>10} {'deliv TDMA':>11}")
-    for eta in ETAS:
+    for eta in grid:
         sel = pts[pts[:, 0] == eta]
         s = {"H_median": float(np.median(sel[:, 2])), "full_reuse": float(sel[:, 3].mean()),
              "cluster_tdma": float(sel[:, 4].mean()), "greedy_muting": float(sel[:, 5].mean()),
@@ -229,6 +305,32 @@ def e1(args) -> None:
             summary["by_rho"][f"{lo}-{hi:g}"] = {"n": int(len(sel)), "H_median": float(np.median(sel[:, 2])),
                                                 "H_max": float(sel[:, 2].max())}
             print(f"{lo:>5g}-{hi:<6g} {len(sel):>4} {100*np.median(sel[:, 2]):>8.1f}% {100*sel[:, 2].max():>6.1f}%")
+
+    # packet delays: a policy is stable on a pair of drop and load when less than STABLE_CENSORED of the packets
+    # of the measurement window are left at the end; delays are compared on the pairs where both are stable
+    print(f"{'eta':>6} " + " ".join(f"{p[:8] + ' stab':>13}" for p in POLICIES) +
+          f" {'n both':>7} {'oracle med':>11} {'TDMA med':>9} {'TDMA/orc med':>13} {'p95 orc':>8} {'p95 TDMA':>9}"
+          "   (median over drops of the median / p95 packet delay, slots)")
+    for eta in grid:
+        pairs = [v[eta] for v in by.values()]
+        stable = {p: np.array([pol[p]["delay_censored"] < STABLE_CENSORED for pol in pairs]) for p in POLICIES}
+        both = stable["oracle"] & stable["cluster_tdma"]
+        d = {p: np.array([pol[p]["delay_median"] for pol in pairs])[both] for p in POLICIES}
+        dm = {p: np.array([pol[p]["delay_mean"] for pol in pairs])[both] for p in POLICIES}
+        q = {p: np.array([pol[p]["delay_p95"] for pol in pairs])[both] for p in POLICIES}
+        entry = {"stable_share": {p: float(stable[p].mean()) for p in POLICIES}, "n_both_stable": int(both.sum())}
+        if both.any():
+            entry.update({"delay_median_median": {p: float(np.median(d[p])) for p in POLICIES},
+                          "delay_mean_median": {p: float(np.median(dm[p])) for p in POLICIES},
+                          "delay_p95_median": {p: float(np.median(q[p])) for p in POLICIES},
+                          "tdma_to_oracle_delay_median": float(np.median(d["cluster_tdma"] / d["oracle"]))})
+        summary["delay_by_eta"][str(eta)] = entry
+        line = f"{eta:>6g} " + " ".join(f"{100*stable[p].mean():>12.1f}%" for p in POLICIES) + f" {both.sum():>7}"
+        if both.any():
+            line += (f" {np.median(d['oracle']):>11.2f} {np.median(d['cluster_tdma']):>9.2f} "
+                     f"{entry['tdma_to_oracle_delay_median']:>13.2f} {np.median(q['oracle']):>8.1f} "
+                     f"{np.median(q['cluster_tdma']):>9.1f}")
+        print(line)
     with open(os.path.join(OUT, f"{tag}_summary.json"), "w") as handle:
         json.dump({"config": vars(args), "base": asdict(CellularConfig()), **summary}, handle, indent=2)
 
@@ -529,6 +631,8 @@ def main() -> None:
     parser.add_argument("--drops", type=int, default=50)
     parser.add_argument("--seeds", type=int, default=1)
     parser.add_argument("--ues", type=int, default=4)
+    parser.add_argument("--objective", choices=["throughput", "maxweight"], default="throughput",
+                        help="e1: objective of the oracle and the references")
     parser.add_argument("--timing-slots", type=int, default=20)
     parser.add_argument("--workers", type=int, default=os.cpu_count())
     parser.add_argument("--hours", type=float, default=None,

@@ -37,7 +37,7 @@ class CellularConfig:
     cluster_size: int = 3
     speed_kmh: float = 3.0
     cqi_delay: int = 4
-    objective: str = "pf"            # pf | throughput
+    objective: str = "pf"            # pf | throughput | maxweight (backlog-weighted rate, finite buffer only)
     pf_beta: float = 0.01
     full_buffer: bool = True
     load: float = 0.0                # lambda: mean offered load per UE in units of e_15 * W * T_slot per slot
@@ -46,8 +46,10 @@ class CellularConfig:
     warmup_slots: int = 300          # 3 time constants 1 / pf_beta of the PF averages; metrics skip these slots
 
     def __post_init__(self):
-        if self.objective not in ("pf", "throughput"):
-            raise ValueError(f"objective must be pf or throughput, got {self.objective}")
+        if self.objective not in ("pf", "throughput", "maxweight"):
+            raise ValueError(f"objective must be pf, throughput or maxweight, got {self.objective}")
+        if self.objective == "maxweight" and self.full_buffer:
+            raise ValueError("the maxweight objective needs a finite buffer")
 
 
 class CellularSim:
@@ -133,6 +135,10 @@ class CellularSim:
     def weights(self) -> np.ndarray:
         if self.cfg.objective == "throughput":
             return np.ones(self.n_ues)
+        if self.cfg.objective == "maxweight":
+            # max-weight scheduling: the rate of a UE is weighted by its backlog (in packets), which keeps every
+            # queue stable whenever the arrival rates lie inside the capacity region
+            return self.backlog_now() / self.packet
         return 1.0 / self.avg_rate
 
     def background_interference(self, rx: np.ndarray) -> np.ndarray:

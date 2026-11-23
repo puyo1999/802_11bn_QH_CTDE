@@ -142,6 +142,10 @@ REFERENCES = ("oracle", "full_reuse", "greedy_muting", "causal_full_reuse", "cau
 def e2_refs(job: tuple) -> list[dict]:
     """job = (drop, delay, speed): references with genie and with local (OLLA) CQI, log utility per policy."""
     drop, delay, speed = job
+    path = os.path.join(os.path.dirname(OUT), "e2_refs", f"d{drop}_delay{delay}_v{speed:g}.json")
+    if os.path.exists(path):
+        with open(path) as handle:
+            return json.load(handle)
     cfg = CellularConfig(cluster_size=3, ues_per_cell=4, n_subbands=4, objective="pf", cqi_delay=delay,
                          speed_kmh=speed)
     rows = []
@@ -150,7 +154,33 @@ def e2_refs(job: tuple) -> list[dict]:
             r = evaluate_reference(cfg, drop, p, cqi_mode)
             rows.append({"drop": drop, "policy": p, "cqi_mode": cqi_mode, "log_utility": r["log_utility"],
                          "n_ues": r["n_ues"]})
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as handle:
+        json.dump(rows, handle)
     return rows
+
+
+def e3_unit(job: tuple) -> list[dict]:
+    """A reference job ("refs", drop, delay, speed) or a learner job of learn_job, for one process pool."""
+    if job[0] == "refs":
+        return e2_refs(job[1:])
+    return learn_rows(job)
+
+
+E3_CONDITIONS = [(d, v) for d in (0, 4, 8) for v in (3.0, 30.0, 60.0)]
+
+
+def e3(args) -> None:
+    """E3 (reduced): E2 for every CQI delay and UE speed of LA0 on drops 0..D-1; one E2 summary per condition."""
+    drops = list(range(args.drops))
+    jobs = [("refs", d, delay, speed) for delay, speed in E3_CONDITIONS for d in drops]
+    # learner jobs first by cost: the pool then ends with short jobs
+    jobs = [(d, delay, speed, key, mode, args.episodes, args.train_len, 0, args.gamma)
+            for key in args.learners for delay, speed in E3_CONDITIONS for d in drops for mode in args.cqi_modes] + jobs
+    run_jobs(e3_unit, jobs, args.workers)
+    for delay, speed in E3_CONDITIONS:
+        sub = argparse.Namespace(**{**vars(args), "delay": delay, "speed": speed, "workers": 1})
+        e2(sub)
 
 
 def e2(args) -> None:
@@ -189,7 +219,7 @@ def e2(args) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("exp", choices=["pilot", "e2"])
+    parser.add_argument("exp", choices=["pilot", "e2", "e3"])
     parser.add_argument("--drop", type=int, default=0)
     parser.add_argument("--delay", type=int, default=4)
     parser.add_argument("--speed", type=float, default=3.0)
@@ -201,7 +231,7 @@ def main() -> None:
     parser.add_argument("--drops", type=int, default=5)
     parser.add_argument("--cqi-modes", nargs="+", default=["ideal", "olla", "learned"])
     args = parser.parse_args()
-    {"pilot": pilot, "e2": e2}[args.exp](args)
+    {"pilot": pilot, "e2": e2, "e3": e3}[args.exp](args)
 
 
 if __name__ == "__main__":
