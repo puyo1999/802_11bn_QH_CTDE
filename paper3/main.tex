@@ -254,7 +254,7 @@ Table~\ref{tab:params} lists the parameters. Five experiments cover the research
 \begin{equation}
 \eta_{\text{TDMA}} = \lambda\, C\, U\, e_{15} W T_{\text{slot}} / \Theta^{\text{sat}}_{\text{TDMA}}.
 \label{eq:rho_tdma}
-\end{equation} E2 evaluates all schedulers under full buffer with $C = 3$, $U = 4$, and $B = 4$ on 20 drops at a speed of 3~km/h and a CQI delay of four slots, the learners on the first 5 of these drops. E3 repeats E2 for the CQI delays $d \in \{0, 4, 8\}$ slots and the speeds $v \in \{3, 30, 60\}$~km/h, which give $\rho \approx 0.999$, $0.909$, and $0.660$ in~\eqref{eq:fading}, on 10 drops. E4 compares the throughput and the PF objective on the drops of E2 and reports the fifth percentile of the UE rate. E5 evaluates the oracle, the better reference, and both learners with ideal CQI control for $C = 7$ and $U \in \{2, 4\}$ on 10 drops.
+\end{equation} E2 evaluates all schedulers under full buffer with $C = 3$, $U = 4$, and $B = 4$ on 20 drops at a speed of 3~km/h and a CQI delay of four slots, the learners on the first 5 of these drops. E3 repeats E2 for the CQI delays $d \in \{0, 4, 8\}$ slots and the speeds $v \in \{3, 30, 60\}$~km/h, which give $\rho \approx 0.999$, $0.909$, and $0.660$ in~\eqref{eq:fading}, with MAPPO under ideal CQI control and OLLA on the first 3 drops of E2; it omits Central PPO, whose information gap is below one point in E2, and learned CQI control, whose gap dominates already at 3~km/h. E4 compares the throughput and the PF objective on the drops of E2 and reports the fifth percentile of the UE rate. E5 evaluates the oracle, the better reference, and both learners with ideal CQI control for $C = 7$ and $U \in \{2, 4\}$ on 10 drops.
 
 A link-adaptation study (LA0) separates rate selection from scheduling without learners. Under the setting of E2, the targets of full reuse, greedy muting, and the oracle are combined with four CQI selections. Genie selection applies~\eqref{eq:best_cqi} to the SINR of the slot. Local selection applies OLLA by~\eqref{eq:olla_select} and~\eqref{eq:olla_update} to the report of age $a = d + 1$. Fresh selection applies OLLA to the all-transmit SINR of the current slot, i.e., to a report without aging. The difference between genie and fresh selection is the operating cost of OLLA, which comprises the target error rate and the all-transmit assumption of the report, and the difference between fresh and local selection is the cost of aging. Intent-aware selection assumes that every cell of $\mathcal{C}$ announces its targets for the slot over the backhaul, predicts the SINR of UE $u$ on subband $b$ as
 \begin{equation}
@@ -445,7 +445,37 @@ Central PPO & $96.8 \pm 1.4$ & $84.8 \pm 1.9$ & -- \\
 \end{tabular}
 \end{table}
 
-\todo{E3--E5: gaps versus CQI delay and UE speed (E3), throughput versus PF objective and fifth-percentile rate (E4), cluster size (E5).}
+Table~\ref{tab:e3} reports E3 on 3 drops per condition. The better causal reference is the larger of causal full reuse and causal greedy muting on each drop, and differences below are paired over drops with 95\% confidence intervals. The references that select targets from the current channel attain 98.9--99.0\% (full reuse) and 99.4--99.5\% (greedy muting) with ideal CQI control in every condition, so their loss to the oracle does not depend on the CQI delay or the speed. What depends on them is the information that a causal scheduler has. The better causal reference falls from 97.1--98.3\% at 3~km/h to 67.9--90.7\% at 30~km/h and 63.4--76.7\% at 60~km/h, and causal full reuse attains up to 35.9 points ($\pm 5.4$) less than full reuse at $d = 8$ and 60~km/h, where the report retains the correlation $\rho^{d+1} \approx 0.02$ with the current channel. At $d = 4$ and $d = 8$ with 60~km/h, it attains 64.1\% and 63.4\%, so the report carries no information that matters for target selection beyond the average channel.
+
+With ideal CQI control, MAPPO follows the better causal reference. In the seven conditions other than $d \ge 4$ at 60~km/h, it is 0.3 to 1.1 points below it, with confidence intervals of $\pm 0.5$ to $\pm 2.4$ points; the delayed observation thus accounts for almost all of its loss to the oracle in every condition, as in E2, and the learner does not learn to predict the current channel from the delayed reports beyond what the references extract from them. In the two conditions without useful information, the most likely action of MAPPO is 4.3 ($\pm 9.4$) and 5.0 ($\pm 3.7$) points below the better causal reference, whereas the sampled action is 0.4 ($\pm 0.7$) points below and 0.3 ($\pm 1.2$) points above it. When the observation says little about the current channel, the deterministic evaluation of the setup therefore discards the randomization of the learned policy; in the other conditions, sampled actions are 0.9 to 2.5 points below the most likely ones.
+
+With OLLA, the rates of all schedulers collapse with speed and delay, and the OLLA gap of MAPPO grows from 9.8--12.7 points at 3~km/h to 29.3--48.2 points at 30~km/h and 44.9--47.0 points at 60~km/h. At 3~km/h, MAPPO with OLLA is 0.5 to 0.8 points below the better causal reference with OLLA, as in E2. For $d \ge 4$ at 30 and 60~km/h, however, it exceeds it by 3.4 ($\pm 2.9$) to 5.4 ($\pm 2.9$) points, e.g., 18.7\% against 13.2\% at $d = 8$ and 30~km/h. The references choose their targets as if the rate matched the report, whereas MAPPO is trained with the rate selection of OLLA; these four conditions are the only ones in E2 and E3 in which a learner exceeds the better causal reference, presumably because it selects targets that suit the rate selection. It is small against the OLLA gap, so the conclusion of E2 holds in all nine conditions: rate selection dominates the loss of the learner, and the remaining loss of target selection is the loss of the delayed observation, which grows as $\rho^{d+1}$ decreases and which MAPPO does not recover.
+
+\begin{table}
+\caption{GEOMETRIC-MEAN RATE RELATIVE TO THE ORACLE WITH GENIE CQI IN E3 (\%, MEAN AND 95\% CONFIDENCE INTERVAL OVER 3 DROPS). C.\ REF.: BETTER CAUSAL REFERENCE ON EACH DROP; MAPPO WITH THE MOST LIKELY AND THE SAMPLED ACTION}
+\label{tab:e3}
+\centering
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{cc cccc cc}
+\toprule
+& & \multicolumn{4}{c}{Ideal CQI control} & \multicolumn{2}{c}{OLLA} \
+\cmidrule(lr){3-6} \cmidrule(lr){7-8}
+$d$ & $v$ & Full reuse & C.\ ref. & MAPPO & Sampled & C.\ ref. & MAPPO \
+\midrule
+0 & 3 & $98.9 \pm 3.1$ & $98.3 \pm 2.9$ & $97.2 \pm 4.5$ & $94.8 \pm 4.9$ & $88.2 \pm 2.8$ & $87.4 \pm 4.2$ \
+0 & 30 & $99.0 \pm 1.8$ & $90.7 \pm 2.8$ & $90.4 \pm 3.4$ & $88.8 \pm 3.7$ & $60.3 \pm 6.3$ & $61.1 \pm 7.1$ \
+0 & 60 & $99.0 \pm 1.9$ & $76.7 \pm 4.0$ & $76.3 \pm 4.4$ & $74.6 \pm 4.3$ & $30.2 \pm 11.5$ & $31.4 \pm 10.6$ \
+4 & 3 & $98.9 \pm 3.1$ & $97.6 \pm 2.9$ & $96.5 \pm 4.6$ & $94.1 \pm 5.2$ & $85.6 \pm 3.2$ & $84.9 \pm 4.3$ \
+4 & 30 & $99.0 \pm 1.8$ & $74.5 \pm 4.7$ & $74.1 \pm 5.2$ & $72.5 \pm 5.8$ & $23.8 \pm 10.9$ & $27.3 \pm 10.3$ \
+4 & 60 & $99.0 \pm 1.9$ & $64.1 \pm 6.4$ & $59.9 \pm 5.5$ & $63.7 \pm 5.8$ & $7.9 \pm 7.5$ & $12.8 \pm 6.2$ \
+8 & 3 & $98.9 \pm 3.1$ & $97.1 \pm 3.0$ & $96.0 \pm 4.6$ & $93.7 \pm 5.2$ & $83.9 \pm 3.5$ & $83.4 \pm 5.0$ \
+8 & 30 & $99.0 \pm 1.8$ & $67.9 \pm 5.4$ & $66.8 \pm 6.5$ & $65.9 \pm 5.4$ & $13.2 \pm 8.3$ & $18.7 \pm 9.4$ \
+8 & 60 & $99.0 \pm 1.9$ & $63.4 \pm 6.9$ & $58.4 \pm 5.0$ & $63.7 \pm 5.7$ & $8.0 \pm 8.0$ & $12.5 \pm 5.5$ \
+\bottomrule
+\end{tabular}
+\end{table}
+
+\todo{E4--E5: throughput versus PF objective and fifth-percentile rate (E4), cluster size (E5).}
 
 \section{Discussion}
 \label{sec:discussion}
