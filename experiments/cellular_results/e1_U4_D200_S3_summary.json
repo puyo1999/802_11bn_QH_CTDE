@@ -1,0 +1,242 @@
+{
+  "config": {
+    "exp": "e1",
+    "drops": 200,
+    "seeds": 3,
+    "ues": 4,
+    "objective": "throughput",
+    "timing_slots": 20,
+    "workers": 4,
+    "hours": null
+  },
+  "base": {
+    "isd": 200.0,
+    "fc_ghz": 3.5,
+    "bandwidth_hz": 20000000.0,
+    "n_subbands": 4,
+    "slot_s": 0.001,
+    "ptx_dbm": 44.0,
+    "noise_figure_db": 9.0,
+    "h_bs": 10.0,
+    "h_ut": 1.5,
+    "ues_per_cell": 4,
+    "cluster_size": 3,
+    "speed_kmh": 3.0,
+    "cqi_delay": 4,
+    "objective": "pf",
+    "pf_beta": 0.01,
+    "full_buffer": true,
+    "load": 0.0,
+    "packets_per_unit": 20,
+    "episode_len": 1300,
+    "warmup_slots": 300
+  },
+  "objective": "throughput",
+  "etas": [
+    0.125,
+    0.25,
+    0.5,
+    1.0,
+    2.0,
+    3.0,
+    5.0
+  ],
+  "capacity_ratio_oracle_to_tdma": {
+    "median": 2.1442028415609053,
+    "min": 1.4393119632991869,
+    "max": 2.8317385829999777
+  },
+  "by_eta": {
+    "0.125": {
+      "H_median": 0.018505830031426362,
+      "full_reuse": 0.9969697745046608,
+      "cluster_tdma": 0.9715553536850208,
+      "greedy_muting": 0.9991000235007225,
+      "delivery_oracle": 1.0020701919555284,
+      "delivery_tdma": 0.9735887439397152
+    },
+    "0.25": {
+      "H_median": 0.08717977809249977,
+      "full_reuse": 0.9927584507733194,
+      "cluster_tdma": 0.9073704860670762,
+      "greedy_muting": 0.9972585668097729,
+      "delivery_oracle": 0.9706080548934896,
+      "delivery_tdma": 0.8807075559588334
+    },
+    "0.5": {
+      "H_median": 0.20100548860686468,
+      "full_reuse": 0.9877349277590991,
+      "cluster_tdma": 0.7966943577839398,
+      "greedy_muting": 0.9949928976117168,
+      "delivery_oracle": 0.9084242006751898,
+      "delivery_tdma": 0.7235003443687801
+    },
+    "1.0": {
+      "H_median": 0.30729830028832394,
+      "full_reuse": 0.9724749251190163,
+      "cluster_tdma": 0.6925436418257662,
+      "greedy_muting": 0.9857815099702035,
+      "delivery_oracle": 0.7788940351401431,
+      "delivery_tdma": 0.538789117719133
+    },
+    "2.0": {
+      "H_median": 0.40436000730256544,
+      "full_reuse": 0.9695840928035803,
+      "cluster_tdma": 0.6008736755241851,
+      "greedy_muting": 0.9811678796350473,
+      "delivery_oracle": 0.5922147570122491,
+      "delivery_tdma": 0.35452479801685305
+    },
+    "3.0": {
+      "H_median": 0.4641723333143026,
+      "full_reuse": 0.9817884596723067,
+      "cluster_tdma": 0.5391440234613801,
+      "greedy_muting": 0.9886800198002184,
+      "delivery_oracle": 0.4873293768326161,
+      "delivery_tdma": 0.26084249916702634
+    },
+    "5.0": {
+      "H_median": 0.5336262126793317,
+      "full_reuse": 0.986186552425915,
+      "cluster_tdma": 0.4732246504566359,
+      "greedy_muting": 0.9907223615835924,
+      "delivery_oracle": 0.34359876440738807,
+      "delivery_tdma": 0.16121392890831623
+    }
+  },
+  "by_rho": {
+    "0-0.5": {
+      "n": 1196,
+      "H_median": 0.0515066496615571,
+      "H_max": 0.30465133513255915
+    },
+    "0.5-0.9": {
+      "n": 587,
+      "H_median": 0.1980022045306733,
+      "H_max": 0.4026865788394355
+    },
+    "0.9-1.1": {
+      "n": 141,
+      "H_median": 0.2786104001123806,
+      "H_max": 0.4293859619064857
+    },
+    "1.1-2": {
+      "n": 473,
+      "H_median": 0.313658680548075,
+      "H_max": 0.48686276089490477
+    },
+    "2-5": {
+      "n": 1182,
+      "H_median": 0.4332916270460757,
+      "H_max": 0.5952315276613358
+    },
+    "5-1e+09": {
+      "n": 621,
+      "H_median": 0.5323979477360452,
+      "H_max": 0.6468600576326548
+    }
+  },
+  "delay_by_eta": {
+    "0.125": {
+      "stable_share": {
+        "oracle": 0.9366666666666666,
+        "full_reuse": 0.885,
+        "cluster_tdma": 0.5416666666666666,
+        "greedy_muting": 0.9183333333333333
+      },
+      "n_both_stable": 325,
+      "delay_median_median": {
+        "oracle": 1.0,
+        "full_reuse": 1.0,
+        "cluster_tdma": 5.0,
+        "greedy_muting": 1.0
+      },
+      "delay_mean_median": {
+        "oracle": 2.850967007963595,
+        "full_reuse": 4.861205915813424,
+        "cluster_tdma": 22.323879750425412,
+        "greedy_muting": 3.7782189449801473
+      },
+      "delay_p95_median": {
+        "oracle": 7.0,
+        "full_reuse": 15.0,
+        "cluster_tdma": 135.0,
+        "greedy_muting": 9.399999999999864
+      },
+      "tdma_to_oracle_delay_median": 5.0
+    },
+    "0.25": {
+      "stable_share": {
+        "oracle": 0.5066666666666667,
+        "full_reuse": 0.43,
+        "cluster_tdma": 0.06166666666666667,
+        "greedy_muting": 0.49166666666666664
+      },
+      "n_both_stable": 37,
+      "delay_median_median": {
+        "oracle": 1.0,
+        "full_reuse": 1.0,
+        "cluster_tdma": 7.0,
+        "greedy_muting": 1.0
+      },
+      "delay_mean_median": {
+        "oracle": 4.58833974548683,
+        "full_reuse": 7.871452894438138,
+        "cluster_tdma": 45.029002663509914,
+        "greedy_muting": 6.969555677454745
+      },
+      "delay_p95_median": {
+        "oracle": 12.0,
+        "full_reuse": 59.0,
+        "cluster_tdma": 246.0,
+        "greedy_muting": 20.0
+      },
+      "tdma_to_oracle_delay_median": 6.0
+    },
+    "0.5": {
+      "stable_share": {
+        "oracle": 0.12166666666666667,
+        "full_reuse": 0.08666666666666667,
+        "cluster_tdma": 0.0,
+        "greedy_muting": 0.105
+      },
+      "n_both_stable": 0
+    },
+    "1.0": {
+      "stable_share": {
+        "oracle": 0.0033333333333333335,
+        "full_reuse": 0.0033333333333333335,
+        "cluster_tdma": 0.0,
+        "greedy_muting": 0.0033333333333333335
+      },
+      "n_both_stable": 0
+    },
+    "2.0": {
+      "stable_share": {
+        "oracle": 0.0,
+        "full_reuse": 0.0,
+        "cluster_tdma": 0.0,
+        "greedy_muting": 0.0
+      },
+      "n_both_stable": 0
+    },
+    "3.0": {
+      "stable_share": {
+        "oracle": 0.0,
+        "full_reuse": 0.0,
+        "cluster_tdma": 0.0,
+        "greedy_muting": 0.0
+      },
+      "n_both_stable": 0
+    },
+    "5.0": {
+      "stable_share": {
+        "oracle": 0.0,
+        "full_reuse": 0.0,
+        "cluster_tdma": 0.0,
+        "greedy_muting": 0.0
+      },
+      "n_both_stable": 0
+    }
+  }
+}

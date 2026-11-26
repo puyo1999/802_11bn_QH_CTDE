@@ -248,6 +248,8 @@ def e1_job(job: tuple) -> list[dict]:
     os.makedirs(E1_JOBS, exist_ok=True)
     with open(path + ".tmp", "w") as handle:
         json.dump(rows, handle)
+        handle.flush()
+        os.fsync(handle.fileno())     # a power loss must not leave a file of the right size without its data
     os.replace(path + ".tmp", path)
     return rows
 
