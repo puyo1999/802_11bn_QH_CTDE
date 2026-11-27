@@ -1,0 +1,226 @@
+[progress] 1/81 jobs, 822 s
+[progress] 2/81 jobs, 834 s
+[progress] 3/81 jobs, 836 s
+[progress] 4/81 jobs, 1933 s
+[progress] 5/81 jobs, 1962 s
+[progress] 6/81 jobs, 1977 s
+[progress] 7/81 jobs, 2865 s
+[progress] 8/81 jobs, 2867 s
+[progress] 9/81 jobs, 2890 s
+[progress] 10/81 jobs, 3729 s
+[progress] 11/81 jobs, 3746 s
+[progress] 12/81 jobs, 3756 s
+[progress] 13/81 jobs, 4618 s
+[progress] 14/81 jobs, 4626 s
+[progress] 15/81 jobs, 4647 s
+[progress] 16/81 jobs, 5456 s
+[progress] 17/81 jobs, 5456 s
+[progress] 18/81 jobs, 5456 s
+[progress] 19/81 jobs, 5456 s
+[progress] 20/81 jobs, 5456 s
+[progress] 21/81 jobs, 5456 s
+[progress] 22/81 jobs, 5456 s
+[progress] 23/81 jobs, 5477 s
+[progress] 24/81 jobs, 5487 s
+[progress] 25/81 jobs, 6289 s
+[progress] 26/81 jobs, 6300 s
+[progress] 27/81 jobs, 6323 s
+[progress] 28/81 jobs, 7227 s
+[progress] 29/81 jobs, 7251 s
+[progress] 30/81 jobs, 7264 s
+[progress] 31/81 jobs, 8164 s
+[progress] 32/81 jobs, 8182 s
+[progress] 33/81 jobs, 8213 s
+[progress] 34/81 jobs, 9648 s
+[progress] 35/81 jobs, 9716 s
+[progress] 36/81 jobs, 9751 s
+[progress] 37/81 jobs, 15531 s
+[progress] 38/81 jobs, 16190 s
+[progress] 39/81 jobs, 17105 s
+[progress] 40/81 jobs, 87008 s
+[progress] 41/81 jobs, 87049 s
+[progress] 42/81 jobs, 87065 s
+[progress] 43/81 jobs, 88216 s
+[progress] 44/81 jobs, 88247 s
+[progress] 45/81 jobs, 88288 s
+[progress] 46/81 jobs, 89278 s
+[progress] 47/81 jobs, 89324 s
+[progress] 48/81 jobs, 89343 s
+[progress] 49/81 jobs, 90165 s
+[progress] 50/81 jobs, 90192 s
+[progress] 51/81 jobs, 90221 s
+[progress] 52/81 jobs, 91264 s
+[progress] 53/81 jobs, 91308 s
+[progress] 54/81 jobs, 91327 s
+[progress] 55/81 jobs, 91332 s
+[progress] 56/81 jobs, 91379 s
+[progress] 57/81 jobs, 91399 s
+[progress] 58/81 jobs, 91402 s
+[progress] 59/81 jobs, 91472 s
+[progress] 60/81 jobs, 91512 s
+[progress] 61/81 jobs, 91516 s
+[progress] 62/81 jobs, 91516 s
+[progress] 63/81 jobs, 91597 s
+[progress] 64/81 jobs, 91635 s
+[progress] 65/81 jobs, 91641 s
+[progress] 66/81 jobs, 91708 s
+[progress] 67/81 jobs, 91729 s
+[progress] 68/81 jobs, 91731 s
+[progress] 69/81 jobs, 91790 s
+[progress] 70/81 jobs, 91811 s
+[progress] 71/81 jobs, 91817 s
+[progress] 72/81 jobs, 91868 s
+[progress] 73/81 jobs, 91886 s
+[progress] 74/81 jobs, 91889 s
+[progress] 75/81 jobs, 91934 s
+[progress] 76/81 jobs, 91951 s
+[progress] 77/81 jobs, 91955 s
+[progress] 78/81 jobs, 91996 s
+[progress] 79/81 jobs, 92013 s
+[progress] 80/81 jobs, 92015 s
+[progress] 81/81 jobs, 92042 s
+81 jobs in 92043 s
+
+== E2 (reduced): 3 drops, d=0, v=3 km/h, 300 episodes, gamma=0: geometric-mean rate / oracle with genie CQI (%), mean and per drop
+                      oracle|ideal:  100.0  [100.0 100.0 100.0]
+                  full_reuse|ideal:   98.9  [ 99.4  99.8  97.5]
+               greedy_muting|ideal:   99.4  [ 99.9 100.0  98.5]
+           causal_full_reuse|ideal:   98.1  [ 98.5  99.1  96.7]
+               causal_greedy|ideal:   98.0  [ 98.8  98.3  97.0]
+                       oracle|olla:   86.1  [ 88.4  87.3  82.5]
+                   full_reuse|olla:   88.9  [ 89.5  89.6  87.5]
+                greedy_muting|olla:   87.5  [ 88.6  88.7  85.2]
+            causal_full_reuse|olla:   88.2  [ 88.6  89.0  86.9]
+                causal_greedy|olla:   86.3  [ 88.2  87.1  83.8]
+               mappo|ideal|sampled:   94.8  [ 95.6  96.3  92.5]
+                mappo|ideal|argmax:   97.2  [ 97.9  98.7  95.2]
+                mappo|olla|sampled:   84.9  [ 85.5  86.3  82.9]
+                 mappo|olla|argmax:   87.4  [ 88.1  88.7  85.5]
+
+== E2 (reduced): 3 drops, d=0, v=30 km/h, 300 episodes, gamma=0: geometric-mean rate / oracle with genie CQI (%), mean and per drop
+                      oracle|ideal:  100.0  [100.0 100.0 100.0]
+                  full_reuse|ideal:   99.0  [ 99.4  99.4  98.2]
+               greedy_muting|ideal:   99.5  [ 99.7  99.8  99.0]
+           causal_full_reuse|ideal:   90.7  [ 91.2  91.5  89.4]
+               causal_greedy|ideal:   90.5  [ 91.1  91.0  89.4]
+                       oracle|olla:   67.2  [ 67.9  68.8  64.8]
+                   full_reuse|olla:   68.9  [ 69.5  70.6  66.5]
+                greedy_muting|olla:   68.2  [ 68.9  69.7  66.2]
+            causal_full_reuse|olla:   60.3  [ 61.1  62.3  57.5]
+                causal_greedy|olla:   59.4  [ 60.5  61.4  56.3]
+               mappo|ideal|sampled:   88.8  [ 89.6  89.7  87.0]
+                mappo|ideal|argmax:   90.4  [ 91.1  91.3  88.8]
+                mappo|olla|sampled:   59.5  [ 60.1  62.0  56.4]
+                 mappo|olla|argmax:   61.1  [ 61.6  63.6  58.0]
+
+== E2 (reduced): 3 drops, d=0, v=60 km/h, 300 episodes, gamma=0: geometric-mean rate / oracle with genie CQI (%), mean and per drop
+                      oracle|ideal:  100.0  [100.0 100.0 100.0]
+                  full_reuse|ideal:   99.0  [ 99.5  99.3  98.1]
+               greedy_muting|ideal:   99.4  [ 99.8  99.7  98.9]
+           causal_full_reuse|ideal:   76.5  [ 76.6  78.1  74.7]
+               causal_greedy|ideal:   76.6  [ 76.5  78.4  75.1]
+                       oracle|olla:   53.1  [ 52.5  56.2  50.5]
+                   full_reuse|olla:   52.7  [ 52.4  55.8  49.9]
+                greedy_muting|olla:   52.9  [ 52.7  56.0  50.2]
+            causal_full_reuse|olla:   29.2  [ 30.7  33.8  23.1]
+                causal_greedy|olla:   30.1  [ 30.3  34.5  25.3]
+               mappo|ideal|sampled:   74.6  [ 75.1  76.1  72.7]
+                mappo|ideal|argmax:   76.3  [ 76.4  78.0  74.5]
+                mappo|olla|sampled:   30.5  [ 30.5  34.7  26.3]
+                 mappo|olla|argmax:   31.4  [ 31.4  35.7  27.2]
+
+== E2 (reduced): 3 drops, d=4, v=3 km/h, 300 episodes, gamma=0: geometric-mean rate / oracle with genie CQI (%), mean and per drop
+                      oracle|ideal:  100.0  [100.0 100.0 100.0]
+                  full_reuse|ideal:   98.9  [ 99.4  99.8  97.5]
+               greedy_muting|ideal:   99.4  [ 99.9 100.0  98.5]
+           causal_full_reuse|ideal:   97.4  [ 97.6  98.5  95.9]
+               causal_greedy|ideal:   97.3  [ 97.9  97.6  96.2]
+                       oracle|olla:   84.6  [ 86.8  85.9  81.0]
+                   full_reuse|olla:   87.3  [ 88.1  88.0  85.8]
+                greedy_muting|olla:   85.8  [ 87.0  87.2  83.4]
+            causal_full_reuse|olla:   85.6  [ 85.9  86.7  84.2]
+                causal_greedy|olla:   83.7  [ 85.3  84.7  81.3]
+               mappo|ideal|sampled:   94.1  [ 94.8  95.7  91.7]
+                mappo|ideal|argmax:   96.5  [ 97.0  98.1  94.5]
+                mappo|olla|sampled:   82.4  [ 83.0  83.9  80.2]
+                 mappo|olla|argmax:   84.9  [ 85.4  86.4  83.0]
+
+== E2 (reduced): 3 drops, d=4, v=30 km/h, 300 episodes, gamma=0: geometric-mean rate / oracle with genie CQI (%), mean and per drop
+                      oracle|ideal:  100.0  [100.0 100.0 100.0]
+                  full_reuse|ideal:   99.0  [ 99.4  99.4  98.2]
+               greedy_muting|ideal:   99.5  [ 99.7  99.8  99.0]
+           causal_full_reuse|ideal:   74.2  [ 74.4  76.2  71.9]
+               causal_greedy|ideal:   74.5  [ 74.3  76.5  72.6]
+                       oracle|olla:   52.0  [ 51.9  54.7  49.3]
+                   full_reuse|olla:   52.0  [ 52.6  55.7  47.8]
+                greedy_muting|olla:   52.0  [ 51.8  55.1  49.0]
+            causal_full_reuse|olla:   22.3  [ 22.2  25.9  18.6]
+                causal_greedy|olla:   23.6  [ 21.5  28.8  20.5]
+               mappo|ideal|sampled:   72.5  [ 73.1  74.4  69.9]
+                mappo|ideal|argmax:   74.1  [ 74.5  75.9  71.8]
+                mappo|olla|sampled:   27.0  [ 28.1  31.0  21.9]
+                 mappo|olla|argmax:   27.3  [ 27.0  31.6  23.3]
+
+== E2 (reduced): 3 drops, d=4, v=60 km/h, 300 episodes, gamma=0: geometric-mean rate / oracle with genie CQI (%), mean and per drop
+                      oracle|ideal:  100.0  [100.0 100.0 100.0]
+                  full_reuse|ideal:   99.0  [ 99.5  99.3  98.1]
+               greedy_muting|ideal:   99.4  [ 99.8  99.7  98.9]
+           causal_full_reuse|ideal:   63.7  [ 63.3  66.5  61.5]
+               causal_greedy|ideal:   64.1  [ 63.2  67.0  62.1]
+                       oracle|olla:   45.1  [ 43.7  48.7  43.0]
+                   full_reuse|olla:   43.9  [ 43.8  47.6  40.3]
+                greedy_muting|olla:   44.4  [ 43.7  48.0  41.6]
+            causal_full_reuse|olla:    6.7  [  6.6   7.7   5.6]
+                causal_greedy|olla:    7.9  [  6.4  11.4   5.8]
+               mappo|ideal|sampled:   63.7  [ 63.2  66.3  61.7]
+                mappo|ideal|argmax:   59.9  [ 62.4  58.6  58.5]
+                mappo|olla|sampled:   13.1  [ 10.9  16.7  11.7]
+                 mappo|olla|argmax:   12.8  [ 11.0  15.7  11.8]
+
+== E2 (reduced): 3 drops, d=8, v=3 km/h, 300 episodes, gamma=0: geometric-mean rate / oracle with genie CQI (%), mean and per drop
+                      oracle|ideal:  100.0  [100.0 100.0 100.0]
+                  full_reuse|ideal:   98.9  [ 99.4  99.8  97.5]
+               greedy_muting|ideal:   99.4  [ 99.9 100.0  98.5]
+           causal_full_reuse|ideal:   96.9  [ 97.2  98.1  95.4]
+               causal_greedy|ideal:   96.8  [ 97.4  97.2  95.7]
+                       oracle|olla:   83.6  [ 85.9  84.7  80.0]
+                   full_reuse|olla:   86.1  [ 86.9  86.8  84.5]
+                greedy_muting|olla:   84.7  [ 85.9  85.9  82.3]
+            causal_full_reuse|olla:   83.9  [ 84.2  85.1  82.3]
+                causal_greedy|olla:   82.0  [ 83.6  83.0  79.4]
+               mappo|ideal|sampled:   93.7  [ 94.3  95.3  91.3]
+                mappo|ideal|argmax:   96.0  [ 96.4  97.7  94.0]
+                mappo|olla|sampled:   80.8  [ 81.4  82.7  78.4]
+                 mappo|olla|argmax:   83.4  [ 83.8  85.1  81.2]
+
+== E2 (reduced): 3 drops, d=8, v=30 km/h, 300 episodes, gamma=0: geometric-mean rate / oracle with genie CQI (%), mean and per drop
+                      oracle|ideal:  100.0  [100.0 100.0 100.0]
+                  full_reuse|ideal:   99.0  [ 99.4  99.4  98.2]
+               greedy_muting|ideal:   99.5  [ 99.7  99.8  99.0]
+           causal_full_reuse|ideal:   67.7  [ 67.3  70.0  65.7]
+               causal_greedy|ideal:   67.9  [ 67.2  70.4  66.2]
+                       oracle|olla:   48.4  [ 47.3  51.4  46.4]
+                   full_reuse|olla:   47.8  [ 47.0  51.3  45.1]
+                greedy_muting|olla:   47.9  [ 47.2  51.2  45.1]
+            causal_full_reuse|olla:   11.0  [ 12.7  11.4   8.9]
+                causal_greedy|olla:   13.2  [ 13.4  16.5   9.8]
+               mappo|ideal|sampled:   65.9  [ 65.8  68.1  63.7]
+                mappo|ideal|argmax:   66.8  [ 67.1  69.3  64.1]
+                mappo|olla|sampled:   18.0  [ 17.3  21.6  15.2]
+                 mappo|olla|argmax:   18.7  [ 17.5  22.9  15.6]
+
+== E2 (reduced): 3 drops, d=8, v=60 km/h, 300 episodes, gamma=0: geometric-mean rate / oracle with genie CQI (%), mean and per drop
+                      oracle|ideal:  100.0  [100.0 100.0 100.0]
+                  full_reuse|ideal:   99.0  [ 99.5  99.3  98.1]
+               greedy_muting|ideal:   99.4  [ 99.8  99.7  98.9]
+           causal_full_reuse|ideal:   63.1  [ 62.5  65.9  60.8]
+               causal_greedy|ideal:   63.4  [ 62.3  66.6  61.3]
+                       oracle|olla:   45.3  [ 43.6  49.4  42.8]
+                   full_reuse|olla:   44.1  [ 43.2  48.3  41.0]
+                greedy_muting|olla:   44.6  [ 43.4  48.9  41.6]
+            causal_full_reuse|olla:    6.5  [  7.0   7.8   4.6]
+                causal_greedy|olla:    7.8  [  6.4  11.5   5.3]
+               mappo|ideal|sampled:   63.7  [ 63.0  66.3  61.8]
+                mappo|ideal|argmax:   58.4  [ 56.7  60.7  58.0]
+                mappo|olla|sampled:   12.6  [ 11.6  15.4  10.7]
+                 mappo|olla|argmax:   12.5  [ 11.6  15.0  10.9]

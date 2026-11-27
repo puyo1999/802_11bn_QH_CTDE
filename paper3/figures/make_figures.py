@@ -1,10 +1,13 @@
 """
 paper3/figures/make_figures.py
-Figures of paper3 from the committed results in experiments/cellular_results (pilot runs: 20 drops, 1 seed).
+Figures of paper3 from the committed results in experiments/cellular_results (E1: 200 drops, 3 seeds;
+LA0 and LA1: 20 drops, 1 seed).
 
     fig_sinr_cdf     E0: CDF of the wideband all-transmit SINR of the serving cell (recomputed from the
                      simulator, 50 drops, large-scale gains only)
     fig_headroom     E1: headroom over cluster TDMA versus eta and the references relative to the oracle
+    fig_delay        E1 with the max-weight objective: share of drops whose queues are stable, and the median and
+                     95th-percentile packet delay on the drops where the oracle and cluster TDMA are stable
     fig_la0          LA0: PF utility relative to the oracle with genie CQI for the CQI selections, and the
                      link-adaptation loss with the share recovered by intent messages
     fig_la1          LA1: share of the link-adaptation loss that established remedies recover with causal
@@ -32,7 +35,8 @@ import numpy as np
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.dirname(os.path.abspath(__file__))
 RESULTS = os.path.join(ROOT, "experiments/cellular_results")
-E1 = os.path.join(RESULTS, "e1_U4_D20_S1.csv")
+E1 = os.path.join(RESULTS, "e1_U4_D200_S3.csv")
+E1_STATS = os.path.join(RESULTS, "e1_stats.json")   # experiments/cellular_results/e1_stats.py
 LA0 = os.path.join(RESULTS, "la0_D20_S1.csv")
 LA1 = os.path.join(RESULTS, "la1_D20_S1_summary.json")
 sys.path.insert(0, ROOT)
@@ -97,12 +101,12 @@ def fig_headroom() -> None:
     pts = np.array(pts)
     fig, axes = plt.subplots(1, 2, figsize=(7.2, 2.8))
     ax = axes[0]
-    ax.scatter(pts[:, 0], pts[:, 1], s=7, color=ORANGE, alpha=0.5, linewidths=0, label="drop and load")
-    edges = np.exp(np.linspace(np.log(pts[:, 0].min()), np.log(pts[:, 0].max()), 9))
+    ax.scatter(pts[:, 0], pts[:, 1], s=3, color=ORANGE, alpha=0.2, linewidths=0, label="drop, seed and load")
+    edges = np.exp(np.linspace(np.log(pts[:, 0].min()), np.log(pts[:, 0].max()), 13))
     centers, medians = [], []
     for lo, hi in zip(edges[:-1], edges[1:]):
         sel = pts[(pts[:, 0] >= lo) & (pts[:, 0] <= hi)]
-        if len(sel) >= 3:
+        if len(sel) >= 10:
             centers.append(np.sqrt(lo * hi))
             medians.append(np.median(sel[:, 1]))
     ax.plot(centers, medians, color=INK, linewidth=1.2, label="binned median")
@@ -247,8 +251,47 @@ def fig_la1(selector: str = "causal_greedy", delay: int = 4) -> None:
     save(fig, "fig_la1")
 
 
+def fig_delay() -> None:
+    """E1 with the max-weight objective: (a) share of drops on which every queue of the policy is stable within the
+    episode, (b) median over drops of the median and the 95th-percentile packet delay, on the drops where both
+    the oracle and cluster TDMA are stable; bars are bootstrap 95% CIs over drops."""
+    with open(E1_STATS) as handle:
+        stats = json.load(handle)["maxweight"]["by_eta"]
+    etas = sorted(float(e) for e in stats)[:-1]          # the highest load only sets the saturated capacity
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 2.8))
+    ax = axes[0]
+    for p, color, label in (("oracle", INK, "Oracle"), ("greedy_muting", GREEN, "Greedy muting"),
+                            ("full_reuse", BLUE, "Full reuse"), ("cluster_tdma", ORANGE, "Cluster TDMA")):
+        est = np.array([stats[str(e)][f"stable_{p}"] for e in etas]) * 100
+        ax.errorbar(etas, est[:, 0], yerr=[est[:, 0] - est[:, 1], est[:, 2] - est[:, 0]], marker="o", markersize=3,
+                    color=color, capsize=2, linewidth=1.1, label=label)
+    ax.set_xticks(etas, [f"{e:g}" for e in etas], rotation=45)
+    ax.set_xlabel("Offered load η", color=INK2, fontsize=8)
+    ax.set_ylabel("Drops with stable queues (%)", color=INK2, fontsize=8)
+    ax.set_title("(a) Stability under max-weight scheduling", loc="left", fontsize=9, color=INK)
+    ax.legend(fontsize=6.5, frameon=False, loc="upper right")
+    ax = axes[1]
+    sel = [e for e in etas if "delay_p95_oracle" in stats[str(e)]]
+    for p, color, label in (("oracle", INK, "Oracle"), ("cluster_tdma", ORANGE, "Cluster TDMA")):
+        for k, style_, name in (("delay_median", "-", "median"), ("delay_p95", "--", "95th pct.")):
+            est = np.array([stats[str(e)][f"{k}_{p}"] for e in sel])
+            ax.errorbar(sel, est[:, 0], yerr=[est[:, 0] - est[:, 1], est[:, 2] - est[:, 0]], marker="o", markersize=3,
+                        color=color, linestyle=style_, capsize=2, linewidth=1.1, label=f"{label}, {name}")
+    ax.set_yscale("log")
+    ax.set_ylim(0.7, 5000)
+    ax.set_xticks(sel, [f"{e:g}" for e in sel], rotation=45)
+    ax.set_xlabel("Offered load η", color=INK2, fontsize=8)
+    ax.set_ylabel("Packet delay (slots of 1 ms)", color=INK2, fontsize=8)
+    ax.set_title("(b) Delay where both are stable", loc="left", fontsize=9, color=INK)
+    ax.legend(fontsize=6, frameon=False, loc="upper left", ncol=2)
+    for ax in axes:
+        style(ax)
+    save(fig, "fig_delay")
+
+
 if __name__ == "__main__":
     fig_sinr_cdf()
     fig_headroom()
+    fig_delay()
     fig_la0()
     fig_la1()
